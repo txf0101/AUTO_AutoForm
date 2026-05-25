@@ -1,0 +1,13 @@
+[project]
+name = "autoform-agent"
+version = "0.1.0"
+description = "Local AutoForm control helpers for Codex and MCP workflows."
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+mcp = ["mcp>=1.0.0"]
+test = ["pytest>=8.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

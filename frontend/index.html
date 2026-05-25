@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AutoForm MCP Console</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <!--
+      页面根节点。
+      data-app-shell 这个属性供烟雾测试和后续自动化测试定位。
+      整个页面保持单文件 HTML 结构，便于不了解前端构建工具的开发者直接打开和调试。
+    -->
+    <main class="app-shell" data-app-shell>
+      <section class="sidebar glass-panel" aria-label="AutoForm 工作区导航">
+        <div class="brand-block">
+          <div class="brand-mark" aria-hidden="true">AF</div>
+          <div>
+            <p class="eyebrow">AutoForm MCP</p>
+            <h1>工作台</h1>
+          </div>
+        </div>
+
+        <button class="primary-action" type="button" data-new-conversation>
+          <span aria-hidden="true">＋</span>
+          新建对话
+        </button>
+
+        <div class="sidebar-section">
+          <div class="section-heading">
+            <span>对话</span>
+            <span class="badge" data-conversation-count>0</span>
+          </div>
+          <div class="conversation-list" data-conversation-list></div>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="section-heading">
+            <span>连接</span>
+            <span class="status-dot status-dot-ok" aria-hidden="true"></span>
+          </div>
+          <div class="connection-card">
+            <label for="bridge-mode">页面通道</label>
+            <select id="bridge-mode" data-bridge-mode>
+              <option value="mock">本地演示模式</option>
+              <option value="http">本地 HTTP 适配器</option>
+            </select>
+            <label for="bridge-endpoint">接口地址</label>
+            <input id="bridge-endpoint" data-bridge-endpoint value="http://127.0.0.1:4317/codex" />
+            <p>
+              当前页面用于预览本地状态。真实 Codex 工具调用通过 stdio MCP 配置进入 Python 工具层。
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="overview" aria-label="AutoForm 处理状态预览">
+        <header class="topbar glass-panel">
+          <div>
+            <p class="eyebrow">当前项目</p>
+            <h2>Solver_R13.afd</h2>
+          </div>
+          <div class="topbar-actions">
+            <button type="button" class="ghost-button" data-run-demo>运行示例流程</button>
+            <button type="button" class="ghost-button" data-reset-demo>重置</button>
+          </div>
+        </header>
+
+        <div class="status-grid">
+          <article class="metric-card glass-panel">
+            <p>连接状态</p>
+            <strong data-metric-connection>页面演示</strong>
+            <span>Codex 主入口为 stdio MCP</span>
+          </article>
+          <article class="metric-card glass-panel">
+            <p>MCP 工具</p>
+            <strong data-metric-tools>48</strong>
+            <span>已登记工具入口</span>
+          </article>
+          <article class="metric-card glass-panel">
+            <p>队列</p>
+            <strong data-metric-queue>Queue1</strong>
+            <span>2375@localhost</span>
+          </article>
+          <article class="metric-card glass-panel">
+            <p>求解状态</p>
+            <strong data-metric-solver>待执行</strong>
+            <span data-metric-solver-detail>准备 kinematic check</span>
+          </article>
+        </div>
+
+        <section class="glass-panel workspace-preview">
+          <div class="section-heading">
+            <span>软件处理预览</span>
+            <span data-preview-phase>Idle</span>
+          </div>
+          <div class="preview-canvas" aria-label="AutoForm 处理预览示意">
+            <div class="part-surface">
+              <div class="strain strain-a"></div>
+              <div class="strain strain-b"></div>
+              <div class="strain strain-c"></div>
+            </div>
+            <div class="preview-overlay">
+              <span data-preview-title>等待任务</span>
+              <small data-preview-subtitle>发送 prompt 后会显示 MCP 预览阶段</small>
+            </div>
+          </div>
+        </section>
+
+        <section class="glass-panel timeline-panel">
+          <div class="section-heading">
+            <span>MCP 操作流</span>
+            <span data-active-tool>无活动工具</span>
+          </div>
+          <ol class="timeline" data-timeline></ol>
+        </section>
+      </section>
+
+      <section class="chat glass-panel" aria-label="Codex 对话界面">
+        <header class="chat-header">
+          <div>
+            <p class="eyebrow">Codex</p>
+            <h2 data-active-conversation-title>AutoForm 初始对话</h2>
+          </div>
+          <span class="badge">MCP ready</span>
+        </header>
+
+        <div class="message-list" data-message-list aria-live="polite"></div>
+
+        <form class="prompt-form" data-prompt-form>
+          <label class="sr-only" for="prompt-input">输入要发送给 Codex 的 prompt</label>
+          <textarea
+            id="prompt-input"
+            data-prompt-input
+            rows="4"
+            placeholder="例如：读取当前 AFD 摘要，执行 kinematic check，并把结果整理成可汇报的步骤。"
+          ></textarea>
+          <div class="prompt-actions">
+            <button type="button" class="ghost-button" data-insert-example>插入示例</button>
+            <button type="submit" class="send-button">发送到 Codex</button>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

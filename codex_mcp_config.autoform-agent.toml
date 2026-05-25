@@ -1,0 +1,15 @@
+# AutoForm Agent MCP config snippet for Codex.
+#
+# Copy this block into:
+#   C:\Users\Tang Xufeng\.codex\config.toml
+#
+# Then restart Codex so it can launch the stdio MCP server.
+
+[mcp_servers."autoform-agent"]
+command = 'C:\ProgramData\anaconda3\python.exe'
+args = ['-m', 'autoform_agent.mcp_server']
+startup_timeout_sec = 60
+enabled = true
+
+[mcp_servers."autoform-agent".env]
+PYTHONPATH = 'F:\【项目和任务】\EIT\2026\AUTO_AutoForm'

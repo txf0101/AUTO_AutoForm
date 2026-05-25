@@ -4,7 +4,7 @@
 
 ## 一句话理解这个项目
 
-AutoForm Agent 是一个本地辅助工具项目。它把本机 AutoForm Forming 的安装发现、材料库处理、QuickLink 导出收集、命令预览、诊断信息读取、MCP 工具入口和浏览器预览页面整理到同一个工作区中。V0.1 版本以 Codex stdio MCP 入口作为真实工具调用链，普通用户可以先通过启动器和网页界面观察能力，开发者可以继续维护 Python 模块、测试和 MCP 工具。
+AutoForm Agent 是一个本地辅助工具项目。它把本机 AutoForm Forming 的安装发现、材料库处理、QuickLink 导出收集、命令预览、诊断信息读取、OpenAI Agents SDK 后端运行时、MCP 工具入口和浏览器预览页面整理到同一个工作区中。当前版本以前端到 HTTP bridge 再到 `autoform_agent.agent_runtime` 的链路作为应用主控，普通用户可以先通过启动器和网页界面观察能力，开发者可以继续维护 Python 模块、测试和 MCP 工具。
 
 这个结论依据项目根目录的 `README.md`、`DEVELOPERS.md`、`docs/codex_mcp_call_chain.md`、`autoform_agent/cli.py`、`autoform_agent/mcp_server.py`、`autoform_agent/http_bridge.py`、`frontend/README.md` 和 `start_autoform_agent.ps1`。
 
@@ -16,9 +16,11 @@ AutoForm Agent 是一个本地辅助工具项目。它把本机 AutoForm Forming
 
 `CLI` 指命令行入口，也就是在 PowerShell 里输入 `python -m autoform_agent.cli ...`。
 
+`Agent runtime` 指 Python 后端运行时。本项目的运行时入口是 `autoform_agent.agent_runtime`，HTTP bridge 和 CLI 的 `agent-turn` 命令都会调用它。配置 `OPENAI_API_KEY` 并安装 `openai-agents` 后，它会调用 OpenAI Agents SDK。
+
 `MCP` 指给 Codex 或其他 MCP host 调用的工具入口。本项目的 MCP 入口是 `python -m autoform_agent.mcp_server`，配置模板是 `codex_mcp_config.autoform-agent.toml`。
 
-`前端` 指 `frontend/` 里的本地网页。它通过本地 HTTP bridge 与 Python 适配器通信，默认页面地址是 `http://127.0.0.1:8765/index.html?bridge=http`。这个页面用于可视化预览和连接检查，真实 Codex 工具调用仍使用 MCP 配置入口。
+`前端` 指 `frontend/` 里的本地网页。它通过本地 HTTP bridge 与 Python 后端运行时通信，默认页面地址是 `http://127.0.0.1:8765/index.html?bridge=http`。这个页面用于输入 prompt、显示状态和观察后端返回结果。
 
 ## 你需要先准备什么
 
@@ -54,7 +56,7 @@ start_autoform_agent.cmd
 powershell -ExecutionPolicy Bypass -File .\start_autoform_agent.ps1
 ```
 
-启动器会显示两个选项。根据 `README.md` 和 `start_autoform_agent.ps1` 的说明，选项一用于检查 Codex MCP 入口是否能导入，选项二会同时启动网页需要的 HTTP bridge 和静态前端服务，并打开本地页面。
+启动器会显示两个选项。根据 `README.md` 和 `start_autoform_agent.ps1` 的说明，选项一用于检查 Codex MCP 入口和后端 Agent runtime 是否能导入，选项二会同时启动网页需要的 HTTP bridge 和静态前端服务，并打开本地页面。
 
 如果端口已经被监听，启动器会复用现有服务。这个行为来自 `start_autoform_agent.ps1` 中的端口检查和启动逻辑。
 
@@ -84,6 +86,18 @@ python -m autoform_agent.cli discover
 
 ```powershell
 python -c "import autoform_agent.mcp_server; print('autoform_agent.mcp_server import ok')"
+```
+
+检查后端 Agent runtime 配置：
+
+```powershell
+python -m autoform_agent.cli agent-status
+```
+
+运行一次后端 prompt：
+
+```powershell
+python -m autoform_agent.cli agent-turn "请读取当前 AutoForm 安装和队列状态"
 ```
 
 运行测试：
@@ -118,7 +132,7 @@ python -m http.server 8765 --directory frontend
 http://127.0.0.1:8765/index.html?bridge=http
 ```
 
-这些命令依据 `frontend/README.md`、`docs/codex_mcp_call_chain.md` 和 `start_autoform_agent.ps1`。HTTP bridge 只服务本地网页通信；Codex 的 MCP 工具调用仍然使用 `python -m autoform_agent.mcp_server` 这个 stdio 入口。
+这些命令依据 `frontend/README.md`、`docs/codex_mcp_call_chain.md` 和 `start_autoform_agent.ps1`。HTTP bridge 会把网页 prompt 转交给 `autoform_agent.agent_runtime`；Codex 的 MCP 工具调用仍然可以使用 `python -m autoform_agent.mcp_server` 这个 stdio 入口。
 
 ## 想让 Codex 使用这个 MCP 工具
 
@@ -136,11 +150,11 @@ C:\Users\Tang Xufeng\.codex\config.toml
 
 加入后重启 Codex，Codex 才会按配置启动 `autoform_agent.mcp_server`。这个步骤的依据是 `codex_mcp_config.autoform-agent.toml` 和 `README.md` 的“MCP 入口”一节。
 
-如果只打开前端网页，页面会调用本地 HTTP bridge 并展示状态摘要。需要真正让 Codex 调用 `autoform_` 工具时，必须完成上面的 MCP 配置步骤。
+如果只打开前端网页，页面会调用本地 HTTP bridge，并由 Python 后端运行时返回状态摘要。需要让 Codex 作为 MCP host 直接调用 `autoform_` 工具时，必须完成上面的 MCP 配置步骤。
 
 ## 每个目录大概负责什么
 
-`autoform_agent/` 存放 Python 业务代码。`DEVELOPERS.md` 已经把主要模块逐一解释，例如 `paths.py` 做 AutoForm 安装发现，`cli.py` 做命令行入口，`mcp_server.py` 做 MCP 工具暴露，`materials.py` 做材料文件处理，`quicklink.py` 做 QuickLink 解析，`solver.py` 做求解器相关计划和探测。
+`autoform_agent/` 存放 Python 业务代码。`DEVELOPERS.md` 已经把主要模块逐一解释，例如 `agent_runtime.py` 做 OpenAI Agents SDK 后端运行时，`paths.py` 做 AutoForm 安装发现，`cli.py` 做命令行入口，`mcp_server.py` 做 MCP 工具暴露，`materials.py` 做材料文件处理，`quicklink.py` 做 QuickLink 解析，`solver.py` 做求解器相关计划和探测。
 
 `frontend/` 存放网页界面。`frontend/README.md` 说明 `index.html` 负责页面结构，`styles.css` 负责视觉样式，`app.js` 负责交互逻辑。
 
@@ -174,7 +188,7 @@ C:\Users\Tang Xufeng\.codex\config.toml
 
 改启动器时，要同时核对 `start_autoform_agent.ps1`、`start_autoform_agent.cmd`、`README.md` 和本文件，因为新手通常会从启动器开始。
 
-改 MCP 工具时，要同时核对 `autoform_agent/mcp_server.py`、对应业务模块、`README.md`、`DEVELOPERS.md` 和 `codex_mcp_config.autoform-agent.toml`。
+改后端运行时时，要同时核对 `autoform_agent/agent_runtime.py`、`autoform_agent/http_bridge.py`、`frontend/README.md`、`README.md` 和测试。改 MCP 工具时，要同时核对 `autoform_agent/mcp_server.py`、对应业务模块、`README.md`、`DEVELOPERS.md` 和 `codex_mcp_config.autoform-agent.toml`。
 
 ## 每次更新后都要检查本文件
 
@@ -221,7 +235,7 @@ python -m autoform_agent.cli discover
 5. `environment.yml`：Conda 环境名和依赖列表。
 6. `start_autoform_agent.ps1` 与 `start_autoform_agent.cmd`：启动器入口、端口、日志目录、PID 目录和 MCP 导入检查。
 7. `frontend/README.md`：前端启动方式、HTTP bridge 地址、连接模式和前端文件职责。
-8. `docs/codex_mcp_call_chain.md`：Codex MCP 优先调用链、源码依据和分层职责。
+8. `docs/codex_mcp_call_chain.md`：后端 Agent runtime、Codex MCP 工具层、源码依据和分层职责。
 9. `codex_mcp_config.autoform-agent.toml`：Codex MCP 配置模板。
-10. `autoform_agent/cli.py`、`autoform_agent/mcp_server.py` 和 `autoform_agent/http_bridge.py`：CLI、MCP 和 HTTP bridge 的实际入口。
+10. `autoform_agent/cli.py`、`autoform_agent/agent_runtime.py`、`autoform_agent/mcp_server.py` 和 `autoform_agent/http_bridge.py`：CLI、Agent runtime、MCP 和 HTTP bridge 的实际入口。
 11. 本次 `rg --files` 输出：当前工作区的目录和文件清单。

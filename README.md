@@ -4,14 +4,16 @@
 
 ## 当前调用方向
 
-V0.1 版本采用 Codex MCP 优先的调用方式。Codex 或其他 MCP host 通过
-`python -m autoform_agent.mcp_server` 启动 stdio MCP server，再调用
-`autoform_` 前缀工具。浏览器前端保留为本地可视化和 HTTP bridge 预览层，用来观察
-AutoForm Agent 的只读状态、操作流和页面通信情况。
+当前版本采用后端 Agent runtime 优先的调用方式。浏览器页面只负责收集 prompt 和显示状态，页面请求进入
+`autoform_agent.http_bridge` 后，会交给 `autoform_agent.agent_runtime`。该运行时在检测到
+`OPENAI_API_KEY` 且当前环境安装 `openai-agents` 时，通过 OpenAI Agents SDK 选择并调用已登记的 AutoForm 工具；缺少云端配置时，运行时会返回明确的本地检查结果，便于离线开发和测试。
 
-这个结论依据 `autoform_agent/mcp_server.py` 的 `FastMCP("autoform-agent")` 入口、
-`codex_mcp_config.autoform-agent.toml` 的 Codex 配置模板、`autoform_agent/http_bridge.py`
-的模块说明，以及 `start_autoform_agent.ps1` 对 MCP 与前端服务的分工注释。更完整的调用链说明见
+Codex MCP 入口仍然保留给 Codex 或其他 MCP host 使用。Codex 可以通过
+`python -m autoform_agent.mcp_server` 启动 stdio MCP server，再调用 `autoform_` 前缀工具。
+
+这个结论依据 `autoform_agent/agent_runtime.py` 的 OpenAI Agents SDK runtime、
+`autoform_agent/http_bridge.py` 的桥接入口、`autoform_agent/mcp_server.py` 的
+`FastMCP("autoform-agent")` 工具层，以及 `start_autoform_agent.ps1` 对运行时和前端服务的启动分工。更完整的调用链说明见
 [docs/codex_mcp_call_chain.md](docs/codex_mcp_call_chain.md)。
 
 ## 已实现能力
@@ -45,6 +47,15 @@ conda activate afagent
 ```powershell
 conda env create -f environment.yml
 ```
+
+复制 OpenAI 配置模板：
+
+```powershell
+Copy-Item .env.example .env
+```
+
+然后在 `.env` 中填写 `OPENAI_API_KEY`。默认模型由 `OPENAI_MODEL` 控制，当前模板使用
+`gpt-4.1-mini`。若没有配置 API key，后端运行时仍会返回本地检查结果。
 
 发现 AutoForm：
 
@@ -107,6 +118,22 @@ python -m autoform_agent.mcp_server
 后续新增能力时，优先在 `autoform_agent/` 的业务模块中实现并测试，再在
 `autoform_agent/mcp_server.py` 中增加薄封装工具。这样 Codex、CLI 和前端 HTTP 预览可以复用同一套经过验证的 AutoForm 能力。
 
+## OpenAI Agents SDK 运行时
+
+后端应用运行时入口在 `autoform_agent/agent_runtime.py`。可以用 CLI 直接检查配置：
+
+```powershell
+python -m autoform_agent.cli agent-status
+```
+
+也可以让后端运行一轮 prompt：
+
+```powershell
+python -m autoform_agent.cli agent-turn "请读取当前 AutoForm 安装和队列状态"
+```
+
+该命令会调用与 HTTP bridge 相同的 Python runtime。运行时已经把安装发现、环境快照、队列检查、示例工程、命令规格、QuickLink 导出、AFD 摘要和 kinematic 计划封装为 Agents SDK function tools。
+
 ## 本地启动器
 
 项目根目录提供 `start_autoform_agent.cmd` 和 `start_autoform_agent.ps1`。双击
@@ -118,15 +145,16 @@ powershell -ExecutionPolicy Bypass -File .\start_autoform_agent.ps1
 
 启动器提供两个选项：
 
-1. `检查 Codex MCP 入口`：确认 `autoform_agent.mcp_server` 可以被当前 Python 环境导入，并显示 Codex MCP 配置模板路径。
-2. `检查 Codex MCP 入口并打开可视化前端`：完成上述检查，同时启动网页使用的 HTTP bridge、静态前端服务，并打开 `http://127.0.0.1:8765/index.html?bridge=http`。
+1. `检查 Codex MCP 入口和后端 Agent runtime`：确认 `autoform_agent.mcp_server` 和 `autoform_agent.agent_runtime` 可以被当前 Python 环境导入，并显示 Codex MCP 配置模板路径与后端运行时配置状态。
+2. `检查 Codex MCP 入口、后端 Agent runtime 并打开可视化前端`：完成上述检查，同时启动网页使用的 HTTP bridge、静态前端服务，并打开 `http://127.0.0.1:8765/index.html?bridge=http`。
 
-网页 HTTP bridge 默认监听 `http://127.0.0.1:4317/codex`，它只服务可视化页面。
-Codex 的真实工具调用仍然通过 `python -m autoform_agent.mcp_server` 这个 stdio MCP 入口完成。
+网页 HTTP bridge 默认监听 `http://127.0.0.1:4317/codex`，它接收页面 prompt 并转交给
+`autoform_agent.agent_runtime`。Codex 的 MCP 工具调用仍然可以通过
+`python -m autoform_agent.mcp_server` 这个 stdio MCP 入口完成。
 启动器使用独立进程启动网页相关服务，关闭启动器窗口不会停止已经启动的 HTTP bridge 或前端服务。日志写入
 `output\launcher_logs`，PID 记录写入 `output\launcher_pids`。如果端口已经被监听，启动器会复用现有服务。
 
-前端页面中的 prompt 会进入本地 HTTP bridge，并返回页面可以渲染的状态摘要。需要让 Codex 真正调用 AutoForm 工具时，应先把
+前端页面中的 prompt 会进入本地 HTTP bridge，并返回页面可以渲染的后端 Agent runtime 状态摘要。需要让 Codex 单独调用 AutoForm MCP 工具时，应先把
 `codex_mcp_config.autoform-agent.toml` 的内容加入 Codex 配置并重启 Codex，然后在 Codex 会话中调用 MCP 工具。
 
 需要完整材料文件清单时，可在 `install-materials` 后添加 `--json`。

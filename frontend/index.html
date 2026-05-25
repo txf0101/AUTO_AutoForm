@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>AutoForm MCP Console</title>
+    <title>AutoForm Agent Runtime Console</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
@@ -17,7 +17,7 @@
         <div class="brand-block">
           <div class="brand-mark" aria-hidden="true">AF</div>
           <div>
-            <p class="eyebrow">AutoForm MCP</p>
+            <p class="eyebrow">AutoForm Agent</p>
             <h1>工作台</h1>
           </div>
         </div>
@@ -49,7 +49,7 @@
             <label for="bridge-endpoint">接口地址</label>
             <input id="bridge-endpoint" data-bridge-endpoint value="http://127.0.0.1:4317/codex" />
             <p>
-              当前页面用于预览本地状态。真实 Codex 工具调用通过 stdio MCP 配置进入 Python 工具层。
+              当前页面只发送 prompt 和显示结果。后端 Python Agent runtime 负责调用 OpenAI Agents SDK 和 AutoForm 工具层。
             </p>
           </div>
         </div>
@@ -71,7 +71,7 @@
           <article class="metric-card glass-panel">
             <p>连接状态</p>
             <strong data-metric-connection>页面演示</strong>
-            <span>Codex 主入口为 stdio MCP</span>
+            <span>主控在 Python 后端运行时</span>
           </article>
           <article class="metric-card glass-panel">
             <p>MCP 工具</p>
@@ -103,42 +103,42 @@
             </div>
             <div class="preview-overlay">
               <span data-preview-title>等待任务</span>
-              <small data-preview-subtitle>发送 prompt 后会显示 MCP 预览阶段</small>
+              <small data-preview-subtitle>发送 prompt 后会显示后端运行时阶段</small>
             </div>
           </div>
         </section>
 
         <section class="glass-panel timeline-panel">
           <div class="section-heading">
-            <span>MCP 操作流</span>
+            <span>后端操作流</span>
             <span data-active-tool>无活动工具</span>
           </div>
           <ol class="timeline" data-timeline></ol>
         </section>
       </section>
 
-      <section class="chat glass-panel" aria-label="Codex 对话界面">
+      <section class="chat glass-panel" aria-label="Agent Runtime 对话界面">
         <header class="chat-header">
           <div>
-            <p class="eyebrow">Codex</p>
+            <p class="eyebrow">Agent Runtime</p>
             <h2 data-active-conversation-title>AutoForm 初始对话</h2>
           </div>
-          <span class="badge">MCP ready</span>
+          <span class="badge">Runtime ready</span>
         </header>
 
         <div class="message-list" data-message-list aria-live="polite"></div>
 
         <form class="prompt-form" data-prompt-form>
-          <label class="sr-only" for="prompt-input">输入要发送给 Codex 的 prompt</label>
+          <label class="sr-only" for="prompt-input">输入要发送给后端 Agent runtime 的 prompt</label>
           <textarea
             id="prompt-input"
             data-prompt-input
             rows="4"
-            placeholder="例如：读取当前 AFD 摘要，执行 kinematic check，并把结果整理成可汇报的步骤。"
+            placeholder="例如：读取当前 AFD 摘要，规划 kinematic check，并把结果整理成可汇报的步骤。"
           ></textarea>
           <div class="prompt-actions">
             <button type="button" class="ghost-button" data-insert-example>插入示例</button>
-            <button type="submit" class="send-button">发送到 Codex</button>
+            <button type="submit" class="send-button">发送到 Agent</button>
           </div>
         </form>
       </section>

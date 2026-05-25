@@ -2,8 +2,9 @@
 
 本文档面向后续接手本项目的开发者。项目目标是把本机 AutoForm 能力逐步整理为可验证、可测试、可迁移的 CLI 与 MCP 工具。所有新能力都应先有证据，再进入封装层。
 
-V0.1 版本的运行口径是 Codex MCP 优先。Codex 通过 `python -m autoform_agent.mcp_server`
-启动 stdio MCP server，浏览器前端通过 `autoform_agent.http_bridge` 做本地可视化预览。
+当前版本的运行口径是后端 Agent runtime 优先。浏览器前端通过 `autoform_agent.http_bridge`
+把 prompt 交给 `autoform_agent.agent_runtime`，该运行时负责 OpenAI Agents SDK 调用和工具选择。Codex 通过 `python -m autoform_agent.mcp_server`
+启动 stdio MCP server 的能力仍然保留，供 MCP host 直接调用工具。
 调用链依据和后续维护要求集中记录在 `docs/codex_mcp_call_chain.md`。
 
 ## 一、总体结构
@@ -12,8 +13,9 @@ V0.1 版本的运行口径是 Codex MCP 优先。Codex 通过 `python -m autofor
 
 - `paths.py`：AutoForm 安装发现和标准目录推导。跨机器适配优先在这里扩展。
 - `cli.py`：命令行入口。它负责参数解析和输出格式，不承载业务规则。
+- `agent_runtime.py`：OpenAI Agents SDK 后端运行时。它负责读取 `.env`、配置 OpenAI client、构建 manager agent、注册 function tools，并把结果整理成 HTTP 和 CLI 可复用的 JSON。
 - `mcp_server.py`：MCP 工具暴露层。它把 MCP 的字符串参数转换为内部函数需要的 `Path` 或基础类型。
-- `http_bridge.py`：本地静态前端使用的 HTTP 适配器。它提供 localhost 页面通信和只读状态摘要，真实 Codex 工具调用继续通过 `mcp_server.py`。
+- `http_bridge.py`：本地静态前端使用的 HTTP 适配器。它提供 localhost 页面通信，并把 prompt 转交给 `agent_runtime.py`。
 - `config.py`：读取 `systemConfigFile.xml` 中的队列、远程主机和日志配置。
 - `inventory.py`：读取示例工程、`.afd` 文件事实、bin 目录入口和帮助主题。
 - `quicklink.py`：QuickLink 导出收集、XML 解析、标准校验和语义段落摘要。

@@ -1,5 +1,5 @@
 /*
- * AutoForm MCP Console frontend.
+ * AutoForm Agent Runtime Console frontend.
  *
  * This file is written as plain browser JavaScript so the project can be opened
  * in VSCode without a build step.  The code is split into clear sections:
@@ -11,10 +11,11 @@
 /**
  * Central application state.
  *
- * The UI is rendered from this object.  The production Codex path runs through
- * the stdio MCP server outside the browser.  This page only mirrors local
- * preview data returned by the HTTP bridge, then calls render functions from
- * one explicit state object so new developers can follow every screen update.
+ * The UI is rendered from this object.  The production prompt path runs through
+ * the OpenAI Agents SDK capable Python runtime outside the browser.  This page
+ * only forwards prompts and mirrors preview data returned by the HTTP bridge,
+ * then calls render functions from one explicit state object so new developers
+ * can follow every screen update.
  */
 const appState = {
   activeConversationId: "conv-1",
@@ -28,7 +29,7 @@ const appState = {
       messages: [
         {
           role: "system",
-          text: "已建立本地演示会话。发送 prompt 后，页面会展示 AutoForm MCP 操作流预览；真实 Codex 工具调用请使用 stdio MCP 配置入口。",
+          text: "已建立本地演示会话。发送 prompt 后，页面会把文本交给 Python 后端运行时，并展示返回的操作流预览。",
           time: new Date().toISOString(),
         },
       ],
@@ -57,7 +58,7 @@ const appState = {
   preview: {
     phase: "Idle",
     title: "等待任务",
-    subtitle: "发送 prompt 后会显示 MCP 操作阶段",
+    subtitle: "发送 prompt 后会显示后端运行时阶段",
     solver: "待执行",
     solverDetail: "准备 kinematic check",
     activeTool: "无活动工具",
@@ -65,15 +66,15 @@ const appState = {
 };
 
 /**
- * CodexBridge is the only place that knows how prompts leave the browser.
+ * AgentRuntimeBridge is the only place that knows how prompts leave the browser.
  *
  * Current limitation:
- * A static web page cannot create Codex desktop conversations or call MCP
- * stdio tools.  The mock implementation keeps the visual workflow inspectable,
- * and the HTTP branch talks only to `autoform_agent.http_bridge`.  Real Codex
- * sessions are created by Codex itself after it reads the MCP config snippet.
+ * A static web page cannot run OpenAI Agents SDK or AutoForm tools directly.
+ * The mock implementation keeps the visual workflow inspectable, and the HTTP
+ * branch talks to `autoform_agent.http_bridge`, which delegates to the Python
+ * `autoform_agent.agent_runtime` module.
  */
-class CodexBridge {
+class AgentRuntimeBridge {
   constructor(state) {
     this.state = state;
   }
@@ -81,8 +82,9 @@ class CodexBridge {
   /**
    * Create a frontend conversation for the visual shell.
    *
-   * The production Codex session is managed by Codex, not by browser JavaScript.
-   * Keeping this method local avoids mixing UI state with MCP process lifecycle.
+   * The production agent session is managed by Python, not by browser
+   * JavaScript.  Keeping this method local avoids mixing UI state with runtime
+   * process lifecycle.
    */
   createConversation() {
     const nextIndex = this.state.conversations.length + 1;
@@ -94,7 +96,7 @@ class CodexBridge {
       messages: [
         {
           role: "system",
-          text: "已在前端创建新对话。这里维护页面状态；Codex 会话由 Codex App 按 MCP 配置管理。",
+          text: "已在前端创建新对话。这里只维护页面状态；后端 Agent runtime 负责理解 prompt 和选择工具。",
           time: new Date().toISOString(),
         },
       ],
@@ -109,8 +111,9 @@ class CodexBridge {
    * Send a prompt through the page-level bridge.
    *
    * The `mock` branch simulates a useful response and MCP progress.  The `http`
-   * branch sends the prompt to the local HTTP bridge, which returns visual
-   * status data.  Codex MCP tools continue to run through the stdio server.
+   * branch sends the prompt to the local HTTP bridge.  The HTTP bridge delegates
+   * to Python runtime code, so the frontend does not decide which AutoForm tool
+   * should run.
    */
   async sendPrompt(prompt) {
     if (this.state.bridgeMode === "http") {
@@ -128,7 +131,7 @@ class CodexBridge {
       role: "assistant",
       text:
         "我会先发现 AutoForm 安装，再读取当前 AFD 工程摘要，并生成 kinematic check 计划。" +
-        "当前演示模式已经把这些动作映射到 MCP 操作流；真实 Codex 调用请通过 MCP 配置启动 autoform_agent.mcp_server。",
+        "当前演示模式已经把这些动作映射到后端操作流；真实运行时会由 autoform_agent.agent_runtime 接管 prompt。",
       time: new Date().toISOString(),
     };
   }
@@ -148,7 +151,7 @@ class CodexBridge {
     });
 
     if (!response.ok) {
-      throw new Error(`Codex adapter returned HTTP ${response.status}`);
+      throw new Error(`Agent runtime adapter returned HTTP ${response.status}`);
     }
 
     const reply = await response.json();
@@ -157,7 +160,7 @@ class CodexBridge {
   }
 }
 
-const bridge = new CodexBridge(appState);
+const bridge = new AgentRuntimeBridge(appState);
 
 const elements = {
   conversationList: document.querySelector("[data-conversation-list]"),
@@ -362,7 +365,7 @@ function simulateToolProgress(toolName, finalState) {
   appState.preview = {
     phase: finalState === "complete" ? "Plan Ready" : "Running",
     title: toolName,
-    subtitle: finalState === "complete" ? "已生成可检查的 MCP 操作计划" : "页面正在更新 MCP 操作流",
+    subtitle: finalState === "complete" ? "已生成可检查的后端操作计划" : "页面正在等待后端运行时状态",
     solver: finalState === "complete" ? "计划完成" : "处理中",
     solverDetail: finalState === "complete" ? "等待真实执行确认" : "正在更新操作流",
     activeTool: toolName,
@@ -434,7 +437,7 @@ function bindEvents() {
 function roleLabel(role) {
   return {
     user: "你",
-    assistant: "Codex",
+    assistant: "Agent",
     system: "系统",
   }[role] || role;
 }

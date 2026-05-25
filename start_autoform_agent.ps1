@@ -10,14 +10,15 @@
 # AutoForm Agent 本地启动器。
 #
 # 本脚本的目标是把常用启动步骤收拢到一个入口里：
-# 1. 检查 Codex 使用的 stdio MCP server 入口。
-# 2. 检查 stdio MCP server 入口，同时启动可视化前端需要的 HTTP bridge。
+# 1. 检查 Codex 使用的 stdio MCP server 入口和后端 Agent runtime。
+# 2. 检查上述入口，同时启动可视化前端需要的 HTTP bridge。
 #
 # 关键分工：
 # - Codex 通过配置启动 `python -m autoform_agent.mcp_server`，并通过 stdio
 #   与该 MCP server 通信。
 # - 浏览器前端通过 `autoform_agent.http_bridge` 访问本地 HTTP 服务。HTTP
-#   bridge 只负责可视化页面通信，不替代 Codex 的 stdio MCP 连接。
+#   bridge 会把 prompt 转交给 `autoform_agent.agent_runtime`，由 Python 后端
+#   负责 OpenAI Agents SDK 调用和 AutoForm 工具选择。
 #
 # 进程隔离原则：
 # - 本脚本只负责启动服务和打开页面。
@@ -46,6 +47,7 @@ $RunStamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $OutputRoot = Join-Path $WorkspaceRoot "output"
 $LogDir = Join-Path $OutputRoot "launcher_logs\$RunStamp"
 $PidDir = Join-Path $OutputRoot "launcher_pids"
+$PreferredAfagentPython = Join-Path $env:USERPROFILE ".conda\envs\afagent\python.exe"
 
 function Show-Help {
     <#
@@ -58,13 +60,13 @@ function Show-Help {
     Write-Host "交互式运行："
     Write-Host "  powershell -ExecutionPolicy Bypass -File .\start_autoform_agent.ps1"
     Write-Host ""
-    Write-Host "检查 Codex MCP 入口："
+    Write-Host "检查 Codex MCP 入口和后端 Agent runtime："
     Write-Host "  powershell -ExecutionPolicy Bypass -File .\start_autoform_agent.ps1 -Mode McpOnly"
     Write-Host ""
-    Write-Host "检查 Codex MCP 入口并打开可视化前端："
+    Write-Host "检查 Codex MCP 入口、后端 Agent runtime 并打开可视化前端："
     Write-Host "  powershell -ExecutionPolicy Bypass -File .\start_autoform_agent.ps1 -Mode McpWithFrontend"
     Write-Host ""
-    Write-Host "说明：Codex MCP server 由 Codex 按配置启动；前端 HTTP bridge 会独立运行。"
+    Write-Host "说明：Codex MCP server 由 Codex 按配置启动；前端 HTTP bridge 会调用 Python 后端 Agent runtime。"
 }
 
 function Initialize-LauncherFolders {
@@ -79,11 +81,15 @@ function Initialize-LauncherFolders {
 
 function Get-PythonExecutable {
     <#
-      查找当前 PowerShell 环境中的 python。
-      返回 Get-Command 给出的可执行文件路径，避免把 Python 解释器写死在脚本
-      里。用户使用 Conda 环境时，只要先激活环境，本脚本就会使用该环境中的
-      python。
+      查找项目可用的 Python。
+      首选用户级 afagent Conda 环境，因为 environment.yml、README 和测试命令都
+      以该环境为准，并且 OpenAI Agents SDK 依赖也安装在这里。若该环境不存在，
+      再退回当前 PowerShell 环境中的 python，便于其他机器迁移时继续工作。
     #>
+    if (Test-Path $PreferredAfagentPython) {
+        return $PreferredAfagentPython
+    }
+
     $pythonCommand = Get-Command python -ErrorAction SilentlyContinue
     if ($null -eq $pythonCommand) {
         throw "未找到 python 命令。请先激活项目环境，例如 conda activate afagent。"
@@ -219,6 +225,33 @@ function Test-CodexMcpEntrypoint {
     }
 }
 
+function Test-AgentRuntimeEntrypoint {
+    <#
+      检查后端 Agent runtime 是否可以被当前 Python 导入，并打印配置状态。
+      这里不强制要求 OPENAI_API_KEY，因为离线开发和自动化测试仍应能看到本地
+      降级响应。真实 OpenAI Agents SDK 调用需要安装 openai-agents 并配置 API key。
+    #>
+    $python = Get-PythonExecutable
+    $checkCode = @"
+from autoform_agent.agent_runtime import load_agent_runtime_config
+config = load_agent_runtime_config()
+print('autoform_agent.agent_runtime import ok')
+print(f'agent_runtime_sdk_available={config.sdk_available}')
+print(f'agent_runtime_api_key_configured={config.api_key_configured}')
+print(f'agent_runtime_model={config.model}')
+"@
+    Push-Location $WorkspaceRoot
+    try {
+        & $python -c $checkCode
+        if ($LASTEXITCODE -ne 0) {
+            throw "后端 Agent runtime 导入检查失败，退出码 $LASTEXITCODE。"
+        }
+    }
+    finally {
+        Pop-Location
+    }
+}
+
 function Test-CodexMcpConfigRegistered {
     <#
       检查用户级 Codex 配置是否已经包含 AutoForm MCP server 段落。
@@ -288,13 +321,13 @@ function Open-FrontendPage {
 function Read-LauncherMode {
     <#
       显示用户要求的两个选项。
-      输入 1 时检查 Codex stdio MCP server 入口；输入 2 时检查该入口，并启动
-      网页所需的 HTTP bridge、静态前端和浏览器页面。
+      输入 1 时检查 Codex stdio MCP server 入口和后端 Agent runtime；输入 2 时
+      检查上述入口，并启动网页所需的 HTTP bridge、静态前端和浏览器页面。
     #>
     Write-Host ""
     Write-Host "请选择启动方式："
-    Write-Host "  1. 检查 Codex MCP 入口"
-    Write-Host "  2. 检查 Codex MCP 入口并打开可视化前端"
+    Write-Host "  1. 检查 Codex MCP 入口和后端 Agent runtime"
+    Write-Host "  2. 检查 Codex MCP 入口、后端 Agent runtime 并打开可视化前端"
     Write-Host ""
 
     while ($true) {
@@ -321,15 +354,17 @@ if ([string]::IsNullOrWhiteSpace($Mode)) {
 switch ($Mode) {
     "McpOnly" {
         Test-CodexMcpEntrypoint
+        Test-AgentRuntimeEntrypoint
         Write-Host ""
-        Write-Host "Codex MCP 入口检查完成。"
+        Write-Host "Codex MCP 入口和后端 Agent runtime 检查完成。"
     }
     "McpWithFrontend" {
         Test-CodexMcpEntrypoint
+        Test-AgentRuntimeEntrypoint
         Start-HttpBridge
         Start-FrontendServer
         Open-FrontendPage
         Write-Host ""
-        Write-Host "Codex MCP 入口已检查，可视化前端已处理完成。关闭本启动器窗口不会停止 HTTP bridge 或前端服务。"
+        Write-Host "Codex MCP 入口和后端 Agent runtime 已检查，可视化前端已处理完成。关闭本启动器窗口不会停止 HTTP bridge 或前端服务。"
     }
 }

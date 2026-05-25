@@ -1,9 +1,12 @@
 [project]
 name = "autoform-agent"
 version = "0.1.0"
-description = "Local AutoForm control helpers for Codex and MCP workflows."
+description = "Local AutoForm control helpers with an OpenAI Agents SDK runtime and MCP workflows."
 requires-python = ">=3.10"
-dependencies = []
+dependencies = [
+  "openai>=2.0,<3.0",
+  "openai-agents>=0.6.0",
+]
 
 [project.optional-dependencies]
 mcp = ["mcp>=1.0.0"]

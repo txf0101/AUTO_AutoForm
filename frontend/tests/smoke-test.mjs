@@ -16,7 +16,7 @@ const requiredHtmlMarkers = [
 ];
 
 const requiredJsMarkers = [
-  "class CodexBridge",
+  "class AgentRuntimeBridge",
   "createConversation()",
   "async sendPrompt(prompt)",
   "simulateToolProgress",

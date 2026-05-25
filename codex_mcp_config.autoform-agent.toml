@@ -6,7 +6,7 @@
 # Then restart Codex so it can launch the stdio MCP server.
 
 [mcp_servers."autoform-agent"]
-command = 'C:\ProgramData\anaconda3\python.exe'
+command = 'C:\Users\Tang Xufeng\.conda\envs\afagent\python.exe'
 args = ['-m', 'autoform_agent.mcp_server']
 startup_timeout_sec = 60
 enabled = true

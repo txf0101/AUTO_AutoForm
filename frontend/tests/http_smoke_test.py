@@ -40,8 +40,8 @@ def test_frontend_can_be_served_over_http() -> None:
         js = _fetch(f"{base_url}/app.js")
         css = _fetch(f"{base_url}/styles.css")
 
-        assert "AutoForm MCP Console" in html
-        assert "class CodexBridge" in js
+        assert "AutoForm Agent Runtime Console" in html
+        assert "class AgentRuntimeBridge" in js
         assert "backdrop-filter" in css
     finally:
         server.shutdown()

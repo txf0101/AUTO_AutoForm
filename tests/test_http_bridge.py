@@ -2,26 +2,35 @@ import json
 import threading
 import urllib.request
 
-from autoform_agent.http_bridge import build_codex_adapter_reply, create_server
+from autoform_agent.http_bridge import build_agent_runtime_reply, create_server
 
 
 def test_build_codex_adapter_reply_matches_frontend_contract() -> None:
     snapshot = {
         "install_count": 1,
+        "installations": [],
+        "install_error": None,
+        "queue_status": {"processes": [{"running": True}, {"running": False}]},
+        "queue_error": None,
         "queue_summary": "队列进程 1/2 运行中",
+        "example_count": 2,
+        "examples_error": None,
+        "quicklink_export_count": 3,
+        "quicklinks_error": None,
         "tool_count": 48,
     }
 
-    reply = build_codex_adapter_reply(
+    reply = build_agent_runtime_reply(
         {"conversationId": "conv-test", "prompt": "检查当前工程"},
         snapshot=snapshot,
     )
 
     assert reply["role"] == "assistant"
     assert "conv-test" in reply["text"]
-    assert reply["metrics"]["connection"] == "HTTP 已连接"
-    assert reply["preview"]["activeTool"] == "autoform_http_codex_adapter"
-    assert [item["state"] for item in reply["timeline"]] == ["complete", "complete", "complete"]
+    assert reply["runtime"]["frontendOwnsControl"] is False
+    assert reply["metrics"]["connection"] in {"缺少 openai-agents", "缺少 OPENAI_API_KEY"}
+    assert reply["preview"]["activeTool"] == "autoform_agent_runtime"
+    assert [item["state"] for item in reply["timeline"]] == ["complete", "ready", "ready"]
 
 
 def test_http_bridge_serves_health_and_codex_post() -> None:

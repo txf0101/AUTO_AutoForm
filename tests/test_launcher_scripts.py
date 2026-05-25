@@ -10,8 +10,10 @@ def test_power_shell_launcher_contains_required_menu_and_commands() -> None:
 
     for marker in [
         "检查 Codex MCP 入口",
-        "检查 Codex MCP 入口并打开可视化前端",
+        "后端 Agent runtime",
+        "打开可视化前端",
         "autoform_agent.mcp_server",
+        "autoform_agent.agent_runtime",
         "autoform_agent.http_bridge",
         "http.server",
         "4317",
@@ -20,6 +22,7 @@ def test_power_shell_launcher_contains_required_menu_and_commands() -> None:
         "Start-Process",
         "launcher_logs",
         "launcher_pids",
+        "afagent",
     ]:
         assert marker in script
 
@@ -40,4 +43,5 @@ def test_codex_mcp_config_template_points_to_stdio_server() -> None:
     assert '[mcp_servers."autoform-agent"]' in snippet
     assert "autoform_agent.mcp_server" in snippet
     assert "PYTHONPATH" in snippet
+    assert "afagent" in snippet
     assert "AUTO_AutoForm" in snippet

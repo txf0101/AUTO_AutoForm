@@ -38,7 +38,7 @@ def test_static_frontend_contains_required_hooks() -> None:
         _assert_contains(html, marker, "index.html")
 
     for marker in [
-        "class CodexBridge",
+        "class AgentRuntimeBridge",
         "createConversation()",
         "async sendPrompt(prompt)",
         "applyBridgeStatus",

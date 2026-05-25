@@ -1,5 +1,9 @@
 # 版本记录
 
+## Unreleased
+
+本轮改动把应用主控从前端页面推进到 Python 后端运行时。新增 `autoform_agent.agent_runtime`，该模块负责 OpenAI Agents SDK 配置、manager agent 构建、function tool 注册和本地降级响应。HTTP bridge 改为转交 prompt 给后端运行时，前端只负责输入和显示。
+
 ## V0.1 - 2026-05-25
 
 本版本确立 AutoForm Agent 的 Codex MCP 优先调用方式。项目保留既有 CLI、MCP server、HTTP bridge、前端预览、启动脚本和测试逻辑，功能性 AutoForm 操作不变。

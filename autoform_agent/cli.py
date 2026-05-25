@@ -18,6 +18,7 @@ from .af_api import (
     check_af_api_build_env,
     list_af_api_modules,
 )
+from .agent_runtime import load_agent_runtime_config, run_agent_runtime_turn
 from .commands import (
     executable_command_plan,
     executable_help_probe,
@@ -92,6 +93,14 @@ def main(argv: list[str] | None = None) -> int:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     subparsers.add_parser("discover", help="Find local AutoForm installations.")
+
+    agent_parser = subparsers.add_parser("agent-turn", help="Run one prompt through the backend OpenAI Agents SDK runtime.")
+    agent_parser.add_argument("prompt", help="User prompt for the backend AutoForm Agent runtime.")
+    agent_parser.add_argument("--conversation-id", default="cli", help="Stable id included in runtime metadata.")
+    agent_parser.add_argument("--max-turns", type=int, default=8, help="Maximum Agents SDK turns when cloud runtime is configured.")
+
+    agent_status_parser = subparsers.add_parser("agent-status", help="Inspect backend agent runtime configuration.")
+    agent_status_parser.add_argument("--json", action="store_true", help="Print machine-readable runtime status.")
 
     archive_parser = subparsers.add_parser("archive-list", help="List archive members with bsdtar.")
     archive_parser.add_argument("archive", type=Path)
@@ -394,6 +403,40 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "discover":
         installs = [install.as_dict() for install in discover_installations()]
         print(json.dumps(installs, ensure_ascii=False, indent=2))
+        return 0
+
+    if args.command == "agent-status":
+        config = load_agent_runtime_config()
+        status = {
+            "provider": config.provider,
+            "model": config.model,
+            "base_url": config.base_url,
+            "api_key_configured": config.api_key_configured,
+            "sdk_available": config.sdk_available,
+            "project_root": str(config.project_root),
+            "tracing_enabled": config.tracing_enabled,
+        }
+        if args.json:
+            _print_json(status, ensure_ascii=False)
+        else:
+            print(f"provider: {status['provider']}")
+            print(f"model: {status['model']}")
+            print(f"sdk_available: {status['sdk_available']}")
+            print(f"api_key_configured: {status['api_key_configured']}")
+            print(f"project_root: {status['project_root']}")
+        return 0
+
+    if args.command == "agent-turn":
+        _print_json(
+            run_agent_runtime_turn(
+                {
+                    "conversationId": args.conversation_id,
+                    "prompt": args.prompt,
+                },
+                max_turns=args.max_turns,
+            ),
+            ensure_ascii=False,
+        )
         return 0
 
     if args.command == "archive-list":

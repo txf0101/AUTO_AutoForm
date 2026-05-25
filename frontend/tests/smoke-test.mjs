@@ -8,28 +8,28 @@ const css = await readFile(resolve(root, "styles.css"), "utf8");
 
 const requiredHtmlMarkers = [
   "data-app-shell",
-  "data-new-conversation",
   "data-prompt-form",
-  "data-message-list",
-  "data-timeline",
-  "data-bridge-mode",
+  "data-status-summary",
+  "data-terminal-output",
+  "data-api-input",
+  "data-api-response",
 ];
 
 const requiredJsMarkers = [
   "class AgentRuntimeBridge",
-  "createConversation()",
   "async sendPrompt(prompt)",
-  "simulateToolProgress",
-  "renderTimeline",
+  "applyRuntimeReply",
+  "renderTerminal",
+  "renderApiPanel",
   "bindEvents",
 ];
 
 const requiredCssMarkers = [
-  ".glass-panel",
-  "backdrop-filter",
-  ".preview-canvas",
-  ".message-user",
-  "@media (max-width: 780px)",
+  ".console-panel",
+  ".status-summary",
+  ".terminal-output",
+  ".api-grid",
+  "@media (max-width: 980px)",
 ];
 
 function assertIncludes(source, marker, label) {

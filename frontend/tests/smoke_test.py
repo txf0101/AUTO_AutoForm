@@ -29,32 +29,33 @@ def test_static_frontend_contains_required_hooks() -> None:
 
     for marker in [
         "data-app-shell",
-        "data-new-conversation",
         "data-prompt-form",
-        "data-message-list",
-        "data-timeline",
-        "data-bridge-mode",
+        "data-status-summary",
+        "data-terminal-output",
+        "data-api-input",
+        "data-api-response",
+        "data-summary-connection",
     ]:
         _assert_contains(html, marker, "index.html")
 
     for marker in [
         "class AgentRuntimeBridge",
-        "createConversation()",
         "async sendPrompt(prompt)",
-        "applyBridgeStatus",
         "applyStartupOptions",
-        "simulateToolProgress",
-        "renderTimeline",
+        "applyRuntimeReply",
+        "renderSummary",
+        "renderTerminal",
+        "renderApiPanel",
         "bindEvents",
     ]:
         _assert_contains(js, marker, "app.js")
 
     for marker in [
-        ".glass-panel",
-        "backdrop-filter",
-        ".preview-canvas",
-        ".message-user",
-        "@media (max-width: 780px)",
+        ".console-panel",
+        ".status-summary",
+        ".terminal-output",
+        ".api-grid",
+        "@media (max-width: 980px)",
     ]:
         _assert_contains(css, marker, "styles.css")
 

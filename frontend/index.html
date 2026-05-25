@@ -3,144 +3,121 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>AutoForm Agent Runtime Console</title>
+    <title>AutoForm Agent Console</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <!--
-      页面根节点。
-      data-app-shell 这个属性供烟雾测试和后续自动化测试定位。
-      整个页面保持单文件 HTML 结构，便于不了解前端构建工具的开发者直接打开和调试。
+      这个页面只保留四个工作区：用户输入、状态总结、终端式输出、API 输入与使用情况。
+      AutoForm 工具选择和 OpenAI Agents SDK 调用都在 Python 后端完成，前端只负责提交
+      prompt 和渲染后端返回的事实。
     -->
-    <main class="app-shell" data-app-shell>
-      <section class="sidebar glass-panel" aria-label="AutoForm 工作区导航">
-        <div class="brand-block">
-          <div class="brand-mark" aria-hidden="true">AF</div>
-          <div>
-            <p class="eyebrow">AutoForm Agent</p>
-            <h1>工作台</h1>
-          </div>
+    <main class="console-shell" data-app-shell>
+      <section class="console-panel input-panel" aria-label="用户输入">
+        <div class="panel-heading">
+          <span>1</span>
+          <h1>用户输入</h1>
         </div>
-
-        <button class="primary-action" type="button" data-new-conversation>
-          <span aria-hidden="true">＋</span>
-          新建对话
-        </button>
-
-        <div class="sidebar-section">
-          <div class="section-heading">
-            <span>对话</span>
-            <span class="badge" data-conversation-count>0</span>
-          </div>
-          <div class="conversation-list" data-conversation-list></div>
-        </div>
-
-        <div class="sidebar-section">
-          <div class="section-heading">
-            <span>连接</span>
-            <span class="status-dot status-dot-ok" aria-hidden="true"></span>
-          </div>
-          <div class="connection-card">
-            <label for="bridge-mode">页面通道</label>
-            <select id="bridge-mode" data-bridge-mode>
-              <option value="mock">本地演示模式</option>
-              <option value="http">本地 HTTP 适配器</option>
-            </select>
-            <label for="bridge-endpoint">接口地址</label>
-            <input id="bridge-endpoint" data-bridge-endpoint value="http://127.0.0.1:4317/codex" />
-            <p>
-              当前页面只发送 prompt 和显示结果。后端 Python Agent runtime 负责调用 OpenAI Agents SDK 和 AutoForm 工具层。
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section class="overview" aria-label="AutoForm 处理状态预览">
-        <header class="topbar glass-panel">
-          <div>
-            <p class="eyebrow">当前项目</p>
-            <h2>Solver_R13.afd</h2>
-          </div>
-          <div class="topbar-actions">
-            <button type="button" class="ghost-button" data-run-demo>运行示例流程</button>
-            <button type="button" class="ghost-button" data-reset-demo>重置</button>
-          </div>
-        </header>
-
-        <div class="status-grid">
-          <article class="metric-card glass-panel">
-            <p>连接状态</p>
-            <strong data-metric-connection>页面演示</strong>
-            <span>主控在 Python 后端运行时</span>
-          </article>
-          <article class="metric-card glass-panel">
-            <p>MCP 工具</p>
-            <strong data-metric-tools>48</strong>
-            <span>已登记工具入口</span>
-          </article>
-          <article class="metric-card glass-panel">
-            <p>队列</p>
-            <strong data-metric-queue>Queue1</strong>
-            <span>2375@localhost</span>
-          </article>
-          <article class="metric-card glass-panel">
-            <p>求解状态</p>
-            <strong data-metric-solver>待执行</strong>
-            <span data-metric-solver-detail>准备 kinematic check</span>
-          </article>
-        </div>
-
-        <section class="glass-panel workspace-preview">
-          <div class="section-heading">
-            <span>软件处理预览</span>
-            <span data-preview-phase>Idle</span>
-          </div>
-          <div class="preview-canvas" aria-label="AutoForm 处理预览示意">
-            <div class="part-surface">
-              <div class="strain strain-a"></div>
-              <div class="strain strain-b"></div>
-              <div class="strain strain-c"></div>
-            </div>
-            <div class="preview-overlay">
-              <span data-preview-title>等待任务</span>
-              <small data-preview-subtitle>发送 prompt 后会显示后端运行时阶段</small>
-            </div>
-          </div>
-        </section>
-
-        <section class="glass-panel timeline-panel">
-          <div class="section-heading">
-            <span>后端操作流</span>
-            <span data-active-tool>无活动工具</span>
-          </div>
-          <ol class="timeline" data-timeline></ol>
-        </section>
-      </section>
-
-      <section class="chat glass-panel" aria-label="Agent Runtime 对话界面">
-        <header class="chat-header">
-          <div>
-            <p class="eyebrow">Agent Runtime</p>
-            <h2 data-active-conversation-title>AutoForm 初始对话</h2>
-          </div>
-          <span class="badge">Runtime ready</span>
-        </header>
-
-        <div class="message-list" data-message-list aria-live="polite"></div>
 
         <form class="prompt-form" data-prompt-form>
-          <label class="sr-only" for="prompt-input">输入要发送给后端 Agent runtime 的 prompt</label>
+          <label for="prompt-input">Prompt</label>
           <textarea
             id="prompt-input"
             data-prompt-input
-            rows="4"
-            placeholder="例如：读取当前 AFD 摘要，规划 kinematic check，并把结果整理成可汇报的步骤。"
+            rows="8"
+            placeholder="例如：读取当前 AutoForm 安装和队列状态，并规划 kinematic check。"
           ></textarea>
-          <div class="prompt-actions">
-            <button type="button" class="ghost-button" data-insert-example>插入示例</button>
-            <button type="submit" class="send-button">发送到 Agent</button>
+
+          <div class="input-row">
+            <label for="bridge-endpoint">Runtime API</label>
+            <input id="bridge-endpoint" data-bridge-endpoint value="http://127.0.0.1:4317/codex" />
+          </div>
+
+          <div class="input-actions">
+            <button type="button" data-insert-example>示例</button>
+            <button type="submit" data-send-button>发送</button>
           </div>
         </form>
+      </section>
+
+      <section class="console-panel summary-panel" aria-label="状态总结">
+        <div class="panel-heading">
+          <span>2</span>
+          <h2>状态总结</h2>
+        </div>
+
+        <dl class="status-summary" data-status-summary>
+          <div>
+            <dt>连接</dt>
+            <dd data-summary-connection>待发送</dd>
+          </div>
+          <div>
+            <dt>运行时</dt>
+            <dd data-summary-runtime>AutoForm Agent Runtime</dd>
+          </div>
+          <div>
+            <dt>模型</dt>
+            <dd data-summary-model>gpt-4.1-mini</dd>
+          </div>
+          <div>
+            <dt>工具</dt>
+            <dd data-summary-tools>待读取</dd>
+          </div>
+          <div>
+            <dt>队列</dt>
+            <dd data-summary-queue>待检查</dd>
+          </div>
+          <div>
+            <dt>OpenAI</dt>
+            <dd data-summary-openai>未调用</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="console-panel terminal-panel" aria-label="状态报告和输出">
+        <div class="panel-heading">
+          <span>3</span>
+          <h2>状态报告和输出</h2>
+        </div>
+        <pre class="terminal-output" data-terminal-output aria-live="polite">AutoForm Agent Console ready.
+Runtime endpoint: http://127.0.0.1:4317/codex
+Waiting for prompt...</pre>
+      </section>
+
+      <section class="console-panel api-panel" aria-label="API 输入以及 API 使用情况">
+        <div class="panel-heading">
+          <span>4</span>
+          <h2>API 输入以及 API 使用情况</h2>
+        </div>
+
+        <div class="api-grid">
+          <div>
+            <label>Endpoint</label>
+            <code data-api-endpoint>http://127.0.0.1:4317/codex</code>
+          </div>
+          <div>
+            <label>SDK</label>
+            <code data-api-sdk>待检查</code>
+          </div>
+          <div>
+            <label>API Key</label>
+            <code data-api-key>待检查</code>
+          </div>
+          <div>
+            <label>OpenAI Call</label>
+            <code data-api-openai-called>false</code>
+          </div>
+        </div>
+
+        <div class="api-block">
+          <label>Request payload</label>
+          <pre data-api-input>{}</pre>
+        </div>
+
+        <div class="api-block">
+          <label>Runtime response</label>
+          <pre data-api-response>{}</pre>
+        </div>
       </section>
     </main>
 

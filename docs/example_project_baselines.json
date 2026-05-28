@@ -6,9 +6,9 @@
   "examples": [
     {
       "name": "AutoComp_R13.afd",
-      "path": "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\AutoComp_R13.afd",
+      "path": "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\AutoComp_R13.afd",
       "summary": {
-        "path": "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\AutoComp_R13.afd",
+        "path": "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\AutoComp_R13.afd",
         "name": "AutoComp_R13.afd",
         "size_bytes": 14846042,
         "source": "afd_readable_index_candidate",
@@ -43,30 +43,30 @@
         "threads": 1,
         "executed": false,
         "timeout_per_case": 120,
-        "working_dir": "F:\\【项目和任务】\\EIT\\2026\\AUTO_AutoForm\\output\\project_runs\\20260525_235233_AutoComp_R13_kinematic",
+        "working_dir": "output/project_runs/<timestamp>_AutoComp_R13_kinematic",
         "extra_env_keys": [
           "AF_HOME_LIB"
         ],
         "cases": [
           {
-            "afd_path": "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\AutoComp_R13.afd",
+            "afd_path": "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\AutoComp_R13.afd",
             "plan": {
               "kind": "forming-solver-kinematic-check",
               "command": [
-                "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin\\AFFormingSolver.exe",
+                "<autoform-install-dir>\\bin\\AFFormingSolver.exe",
                 "-jn",
-                "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\AutoComp_R13",
+                "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\AutoComp_R13",
                 "-a",
                 "-puse",
                 "1",
                 "-k"
               ],
-              "executable": "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin\\AFFormingSolver.exe",
+              "executable": "<autoform-install-dir>\\bin\\AFFormingSolver.exe",
               "executable_exists": true,
               "evidence": "Uses confirmed -jn, -a, -puse and -k options. Runtime evidence shows -a is a flag and -jn receives the path stem because AutoForm appends .afd.",
               "requires_confirmation": true,
               "recommended_env": {
-                "AF_HOME_LIB": "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin"
+                "AF_HOME_LIB": "<autoform-install-dir>\\bin"
               }
             },
             "executed": false
@@ -78,29 +78,29 @@
         "threads": 1,
         "executed": false,
         "timeout_per_case": 300,
-        "working_dir": "F:\\【项目和任务】\\EIT\\2026\\AUTO_AutoForm\\output\\project_runs\\20260525_235234_AutoComp_R13_full",
+        "working_dir": "output/project_runs/<timestamp>_AutoComp_R13_full",
         "extra_env_keys": [
           "AF_HOME_LIB"
         ],
         "cases": [
           {
-            "afd_path": "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\AutoComp_R13.afd",
+            "afd_path": "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\AutoComp_R13.afd",
             "plan": {
               "kind": "forming-solver-full-solve",
               "command": [
-                "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin\\AFFormingSolver.exe",
+                "<autoform-install-dir>\\bin\\AFFormingSolver.exe",
                 "-jn",
-                "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\AutoComp_R13",
+                "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\AutoComp_R13",
                 "-a",
                 "-puse",
                 "1"
               ],
-              "executable": "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin\\AFFormingSolver.exe",
+              "executable": "<autoform-install-dir>\\bin\\AFFormingSolver.exe",
               "executable_exists": true,
               "evidence": "Uses confirmed -jn, -a and -puse options. Runtime evidence on copied official examples shows the default no -k form performs a full solve and returns Program END 0.",
               "requires_confirmation": true,
               "recommended_env": {
-                "AF_HOME_LIB": "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin"
+                "AF_HOME_LIB": "<autoform-install-dir>\\bin"
               }
             },
             "executed": false
@@ -110,9 +110,9 @@
     },
     {
       "name": "PhaseChange_R13.afd",
-      "path": "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\PhaseChange_R13.afd",
+      "path": "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\PhaseChange_R13.afd",
       "summary": {
-        "path": "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\PhaseChange_R13.afd",
+        "path": "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\PhaseChange_R13.afd",
         "name": "PhaseChange_R13.afd",
         "size_bytes": 10667546,
         "source": "afd_readable_index_candidate",
@@ -147,30 +147,30 @@
         "threads": 1,
         "executed": false,
         "timeout_per_case": 120,
-        "working_dir": "F:\\【项目和任务】\\EIT\\2026\\AUTO_AutoForm\\output\\project_runs\\20260525_235236_PhaseChange_R13_kinematic",
+        "working_dir": "output/project_runs/<timestamp>_PhaseChange_R13_kinematic",
         "extra_env_keys": [
           "AF_HOME_LIB"
         ],
         "cases": [
           {
-            "afd_path": "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\PhaseChange_R13.afd",
+            "afd_path": "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\PhaseChange_R13.afd",
             "plan": {
               "kind": "forming-solver-kinematic-check",
               "command": [
-                "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin\\AFFormingSolver.exe",
+                "<autoform-install-dir>\\bin\\AFFormingSolver.exe",
                 "-jn",
-                "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\PhaseChange_R13",
+                "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\PhaseChange_R13",
                 "-a",
                 "-puse",
                 "1",
                 "-k"
               ],
-              "executable": "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin\\AFFormingSolver.exe",
+              "executable": "<autoform-install-dir>\\bin\\AFFormingSolver.exe",
               "executable_exists": true,
               "evidence": "Uses confirmed -jn, -a, -puse and -k options. Runtime evidence shows -a is a flag and -jn receives the path stem because AutoForm appends .afd.",
               "requires_confirmation": true,
               "recommended_env": {
-                "AF_HOME_LIB": "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin"
+                "AF_HOME_LIB": "<autoform-install-dir>\\bin"
               }
             },
             "executed": false
@@ -182,29 +182,29 @@
         "threads": 1,
         "executed": false,
         "timeout_per_case": 300,
-        "working_dir": "F:\\【项目和任务】\\EIT\\2026\\AUTO_AutoForm\\output\\project_runs\\20260525_235236_PhaseChange_R13_full",
+        "working_dir": "output/project_runs/<timestamp>_PhaseChange_R13_full",
         "extra_env_keys": [
           "AF_HOME_LIB"
         ],
         "cases": [
           {
-            "afd_path": "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\PhaseChange_R13.afd",
+            "afd_path": "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\PhaseChange_R13.afd",
             "plan": {
               "kind": "forming-solver-full-solve",
               "command": [
-                "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin\\AFFormingSolver.exe",
+                "<autoform-install-dir>\\bin\\AFFormingSolver.exe",
                 "-jn",
-                "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\PhaseChange_R13",
+                "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\PhaseChange_R13",
                 "-a",
                 "-puse",
                 "1"
               ],
-              "executable": "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin\\AFFormingSolver.exe",
+              "executable": "<autoform-install-dir>\\bin\\AFFormingSolver.exe",
               "executable_exists": true,
               "evidence": "Uses confirmed -jn, -a and -puse options. Runtime evidence on copied official examples shows the default no -k form performs a full solve and returns Program END 0.",
               "requires_confirmation": true,
               "recommended_env": {
-                "AF_HOME_LIB": "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin"
+                "AF_HOME_LIB": "<autoform-install-dir>\\bin"
               }
             },
             "executed": false
@@ -214,9 +214,9 @@
     },
     {
       "name": "Sigma_R13.afd",
-      "path": "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\Sigma_R13.afd",
+      "path": "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\Sigma_R13.afd",
       "summary": {
-        "path": "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\Sigma_R13.afd",
+        "path": "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\Sigma_R13.afd",
         "name": "Sigma_R13.afd",
         "size_bytes": 13580873,
         "source": "afd_readable_index_candidate",
@@ -251,30 +251,30 @@
         "threads": 1,
         "executed": false,
         "timeout_per_case": 120,
-        "working_dir": "F:\\【项目和任务】\\EIT\\2026\\AUTO_AutoForm\\output\\project_runs\\20260525_235238_Sigma_R13_kinematic",
+        "working_dir": "output/project_runs/<timestamp>_Sigma_R13_kinematic",
         "extra_env_keys": [
           "AF_HOME_LIB"
         ],
         "cases": [
           {
-            "afd_path": "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\Sigma_R13.afd",
+            "afd_path": "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\Sigma_R13.afd",
             "plan": {
               "kind": "forming-solver-kinematic-check",
               "command": [
-                "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin\\AFFormingSolver.exe",
+                "<autoform-install-dir>\\bin\\AFFormingSolver.exe",
                 "-jn",
-                "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\Sigma_R13",
+                "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\Sigma_R13",
                 "-a",
                 "-puse",
                 "1",
                 "-k"
               ],
-              "executable": "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin\\AFFormingSolver.exe",
+              "executable": "<autoform-install-dir>\\bin\\AFFormingSolver.exe",
               "executable_exists": true,
               "evidence": "Uses confirmed -jn, -a, -puse and -k options. Runtime evidence shows -a is a flag and -jn receives the path stem because AutoForm appends .afd.",
               "requires_confirmation": true,
               "recommended_env": {
-                "AF_HOME_LIB": "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin"
+                "AF_HOME_LIB": "<autoform-install-dir>\\bin"
               }
             },
             "executed": false
@@ -286,29 +286,29 @@
         "threads": 1,
         "executed": false,
         "timeout_per_case": 300,
-        "working_dir": "F:\\【项目和任务】\\EIT\\2026\\AUTO_AutoForm\\output\\project_runs\\20260525_235239_Sigma_R13_full",
+        "working_dir": "output/project_runs/<timestamp>_Sigma_R13_full",
         "extra_env_keys": [
           "AF_HOME_LIB"
         ],
         "cases": [
           {
-            "afd_path": "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\Sigma_R13.afd",
+            "afd_path": "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\Sigma_R13.afd",
             "plan": {
               "kind": "forming-solver-full-solve",
               "command": [
-                "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin\\AFFormingSolver.exe",
+                "<autoform-install-dir>\\bin\\AFFormingSolver.exe",
                 "-jn",
-                "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\Sigma_R13",
+                "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\Sigma_R13",
                 "-a",
                 "-puse",
                 "1"
               ],
-              "executable": "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin\\AFFormingSolver.exe",
+              "executable": "<autoform-install-dir>\\bin\\AFFormingSolver.exe",
               "executable_exists": true,
               "evidence": "Uses confirmed -jn, -a and -puse options. Runtime evidence on copied official examples shows the default no -k form performs a full solve and returns Program END 0.",
               "requires_confirmation": true,
               "recommended_env": {
-                "AF_HOME_LIB": "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin"
+                "AF_HOME_LIB": "<autoform-install-dir>\\bin"
               }
             },
             "executed": false
@@ -318,9 +318,9 @@
     },
     {
       "name": "Solver_R13.afd",
-      "path": "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\Solver_R13.afd",
+      "path": "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\Solver_R13.afd",
       "summary": {
-        "path": "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\Solver_R13.afd",
+        "path": "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\Solver_R13.afd",
         "name": "Solver_R13.afd",
         "size_bytes": 13777919,
         "source": "afd_readable_index_candidate",
@@ -355,30 +355,30 @@
         "threads": 1,
         "executed": false,
         "timeout_per_case": 120,
-        "working_dir": "F:\\【项目和任务】\\EIT\\2026\\AUTO_AutoForm\\output\\project_runs\\20260525_235242_Solver_R13_kinematic",
+        "working_dir": "output/project_runs/<timestamp>_Solver_R13_kinematic",
         "extra_env_keys": [
           "AF_HOME_LIB"
         ],
         "cases": [
           {
-            "afd_path": "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\Solver_R13.afd",
+            "afd_path": "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\Solver_R13.afd",
             "plan": {
               "kind": "forming-solver-kinematic-check",
               "command": [
-                "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin\\AFFormingSolver.exe",
+                "<autoform-install-dir>\\bin\\AFFormingSolver.exe",
                 "-jn",
-                "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\Solver_R13",
+                "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\Solver_R13",
                 "-a",
                 "-puse",
                 "1",
                 "-k"
               ],
-              "executable": "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin\\AFFormingSolver.exe",
+              "executable": "<autoform-install-dir>\\bin\\AFFormingSolver.exe",
               "executable_exists": true,
               "evidence": "Uses confirmed -jn, -a, -puse and -k options. Runtime evidence shows -a is a flag and -jn receives the path stem because AutoForm appends .afd.",
               "requires_confirmation": true,
               "recommended_env": {
-                "AF_HOME_LIB": "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin"
+                "AF_HOME_LIB": "<autoform-install-dir>\\bin"
               }
             },
             "executed": false
@@ -390,29 +390,29 @@
         "threads": 1,
         "executed": false,
         "timeout_per_case": 300,
-        "working_dir": "F:\\【项目和任务】\\EIT\\2026\\AUTO_AutoForm\\output\\project_runs\\20260525_235244_Solver_R13_full",
+        "working_dir": "output/project_runs/<timestamp>_Solver_R13_full",
         "extra_env_keys": [
           "AF_HOME_LIB"
         ],
         "cases": [
           {
-            "afd_path": "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\Solver_R13.afd",
+            "afd_path": "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\Solver_R13.afd",
             "plan": {
               "kind": "forming-solver-full-solve",
               "command": [
-                "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin\\AFFormingSolver.exe",
+                "<autoform-install-dir>\\bin\\AFFormingSolver.exe",
                 "-jn",
-                "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\Solver_R13",
+                "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\Solver_R13",
                 "-a",
                 "-puse",
                 "1"
               ],
-              "executable": "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin\\AFFormingSolver.exe",
+              "executable": "<autoform-install-dir>\\bin\\AFFormingSolver.exe",
               "executable_exists": true,
               "evidence": "Uses confirmed -jn, -a and -puse options. Runtime evidence on copied official examples shows the default no -k form performs a full solve and returns Program END 0.",
               "requires_confirmation": true,
               "recommended_env": {
-                "AF_HOME_LIB": "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin"
+                "AF_HOME_LIB": "<autoform-install-dir>\\bin"
               }
             },
             "executed": false
@@ -422,9 +422,9 @@
     },
     {
       "name": "Thermo_R13.afd",
-      "path": "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\Thermo_R13.afd",
+      "path": "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\Thermo_R13.afd",
       "summary": {
-        "path": "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\Thermo_R13.afd",
+        "path": "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\Thermo_R13.afd",
         "name": "Thermo_R13.afd",
         "size_bytes": 21053436,
         "source": "afd_readable_index_candidate",
@@ -459,30 +459,30 @@
         "threads": 1,
         "executed": false,
         "timeout_per_case": 120,
-        "working_dir": "F:\\【项目和任务】\\EIT\\2026\\AUTO_AutoForm\\output\\project_runs\\20260525_235248_Thermo_R13_kinematic",
+        "working_dir": "output/project_runs/<timestamp>_Thermo_R13_kinematic",
         "extra_env_keys": [
           "AF_HOME_LIB"
         ],
         "cases": [
           {
-            "afd_path": "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\Thermo_R13.afd",
+            "afd_path": "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\Thermo_R13.afd",
             "plan": {
               "kind": "forming-solver-kinematic-check",
               "command": [
-                "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin\\AFFormingSolver.exe",
+                "<autoform-install-dir>\\bin\\AFFormingSolver.exe",
                 "-jn",
-                "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\Thermo_R13",
+                "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\Thermo_R13",
                 "-a",
                 "-puse",
                 "1",
                 "-k"
               ],
-              "executable": "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin\\AFFormingSolver.exe",
+              "executable": "<autoform-install-dir>\\bin\\AFFormingSolver.exe",
               "executable_exists": true,
               "evidence": "Uses confirmed -jn, -a, -puse and -k options. Runtime evidence shows -a is a flag and -jn receives the path stem because AutoForm appends .afd.",
               "requires_confirmation": true,
               "recommended_env": {
-                "AF_HOME_LIB": "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin"
+                "AF_HOME_LIB": "<autoform-install-dir>\\bin"
               }
             },
             "executed": false
@@ -494,29 +494,29 @@
         "threads": 1,
         "executed": false,
         "timeout_per_case": 300,
-        "working_dir": "F:\\【项目和任务】\\EIT\\2026\\AUTO_AutoForm\\output\\project_runs\\20260525_235252_Thermo_R13_full",
+        "working_dir": "output/project_runs/<timestamp>_Thermo_R13_full",
         "extra_env_keys": [
           "AF_HOME_LIB"
         ],
         "cases": [
           {
-            "afd_path": "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\Thermo_R13.afd",
+            "afd_path": "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\Thermo_R13.afd",
             "plan": {
               "kind": "forming-solver-full-solve",
               "command": [
-                "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin\\AFFormingSolver.exe",
+                "<autoform-install-dir>\\bin\\AFFormingSolver.exe",
                 "-jn",
-                "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\Thermo_R13",
+                "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\Thermo_R13",
                 "-a",
                 "-puse",
                 "1"
               ],
-              "executable": "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin\\AFFormingSolver.exe",
+              "executable": "<autoform-install-dir>\\bin\\AFFormingSolver.exe",
               "executable_exists": true,
               "evidence": "Uses confirmed -jn, -a and -puse options. Runtime evidence on copied official examples shows the default no -k form performs a full solve and returns Program END 0.",
               "requires_confirmation": true,
               "recommended_env": {
-                "AF_HOME_LIB": "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin"
+                "AF_HOME_LIB": "<autoform-install-dir>\\bin"
               }
             },
             "executed": false
@@ -526,9 +526,9 @@
     },
     {
       "name": "Triboform_R13.afd",
-      "path": "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\Triboform_R13.afd",
+      "path": "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\Triboform_R13.afd",
       "summary": {
-        "path": "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\Triboform_R13.afd",
+        "path": "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\Triboform_R13.afd",
         "name": "Triboform_R13.afd",
         "size_bytes": 14882650,
         "source": "afd_readable_index_candidate",
@@ -563,30 +563,30 @@
         "threads": 1,
         "executed": false,
         "timeout_per_case": 120,
-        "working_dir": "F:\\【项目和任务】\\EIT\\2026\\AUTO_AutoForm\\output\\project_runs\\20260525_235257_Triboform_R13_kinematic",
+        "working_dir": "output/project_runs/<timestamp>_Triboform_R13_kinematic",
         "extra_env_keys": [
           "AF_HOME_LIB"
         ],
         "cases": [
           {
-            "afd_path": "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\Triboform_R13.afd",
+            "afd_path": "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\Triboform_R13.afd",
             "plan": {
               "kind": "forming-solver-kinematic-check",
               "command": [
-                "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin\\AFFormingSolver.exe",
+                "<autoform-install-dir>\\bin\\AFFormingSolver.exe",
                 "-jn",
-                "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\Triboform_R13",
+                "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\Triboform_R13",
                 "-a",
                 "-puse",
                 "1",
                 "-k"
               ],
-              "executable": "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin\\AFFormingSolver.exe",
+              "executable": "<autoform-install-dir>\\bin\\AFFormingSolver.exe",
               "executable_exists": true,
               "evidence": "Uses confirmed -jn, -a, -puse and -k options. Runtime evidence shows -a is a flag and -jn receives the path stem because AutoForm appends .afd.",
               "requires_confirmation": true,
               "recommended_env": {
-                "AF_HOME_LIB": "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin"
+                "AF_HOME_LIB": "<autoform-install-dir>\\bin"
               }
             },
             "executed": false
@@ -598,29 +598,29 @@
         "threads": 1,
         "executed": false,
         "timeout_per_case": 300,
-        "working_dir": "F:\\【项目和任务】\\EIT\\2026\\AUTO_AutoForm\\output\\project_runs\\20260525_235259_Triboform_R13_full",
+        "working_dir": "output/project_runs/<timestamp>_Triboform_R13_full",
         "extra_env_keys": [
           "AF_HOME_LIB"
         ],
         "cases": [
           {
-            "afd_path": "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\Triboform_R13.afd",
+            "afd_path": "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\Triboform_R13.afd",
             "plan": {
               "kind": "forming-solver-full-solve",
               "command": [
-                "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin\\AFFormingSolver.exe",
+                "<autoform-install-dir>\\bin\\AFFormingSolver.exe",
                 "-jn",
-                "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\Triboform_R13",
+                "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\Triboform_R13",
                 "-a",
                 "-puse",
                 "1"
               ],
-              "executable": "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin\\AFFormingSolver.exe",
+              "executable": "<autoform-install-dir>\\bin\\AFFormingSolver.exe",
               "executable_exists": true,
               "evidence": "Uses confirmed -jn, -a and -puse options. Runtime evidence on copied official examples shows the default no -k form performs a full solve and returns Program END 0.",
               "requires_confirmation": true,
               "recommended_env": {
-                "AF_HOME_LIB": "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin"
+                "AF_HOME_LIB": "<autoform-install-dir>\\bin"
               }
             },
             "executed": false
@@ -630,9 +630,9 @@
     },
     {
       "name": "Trim_R13.afd",
-      "path": "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\Trim_R13.afd",
+      "path": "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\Trim_R13.afd",
       "summary": {
-        "path": "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\Trim_R13.afd",
+        "path": "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\Trim_R13.afd",
         "name": "Trim_R13.afd",
         "size_bytes": 13118743,
         "source": "afd_readable_index_candidate",
@@ -667,30 +667,30 @@
         "threads": 1,
         "executed": false,
         "timeout_per_case": 120,
-        "working_dir": "F:\\【项目和任务】\\EIT\\2026\\AUTO_AutoForm\\output\\project_runs\\20260525_235303_Trim_R13_kinematic",
+        "working_dir": "output/project_runs/<timestamp>_Trim_R13_kinematic",
         "extra_env_keys": [
           "AF_HOME_LIB"
         ],
         "cases": [
           {
-            "afd_path": "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\Trim_R13.afd",
+            "afd_path": "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\Trim_R13.afd",
             "plan": {
               "kind": "forming-solver-kinematic-check",
               "command": [
-                "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin\\AFFormingSolver.exe",
+                "<autoform-install-dir>\\bin\\AFFormingSolver.exe",
                 "-jn",
-                "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\Trim_R13",
+                "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\Trim_R13",
                 "-a",
                 "-puse",
                 "1",
                 "-k"
               ],
-              "executable": "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin\\AFFormingSolver.exe",
+              "executable": "<autoform-install-dir>\\bin\\AFFormingSolver.exe",
               "executable_exists": true,
               "evidence": "Uses confirmed -jn, -a, -puse and -k options. Runtime evidence shows -a is a flag and -jn receives the path stem because AutoForm appends .afd.",
               "requires_confirmation": true,
               "recommended_env": {
-                "AF_HOME_LIB": "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin"
+                "AF_HOME_LIB": "<autoform-install-dir>\\bin"
               }
             },
             "executed": false
@@ -702,29 +702,29 @@
         "threads": 1,
         "executed": false,
         "timeout_per_case": 300,
-        "working_dir": "F:\\【项目和任务】\\EIT\\2026\\AUTO_AutoForm\\output\\project_runs\\20260525_235305_Trim_R13_full",
+        "working_dir": "output/project_runs/<timestamp>_Trim_R13_full",
         "extra_env_keys": [
           "AF_HOME_LIB"
         ],
         "cases": [
           {
-            "afd_path": "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\Trim_R13.afd",
+            "afd_path": "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\Trim_R13.afd",
             "plan": {
               "kind": "forming-solver-full-solve",
               "command": [
-                "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin\\AFFormingSolver.exe",
+                "<autoform-install-dir>\\bin\\AFFormingSolver.exe",
                 "-jn",
-                "C:\\ProgramData\\AutoForm\\AFplus\\R13F\\test\\Trim_R13",
+                "%PROGRAMDATA%\\AutoForm\\AFplus\\R13F\\test\\Trim_R13",
                 "-a",
                 "-puse",
                 "1"
               ],
-              "executable": "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin\\AFFormingSolver.exe",
+              "executable": "<autoform-install-dir>\\bin\\AFFormingSolver.exe",
               "executable_exists": true,
               "evidence": "Uses confirmed -jn, -a and -puse options. Runtime evidence on copied official examples shows the default no -k form performs a full solve and returns Program END 0.",
               "requires_confirmation": true,
               "recommended_env": {
-                "AF_HOME_LIB": "D:\\Program Files\\AutoForm\\AFplus\\R13F\\bin"
+                "AF_HOME_LIB": "<autoform-install-dir>\\bin"
               }
             },
             "executed": false

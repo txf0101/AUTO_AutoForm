@@ -1,15 +1,21 @@
-# AutoForm Agent MCP config snippet for Codex.
+# AutoForm Agent MCP config snippet for Codex or another TOML-based MCP host.
 #
 # Copy this block into:
-#   C:\Users\Tang Xufeng\.codex\config.toml
+#   %USERPROFILE%\.codex\config.toml
 #
-# Then restart Codex so it can launch the stdio MCP server.
+# Replace <path-to-cloned-repo> with the absolute path of this repository
+# on your computer. Then restart the MCP host so it can launch the stdio
+# MCP server.
+#
+# If the host cannot find conda, replace command with the full path to
+# your afagent environment python.exe and change args to:
+#   ['-m', 'autoform_agent.mcp_server']
 
 [mcp_servers."autoform-agent"]
-command = 'C:\Users\Tang Xufeng\.conda\envs\afagent\python.exe'
-args = ['-m', 'autoform_agent.mcp_server']
+command = 'conda'
+args = ['run', '-n', 'afagent', 'python', '-m', 'autoform_agent.mcp_server']
 startup_timeout_sec = 60
 enabled = true
 
 [mcp_servers."autoform-agent".env]
-PYTHONPATH = 'F:\【项目和任务】\EIT\2026\AUTO_AutoForm'
+PYTHONPATH = '<path-to-cloned-repo>'

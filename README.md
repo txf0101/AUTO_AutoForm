@@ -1,5 +1,52 @@
 # AutoForm Agent
 
+## Start Here: Open AutoForm MCP / 先从这里打开 AutoForm MCP
+
+Use this section when you want Codex or another MCP host to call AutoForm Agent tools directly.
+
+中文说明：如果你要让 Codex 或其他 MCP host 直接调用 AutoForm Agent 工具，请先按本节操作。本节就是 AutoForm MCP 的打开入口。
+
+1. Open PowerShell in the cloned repository:
+
+```powershell
+cd "<path-to-cloned-repo>"
+```
+
+2. Create and activate the recommended environment:
+
+```powershell
+conda env create -f environment.yml
+conda activate afagent
+```
+
+3. Check that the MCP module can be imported:
+
+```powershell
+python -c "import autoform_agent.mcp_server; print('autoform_agent.mcp_server import ok')"
+python -m autoform_agent.cli status
+```
+
+4. Add this MCP server block to your MCP host configuration. For Codex on Windows, the user config file is usually `%USERPROFILE%\.codex\config.toml`.
+
+```toml
+[mcp_servers."autoform-agent"]
+command = 'conda'
+args = ['run', '-n', 'afagent', 'python', '-m', 'autoform_agent.mcp_server']
+startup_timeout_sec = 60
+enabled = true
+
+[mcp_servers."autoform-agent".env]
+PYTHONPATH = '<path-to-cloned-repo>'
+```
+
+Replace `<path-to-cloned-repo>` with the absolute path of this repository on your computer. If your MCP host cannot find `conda`, set `command` to your own `afagent` environment Python executable and keep `args = ['-m', 'autoform_agent.mcp_server']`.
+
+中文说明：把 `<path-to-cloned-repo>` 替换成你自己电脑上的仓库绝对路径。如果 MCP host 找不到 `conda`，就把 `command` 改成你自己 `afagent` 环境里的 `python.exe` 绝对路径，并把 `args` 保持为 `['-m', 'autoform_agent.mcp_server']`。
+
+5. Restart the MCP host, then read `autoform://status` or call `autoform_status_snapshot`. To run a tested official example, call `autoform_project_run` with `example=Solver_R13`, `mode=kinematic`, and `execute=true`.
+
+中文说明：重启 MCP host 后，先读取 `autoform://status` 或调用 `autoform_status_snapshot`。需要运行已经验证过的官方示例时，可调用 `autoform_project_run`，参数使用 `example=Solver_R13`、`mode=kinematic`、`execute=true`。
+
 AutoForm Agent is a local automation helper for AutoForm Forming. It exposes verified AutoForm workflows through a Python CLI, an optional MCP server, and a local OpenAI-compatible Agent runtime.
 
 中文说明：AutoForm Agent 是面向 AutoForm Forming 的本地自动化辅助项目。项目把已经验证过的 AutoForm 工作流封装为 Python 命令行、可选 MCP server，以及本地 OpenAI-compatible Agent runtime。
@@ -22,9 +69,9 @@ Tested official examples:
 
 | Example | MCP workflow | Solver result | Evidence artifact |
 | --- | --- | --- | --- |
-| `Solver_R13.afd` | `autoform_project_run`, `mode=kinematic`, `execute=true` | `completed`, return code `0`, `simulation_successful=true` | `output/project_runs/mcp_smoke/20260526_120054_Solver_R13_kinematic` |
-| `Trim_R13.afd` | `autoform_project_run`, `mode=kinematic`, `execute=true` | `completed`, return code `0`, `simulation_successful=true` | `output/project_runs/mcp_smoke/20260526_120056_Trim_R13_kinematic` |
-| `AutoComp_R13.afd` | `autoform_project_run`, `mode=kinematic`, `execute=true` | `completed`, return code `0`, `simulation_successful=true` | `output/project_runs/mcp_smoke/20260526_120057_AutoComp_R13_kinematic` |
+| `Solver_R13.afd` | `autoform_project_run`, `mode=kinematic`, `execute=true` | `completed`, return code `0`, `simulation_successful=true` | Local ignored run directory under `output/project_runs/mcp_smoke/<timestamp>_Solver_R13_kinematic` |
+| `Trim_R13.afd` | `autoform_project_run`, `mode=kinematic`, `execute=true` | `completed`, return code `0`, `simulation_successful=true` | Local ignored run directory under `output/project_runs/mcp_smoke/<timestamp>_Trim_R13_kinematic` |
+| `AutoComp_R13.afd` | `autoform_project_run`, `mode=kinematic`, `execute=true` | `completed`, return code `0`, `simulation_successful=true` | Local ignored run directory under `output/project_runs/mcp_smoke/<timestamp>_AutoComp_R13_kinematic` |
 
 中文说明：V1.0 已完成本机可用性验证。`Solver_R13.afd`、`Trim_R13.afd` 和 `AutoComp_R13.afd` 三个官方示例工程已经通过 MCP 工具真实执行，求解器返回码均为 `0`，并写出各自的结果证据包。
 
@@ -65,7 +112,7 @@ conda activate afagent
 When the Windows console has trouble with Chinese paths or encoded output, call the environment Python directly:
 
 ```powershell
-C:\Users\Tang Xufeng\.conda\envs\afagent\python.exe -m autoform_agent.cli status
+conda run -n afagent python -m autoform_agent.cli status
 ```
 
 Optional API runtime configuration:
@@ -131,20 +178,20 @@ python -m autoform_agent.cli report-delivery-plan output\result_package --limit 
 Normalize a QuickLink export:
 
 ```powershell
-python -m autoform_agent.cli quicklink-schema autoform_agent_data\quicklink\20260525_234139\quicklinkExport.zip
+python -m autoform_agent.cli quicklink-schema "<path-to-quicklinkExport.zip>"
 ```
 
 中文说明：最小使用路径是先执行 `discover` 和 `status` 检查环境，再用 `project-run` 预演工程运行，确认许可证和路径可用后添加 `--execute` 执行求解。
 
 ## MCP Usage
 
-Start the MCP server:
+The visible MCP opening steps are at the top of this README. For a direct terminal launch, start the stdio server from the activated environment:
 
 ```powershell
 python -m autoform_agent.mcp_server
 ```
 
-The repository includes a template MCP configuration:
+The repository also includes a portable MCP configuration template:
 
 ```text
 codex_mcp_config.autoform-agent.toml
@@ -229,7 +276,7 @@ python -m autoform_agent.cli release-package-plan output\release\autoform-agent-
 Write-operation planning:
 
 ```powershell
-python -m autoform_agent.cli write-safety-plan C:\ProgramData\AutoForm\AFplus\R13F\scripts\CodexAgentBridge.cmd --backup-root output\rollback
+python -m autoform_agent.cli write-safety-plan "$env:ProgramData\AutoForm\AFplus\<VERSION>\scripts\CodexAgentBridge.cmd" --backup-root output\rollback
 ```
 
 中文说明：公开发布前应执行安全扫描、发布就绪检查和测试。`output/`、`tmp/`、`autoform_agent_data/`、`.env` 均已在 `.gitignore` 中排除，提交范围应保留源码、测试、文档、许可证和示例基准 JSON。

@@ -10,7 +10,7 @@ AutoForm Agent 是一个本地辅助工具项目。它把本机 AutoForm Forming
 
 ## 先认识几个名字
 
-`AutoForm` 指本机安装的 AutoForm Forming 软件。项目当前记录的本机安装目录、材料目录、脚本目录和示例工程目录写在根目录 `README.md` 的“本机依据”一节。
+`AutoForm` 指本机安装的 AutoForm Forming 软件。不同电脑上的安装目录可能不同，应先用 `python -m autoform_agent.cli discover` 读取当前机器的实际路径；如果自动发现失败，可以在 `.env` 中填写 `AUTOFORM_INSTALL_DIR`、`AUTOFORM_PROGRAM_DATA_DIR`、`AUTOFORM_TEST_DIR` 等覆盖项。
 
 `Agent` 指本项目提供的 Python 工具集合，代码主要放在 `autoform_agent/`。
 
@@ -31,7 +31,7 @@ AutoForm Agent 是一个本地辅助工具项目。它把本机 AutoForm Forming
 1. 你需要能打开 PowerShell。项目现有启动脚本是 PowerShell 和 cmd 文件，依据是根目录的 `start_autoform_agent.ps1` 与 `start_autoform_agent.cmd`。
 2. 你需要有 Python 环境。项目推荐环境名是 `afagent`，依据是根目录 `environment.yml` 的 `name: afagent`。
 3. 你需要安装项目依赖。`environment.yml` 已列出 `mcp`、`pillow`、`psutil`、`pyperclip`、`python-docx`、`pytest` 和 `pywinauto`。
-4. 如果要调用真实 AutoForm 能力，需要本机存在 AutoForm 安装。安装发现逻辑由 `autoform_agent/paths.py` 和相关 CLI 命令负责；本机路径示例写在 `README.md` 的“本机依据”一节。
+4. 如果要调用真实 AutoForm 能力，需要本机存在 AutoForm 安装。安装发现逻辑由 `autoform_agent/paths.py` 和相关 CLI 命令负责；实际路径以你自己电脑上的 `discover` 输出为准。
 
 ## 第一次打开项目时看哪里
 
@@ -71,7 +71,7 @@ powershell -ExecutionPolicy Bypass -File .\start_autoform_agent.ps1
 进入项目根目录：
 
 ```powershell
-cd "F:\【项目和任务】\EIT\2026\AUTO_AutoForm"
+cd "<path-to-cloned-repo>"
 ```
 
 激活 Conda 环境：
@@ -124,7 +124,7 @@ python -m autoform_agent.cli project-run --example Solver_R13 --mode kinematic -
 python -m autoform_agent.cli project-run --example Solver_R13 --mode kinematic --threads 1 --output-root output\project_runs --execute --timeout 120
 ```
 
-本机 V1.0 检查中，该命令已经对复制后的 `Solver_R13.afd` 返回 0，并在 `output/project_runs\20260525_235218_Solver_R13_kinematic` 写入 `run_manifest.json` 与 `result_package`。
+本机 V1.0 检查中，该命令已经对复制后的 `Solver_R13.afd` 返回 0，并在 `output/project_runs/<timestamp>_Solver_R13_kinematic` 写入 `run_manifest.json` 与 `result_package`。这里的 `<timestamp>` 会随你的运行时间变化。
 
 检查 MCP 模块能否被 Python 导入：
 
@@ -191,10 +191,12 @@ codex_mcp_config.autoform-agent.toml
 模板说明需要把其中内容加入：
 
 ```text
-C:\Users\Tang Xufeng\.codex\config.toml
+%USERPROFILE%\.codex\config.toml
 ```
 
 把模板内容加入支持 MCP 的客户端配置后，该客户端可以按配置启动 `autoform_agent.mcp_server`。这个步骤的依据是 `codex_mcp_config.autoform-agent.toml` 和 `README.md` 的“MCP 入口”一节。
+
+模板中的 `<path-to-cloned-repo>` 需要替换为你自己电脑上的仓库绝对路径。模板默认通过 `conda run -n afagent python -m autoform_agent.mcp_server` 启动；如果 MCP host 找不到 `conda`，可以把 `command` 改成 `afagent` 环境中 `python.exe` 的绝对路径，并把 `args` 改为 `['-m', 'autoform_agent.mcp_server']`。
 
 如果只打开前端网页，页面会调用本地 HTTP bridge，并由 Python 后端运行时返回状态摘要。需要让外部 MCP host 直接调用 `autoform_` 工具时，才需要完成上面的 MCP 配置步骤。
 
@@ -214,7 +216,7 @@ C:\Users\Tang Xufeng\.codex\config.toml
 
 `output/` 存放已经生成的文档、日志、演示包和运行记录。这里的内容通常用于排查、交付或复核。
 
-`autoform_agent_data/` 存放 Agent 运行时收集的数据，例如 QuickLink 导出记录。当前文件清单中可以看到 `autoform_agent_data/quicklink/...`。
+`autoform_agent_data/` 存放 Agent 运行时收集的数据，例如 QuickLink 导出记录。该目录是本机运行数据目录，默认不会进入 Git 提交。
 
 ## 正式对外发布前要检查什么
 

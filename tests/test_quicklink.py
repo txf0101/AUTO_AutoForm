@@ -16,6 +16,7 @@ from autoform_agent.quicklink import (
     parse_quicklink_xml,
     quicklink_archive_inventory,
     quicklink_bridge_status,
+    quicklink_schema,
     validate_quicklink_standard,
 )
 from autoform_agent.paths import AutoFormInstallation
@@ -71,6 +72,20 @@ def test_parse_quicklink_zip_reads_summary(tmp_path: Path) -> None:
     assert get_project_data(archive)[0]["value"] == "Demo"
     assert get_blank_info(archive)["attributes"]["Name"] == "Blank"
     assert list_exported_geometry(archive) == ["part_tip.igs"]
+
+
+def test_quicklink_schema_returns_stable_v1_shape(tmp_path: Path) -> None:
+    archive = tmp_path / "quicklinkExport.zip"
+    with ZipFile(archive, "w") as zf:
+        zf.writestr("quicklinkExport_v100.xml", QUICKLINK_XML)
+        zf.writestr("part_tip.igs", "geometry")
+
+    schema = quicklink_schema(archive)
+
+    assert schema["schema_version"] == "1.0"
+    assert schema["project_data"]["PRJ_ProjectName"]["value"] == "Demo"
+    assert schema["sections"]["process_plan"]["named_items"] == [{"type": "Operation", "name": "Draw"}]
+    assert schema["archive_member_count"] == 2
 
 
 def test_get_quicklink_section_returns_deep_values(tmp_path: Path) -> None:

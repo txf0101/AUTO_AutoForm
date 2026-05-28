@@ -1,34 +1,69 @@
 /*
  * AutoForm Agent Console frontend.
  *
- * The page is deliberately small: user input, status summary, terminal-like
- * output, and API request/usage details.  AutoForm workflow control lives in
- * Python (`autoform_agent.agent_runtime`), so this file only forwards prompt
- * payloads and renders backend facts.
+ * The page has four panels and one responsibility: collect the user's prompt,
+ * collect request-scoped API settings, and display the Python runtime result.
+ * AutoForm workflow decisions stay in `autoform_agent.agent_runtime`; the
+ * browser only forwards a small JSON contract to the localhost HTTP bridge.
  */
+
+const DEFAULT_ENDPOINT = "http://127.0.0.1:4317/api/agent";
+
+const PROVIDER_PRESETS = {
+  deepseek: {
+    label: "DeepSeek",
+    baseUrl: "https://api.deepseek.com",
+    model: "deepseek-v4-flash",
+    apiMode: "chat_completions",
+  },
+  openai: {
+    label: "OpenAI",
+    baseUrl: "",
+    model: "gpt-4.1-mini",
+    apiMode: "responses",
+  },
+  custom: {
+    label: "OpenAI-compatible",
+    baseUrl: "",
+    model: "gpt-4.1-mini",
+    apiMode: "chat_completions",
+  },
+};
 
 const appState = {
   conversationId: `web-${Date.now()}`,
-  endpoint: "http://127.0.0.1:4317/codex",
+  endpoint: DEFAULT_ENDPOINT,
   lastPayload: {},
   lastResponse: {},
   terminalLines: [
     "AutoForm Agent Console ready.",
-    "Runtime endpoint: http://127.0.0.1:4317/codex",
+    `Runtime endpoint: ${DEFAULT_ENDPOINT}`,
+    "Provider preset: DeepSeek, chat_completions",
     "Waiting for prompt...",
   ],
+  apiConfig: {
+    provider: "deepseek",
+    baseUrl: PROVIDER_PRESETS.deepseek.baseUrl,
+    model: PROVIDER_PRESETS.deepseek.model,
+    apiMode: PROVIDER_PRESETS.deepseek.apiMode,
+    apiKey: "",
+  },
   summary: {
     connection: "待发送",
-    runtime: "AutoForm Agent Runtime",
-    model: "gpt-4.1-mini",
+    provider: "DeepSeek",
+    model: PROVIDER_PRESETS.deepseek.model,
+    apiMode: PROVIDER_PRESETS.deepseek.apiMode,
     tools: "待读取",
     queue: "待检查",
-    openai: "未调用",
+    sdk: "待检查",
+    key: "未输入",
   },
   api: {
     sdk: "待检查",
-    apiKey: "待检查",
+    apiKey: "未输入",
+    apiKeySource: "none",
     openaiCalled: "false",
+    baseUrl: PROVIDER_PRESETS.deepseek.baseUrl,
   },
 };
 
@@ -38,17 +73,23 @@ class AgentRuntimeBridge {
   }
 
   async sendPrompt(prompt) {
+    const runtimeConfig = buildRuntimeConfigForRequest();
     const payload = {
       conversationId: this.state.conversationId,
       prompt,
+      runtimeConfig,
       uiContext: {
         surface: "four-panel-console",
         requestedPanels: ["input", "summary", "terminal", "api"],
       },
     };
-    this.state.lastPayload = payload;
+
+    this.state.lastPayload = redactPayloadForDisplay(payload);
     renderApiPanel();
     appendTerminal(`USER> ${prompt}`);
+    appendTerminal(
+      `CONFIG provider=${runtimeConfig.provider} model=${runtimeConfig.model || "(provider default)"} api_mode=${runtimeConfig.apiMode} key=${runtimeConfig.apiKey ? "request" : "env-or-missing"}`,
+    );
     appendTerminal(`POST ${this.state.endpoint}`);
 
     const startedAt = performance.now();
@@ -64,7 +105,7 @@ class AgentRuntimeBridge {
     }
 
     const reply = await response.json();
-    this.state.lastResponse = reply;
+    this.state.lastResponse = redactPayloadForDisplay(reply);
     applyRuntimeReply(reply, elapsedMs);
     return reply;
   }
@@ -73,9 +114,9 @@ class AgentRuntimeBridge {
 const bridge = new AgentRuntimeBridge(appState);
 
 /*
- * DOM bindings stay flat because the page has only four panels.  Each renderer
- * below owns one panel, which keeps later backend contract changes easy to
- * audit for developers who are new to the frontend.
+ * DOM bindings are intentionally grouped here.  When maintainers add a backend
+ * response field later, they only need to touch this map and the matching
+ * renderer instead of searching event handlers across the file.
  */
 const elements = {
   promptForm: document.querySelector("[data-prompt-form]"),
@@ -85,15 +126,26 @@ const elements = {
   sendButton: document.querySelector("[data-send-button]"),
   terminalOutput: document.querySelector("[data-terminal-output]"),
   summaryConnection: document.querySelector("[data-summary-connection]"),
-  summaryRuntime: document.querySelector("[data-summary-runtime]"),
+  summaryProvider: document.querySelector("[data-summary-provider]"),
   summaryModel: document.querySelector("[data-summary-model]"),
+  summaryApiMode: document.querySelector("[data-summary-api-mode]"),
   summaryTools: document.querySelector("[data-summary-tools]"),
   summaryQueue: document.querySelector("[data-summary-queue]"),
-  summaryOpenai: document.querySelector("[data-summary-openai]"),
+  summarySdk: document.querySelector("[data-summary-sdk]"),
+  summaryKey: document.querySelector("[data-summary-key]"),
+  providerSelect: document.querySelector("[data-provider-select]"),
+  providerBaseUrl: document.querySelector("[data-provider-base-url]"),
+  providerModel: document.querySelector("[data-provider-model]"),
+  apiMode: document.querySelector("[data-api-mode]"),
+  providerApiKey: document.querySelector("[data-provider-api-key]"),
+  applyProviderPreset: document.querySelector("[data-apply-provider-preset]"),
+  clearApiKey: document.querySelector("[data-clear-api-key]"),
   apiEndpoint: document.querySelector("[data-api-endpoint]"),
   apiSdk: document.querySelector("[data-api-sdk]"),
   apiKey: document.querySelector("[data-api-key]"),
+  apiKeySource: document.querySelector("[data-api-key-source]"),
   apiOpenaiCalled: document.querySelector("[data-api-openai-called]"),
+  apiBaseUrl: document.querySelector("[data-api-base-url]"),
   apiInput: document.querySelector("[data-api-input]"),
   apiResponse: document.querySelector("[data-api-response]"),
 };
@@ -104,28 +156,79 @@ function applyRuntimeReply(reply, elapsedMs) {
 
   appState.summary = {
     connection: metrics.connection || "已返回",
-    runtime: runtime.name || "autoform-agent-runtime",
-    model: metrics.model || runtime.model || "未返回",
+    provider: metrics.provider || runtime.providerLabel || providerLabel(appState.apiConfig.provider),
+    model: metrics.model || runtime.model || appState.apiConfig.model || "未返回",
+    apiMode: metrics.apiMode || runtime.apiMode || appState.apiConfig.apiMode,
     tools: metrics.tools || "未返回",
     queue: metrics.queue || "未返回",
-    openai: runtime.openaiCalled ? "已调用" : "未调用",
+    sdk: booleanLabel(runtime.sdkAvailable),
+    key: keyStatusLabel(runtime),
   };
 
   appState.api = {
     sdk: booleanLabel(runtime.sdkAvailable),
-    apiKey: booleanLabel(runtime.apiKeyConfigured),
+    apiKey: keyStatusLabel(runtime),
+    apiKeySource: runtime.apiKeySource || (appState.apiConfig.apiKey ? "request" : "none"),
     openaiCalled: String(Boolean(runtime.openaiCalled)),
+    baseUrl: runtime.baseUrl || metrics.baseUrl || appState.apiConfig.baseUrl || "OpenAI default",
   };
 
   appendTerminal(`HTTP 200 in ${elapsedMs} ms`);
   appendTerminal(
-    `RUNTIME provider=${runtime.provider || "unknown"} model=${runtime.model || "unknown"} sdk=${appState.api.sdk} api_key=${appState.api.apiKey} openai_called=${appState.api.openaiCalled}`,
+    `RUNTIME provider=${runtime.providerLabel || runtime.provider || "unknown"} model=${runtime.model || "unknown"} api_mode=${runtime.apiMode || "unknown"} base_url=${runtime.baseUrl || "OpenAI default"} sdk=${appState.api.sdk} key=${appState.api.apiKeySource} sdk_call=${appState.api.openaiCalled}`,
   );
   for (const step of reply.timeline || []) {
     appendTerminal(`STEP ${step.state}: ${step.title} - ${step.detail}`);
   }
   appendTerminal(`AGENT> ${reply.text || "(empty response)"}`);
 
+  renderAll();
+}
+
+function buildRuntimeConfigForRequest() {
+  syncApiConfigFromDom();
+  const runtimeConfig = {
+    provider: appState.apiConfig.provider,
+    baseUrl: appState.apiConfig.baseUrl,
+    model: appState.apiConfig.model,
+    apiMode: appState.apiConfig.apiMode,
+  };
+
+  if (appState.apiConfig.apiKey) {
+    runtimeConfig.apiKey = appState.apiConfig.apiKey;
+  }
+  return runtimeConfig;
+}
+
+function syncApiConfigFromDom() {
+  appState.apiConfig = {
+    provider: elements.providerSelect.value,
+    baseUrl: elements.providerBaseUrl.value.trim(),
+    model: elements.providerModel.value.trim(),
+    apiMode: elements.apiMode.value,
+    apiKey: elements.providerApiKey.value.trim(),
+  };
+}
+
+function applyProviderPreset(force = false) {
+  const provider = elements.providerSelect.value;
+  const preset = PROVIDER_PRESETS[provider] || PROVIDER_PRESETS.custom;
+
+  if (force || !elements.providerBaseUrl.value.trim()) {
+    elements.providerBaseUrl.value = preset.baseUrl;
+  }
+  if (force || !elements.providerModel.value.trim()) {
+    elements.providerModel.value = preset.model;
+  }
+  if (force || elements.apiMode.value === "auto") {
+    elements.apiMode.value = preset.apiMode;
+  }
+
+  syncApiConfigFromDom();
+  appState.summary.provider = preset.label;
+  appState.summary.model = appState.apiConfig.model || preset.model;
+  appState.summary.apiMode = appState.apiConfig.apiMode;
+  appState.api.baseUrl = appState.apiConfig.baseUrl || "OpenAI default";
   renderAll();
 }
 
@@ -144,11 +247,13 @@ function appendTerminal(line) {
 
 function renderSummary() {
   elements.summaryConnection.textContent = appState.summary.connection;
-  elements.summaryRuntime.textContent = appState.summary.runtime;
+  elements.summaryProvider.textContent = appState.summary.provider;
   elements.summaryModel.textContent = appState.summary.model;
+  elements.summaryApiMode.textContent = appState.summary.apiMode;
   elements.summaryTools.textContent = appState.summary.tools;
   elements.summaryQueue.textContent = appState.summary.queue;
-  elements.summaryOpenai.textContent = appState.summary.openai;
+  elements.summarySdk.textContent = appState.summary.sdk;
+  elements.summaryKey.textContent = appState.summary.key;
 }
 
 function renderTerminal() {
@@ -159,8 +264,10 @@ function renderTerminal() {
 function renderApiPanel() {
   elements.apiEndpoint.textContent = appState.endpoint;
   elements.apiSdk.textContent = appState.api.sdk;
-  elements.apiKey.textContent = appState.api.apiKey;
+  elements.apiKey.textContent = appState.apiConfig.apiKey ? "页面会话 key 已输入" : appState.api.apiKey;
+  elements.apiKeySource.textContent = appState.apiConfig.apiKey ? "request" : appState.api.apiKeySource;
   elements.apiOpenaiCalled.textContent = appState.api.openaiCalled;
+  elements.apiBaseUrl.textContent = appState.apiConfig.baseUrl || appState.api.baseUrl || "OpenAI default";
   elements.apiInput.textContent = prettyJson(appState.lastPayload);
   elements.apiResponse.textContent = prettyJson(trimRuntimeResponse(appState.lastResponse));
 }
@@ -178,12 +285,48 @@ function applyStartupOptions() {
     appState.endpoint = endpoint;
     elements.endpointInput.value = endpoint;
   }
+
+  const provider = options.get("provider");
+  if (provider && PROVIDER_PRESETS[provider]) {
+    elements.providerSelect.value = provider;
+    applyProviderPreset(true);
+  }
 }
 
 function bindEvents() {
   elements.endpointInput.addEventListener("input", () => {
-    appState.endpoint = elements.endpointInput.value.trim();
+    appState.endpoint = elements.endpointInput.value.trim() || DEFAULT_ENDPOINT;
     renderApiPanel();
+  });
+
+  elements.providerSelect.addEventListener("change", () => {
+    applyProviderPreset(true);
+  });
+
+  for (const input of [elements.providerBaseUrl, elements.providerModel, elements.apiMode, elements.providerApiKey]) {
+    const eventName = input.tagName === "SELECT" ? "change" : "input";
+    input.addEventListener(eventName, () => {
+      syncApiConfigFromDom();
+      appState.summary.provider = providerLabel(appState.apiConfig.provider);
+      appState.summary.model = appState.apiConfig.model || "待配置";
+      appState.summary.apiMode = appState.apiConfig.apiMode;
+      appState.summary.key = appState.apiConfig.apiKey ? "页面会话 key 已输入" : "未输入";
+      renderAll();
+    });
+  }
+
+  elements.applyProviderPreset.addEventListener("click", () => {
+    applyProviderPreset(true);
+  });
+
+  elements.clearApiKey.addEventListener("click", () => {
+    elements.providerApiKey.value = "";
+    syncApiConfigFromDom();
+    appState.summary.key = "未输入";
+    appState.api.apiKey = "未输入";
+    appState.api.apiKeySource = "none";
+    appendTerminal("INFO cleared page session API key");
+    renderAll();
   });
 
   elements.insertExampleButton.addEventListener("click", () => {
@@ -228,6 +371,21 @@ function trimRuntimeResponse(reply) {
   };
 }
 
+function redactPayloadForDisplay(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => redactPayloadForDisplay(item));
+  }
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [
+        key,
+        /apiKey|api_key|OPENAI_API_KEY/i.test(key) && item ? "[redacted]" : redactPayloadForDisplay(item),
+      ]),
+    );
+  }
+  return value;
+}
+
 function prettyJson(value) {
   return JSON.stringify(value || {}, null, 2);
 }
@@ -240,6 +398,20 @@ function booleanLabel(value) {
     return "false";
   }
   return "待检查";
+}
+
+function keyStatusLabel(runtime) {
+  if (runtime.apiKeyConfigured === true) {
+    return runtime.apiKeySource === "request" ? "页面会话 key 已输入" : "后端环境已配置";
+  }
+  if (appState.apiConfig.apiKey) {
+    return "页面会话 key 已输入";
+  }
+  return "未输入";
+}
+
+function providerLabel(provider) {
+  return (PROVIDER_PRESETS[provider] || PROVIDER_PRESETS.custom).label;
 }
 
 applyStartupOptions();

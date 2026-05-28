@@ -34,6 +34,9 @@ def test_static_frontend_contains_required_hooks() -> None:
         "data-terminal-output",
         "data-api-input",
         "data-api-response",
+        "data-provider-select",
+        "data-provider-api-key",
+        "data-api-mode",
         "data-summary-connection",
     ]:
         _assert_contains(html, marker, "index.html")
@@ -42,7 +45,9 @@ def test_static_frontend_contains_required_hooks() -> None:
         "class AgentRuntimeBridge",
         "async sendPrompt(prompt)",
         "applyStartupOptions",
+        "buildRuntimeConfigForRequest",
         "applyRuntimeReply",
+        "redactPayloadForDisplay",
         "renderSummary",
         "renderTerminal",
         "renderApiPanel",
@@ -54,6 +59,7 @@ def test_static_frontend_contains_required_hooks() -> None:
         ".console-panel",
         ".status-summary",
         ".terminal-output",
+        ".api-config-grid",
         ".api-grid",
         "@media (max-width: 980px)",
     ]:

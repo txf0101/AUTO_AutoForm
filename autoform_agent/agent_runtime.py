@@ -14,7 +14,7 @@ AutoForm commands or writing executable scripts.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 import os
 from pathlib import Path
@@ -25,13 +25,43 @@ from .coverage import MODULE_COVERAGE
 from .diagnostics import environment_snapshot
 from .inventory import get_afd_project_summary, list_example_projects
 from .paths import discover_installations
+from .project_workflow import project_run_workflow, resolve_project_input
 from .queue import queue_health_check
 from .quicklink import list_quicklink_exports
 from .solver import forming_solver_kinematic_plan
 
 
 DEFAULT_MODEL = "gpt-4.1-mini"
+DEFAULT_DEEPSEEK_MODEL = "deepseek-v4-flash"
 DEFAULT_MAX_TURNS = 8
+SUPPORTED_AGENT_API_MODES = {"responses", "chat_completions"}
+PLACEHOLDER_API_KEYS = {
+    "your_provider_api_key_here",
+    "your_openai_api_key_here",
+    "your_deepseek_api_key_here",
+}
+
+
+PROVIDER_PRESETS: dict[str, dict[str, str | None]] = {
+    "openai": {
+        "label": "OpenAI",
+        "model": DEFAULT_MODEL,
+        "base_url": None,
+        "api_mode": "responses",
+    },
+    "deepseek": {
+        "label": "DeepSeek",
+        "model": DEFAULT_DEEPSEEK_MODEL,
+        "base_url": "https://api.deepseek.com",
+        "api_mode": "chat_completions",
+    },
+    "custom": {
+        "label": "OpenAI-compatible custom provider",
+        "model": DEFAULT_MODEL,
+        "base_url": None,
+        "api_mode": "chat_completions",
+    },
+}
 
 
 @dataclass(frozen=True)
@@ -41,7 +71,10 @@ class AgentRuntimeConfig:
     provider: str
     model: str
     base_url: str | None
+    api_mode: str
+    api_key: str | None
     api_key_configured: bool
+    api_key_source: str
     sdk_available: bool
     project_root: Path
     tracing_enabled: bool
@@ -88,7 +121,10 @@ def run_agent_runtime_turn(
     tool registration, deterministic fallback, and response shaping.
     """
 
-    runtime_config = config or load_agent_runtime_config()
+    runtime_config = _apply_payload_runtime_config(
+        payload=payload,
+        config=config or load_agent_runtime_config(),
+    )
     prompt = str(payload.get("prompt") or "").strip()
     conversation_id = str(payload.get("conversationId") or "unknown")
     runtime_snapshot = snapshot or collect_agent_runtime_snapshot(runtime_config.project_root)
@@ -117,43 +153,114 @@ def run_agent_runtime_turn(
             conversation_id=conversation_id,
             config=runtime_config,
             snapshot=runtime_snapshot,
-            reason="未检测到 OPENAI_API_KEY，后端运行时返回本地检查结果。",
+            reason="未检测到 API key；可在页面临时输入，或在 .env 中配置 OPENAI_API_KEY。",
         ).as_dict()
 
-    return _run_openai_agents_sdk_turn(
-        prompt=prompt,
-        conversation_id=conversation_id,
-        config=runtime_config,
-        snapshot=runtime_snapshot,
-        max_turns=max_turns,
-    ).as_dict()
+    try:
+        return _run_openai_agents_sdk_turn(
+            prompt=prompt,
+            conversation_id=conversation_id,
+            config=runtime_config,
+            snapshot=runtime_snapshot,
+            max_turns=max_turns,
+        ).as_dict()
+    except Exception as exc:  # pragma: no cover - depends on live provider behavior
+        return _build_local_runtime_result(
+            prompt=prompt,
+            conversation_id=conversation_id,
+            config=runtime_config,
+            snapshot=runtime_snapshot,
+            reason=f"{_provider_label(runtime_config.provider)} 调用失败：{_sanitize_runtime_error(exc, runtime_config)}",
+        ).as_dict()
 
 
 def load_agent_runtime_config(project_root: Path | None = None) -> AgentRuntimeConfig:
     """Load OpenAI runtime settings from `.env` and process environment.
 
-    The loader mirrors the environment style used by many OpenAI prototypes:
-    local `.env` values are read first without overriding explicit shell
-    variables, then `OPENAI_API_KEY`, `OPENAI_MODEL`, and `OPENAI_BASE_URL` are
-    resolved for the current process.
+    The loader mirrors the environment style used by OpenAI-compatible
+    prototypes: local `.env` values are read first without overriding explicit
+    shell variables, then provider, model, base URL, API mode, and API key are
+    resolved for the current process.  Secrets are kept inside the config object
+    and are never copied into the frontend response payload.
     """
 
     resolved_root = project_root or _find_project_root()
     _load_env_file(resolved_root / ".env")
 
-    provider = os.getenv("CHAT_PROVIDER", "openai").strip().lower() or "openai"
-    model = os.getenv("OPENAI_MODEL", DEFAULT_MODEL).strip() or DEFAULT_MODEL
-    base_url = _clean_base_url(os.getenv("OPENAI_BASE_URL"))
-    api_key_configured = bool(os.getenv("OPENAI_API_KEY"))
+    provider = _normalize_provider(os.getenv("CHAT_PROVIDER"))
+    preset = _provider_preset(provider)
+    model = _clean_text(os.getenv("OPENAI_MODEL")) or str(preset["model"])
+    base_url = _clean_base_url(os.getenv("OPENAI_BASE_URL")) or preset["base_url"]
+    api_mode = _resolve_api_mode(os.getenv("OPENAI_AGENTS_API_MODE"), provider, base_url)
+    api_key = _clean_secret(os.getenv("OPENAI_API_KEY"))
 
     return AgentRuntimeConfig(
         provider=provider,
         model=model,
         base_url=base_url,
-        api_key_configured=api_key_configured,
+        api_mode=api_mode,
+        api_key=api_key,
+        api_key_configured=bool(api_key),
+        api_key_source="environment" if api_key else "none",
         sdk_available=_is_agents_sdk_available(),
         project_root=resolved_root,
         tracing_enabled=os.getenv("OPENAI_AGENTS_TRACING", "0") in {"1", "true", "True"},
+    )
+
+
+def _apply_payload_runtime_config(
+    *,
+    payload: dict[str, Any],
+    config: AgentRuntimeConfig,
+) -> AgentRuntimeConfig:
+    """Merge optional frontend runtime settings into the base config.
+
+    The browser may send a `runtimeConfig` object when the user chooses a
+    provider such as DeepSeek or a custom OpenAI-compatible endpoint.  This
+    helper keeps those settings request-scoped: it never writes `.env`, never
+    mutates process environment variables, and never returns the secret key in
+    the HTTP response.  Empty UI fields mean "use the provider preset or the
+    existing environment value" so the same page works for both IT-provided
+    `.env` keys and one-off session keys typed into the page.
+    """
+
+    runtime_config = payload.get("runtimeConfig")
+    if not isinstance(runtime_config, dict):
+        return config
+
+    requested_provider = _clean_text(runtime_config.get("provider"))
+    provider = _normalize_provider(requested_provider or config.provider)
+    preset = _provider_preset(provider)
+
+    provider_changed = provider != config.provider
+    requested_model = _clean_text(runtime_config.get("model"))
+    model = requested_model or (str(preset["model"]) if provider_changed else config.model)
+
+    requested_base_url = runtime_config.get("baseUrl")
+    if requested_base_url is None and not provider_changed:
+        base_url = config.base_url
+    else:
+        base_url = _clean_base_url(requested_base_url) or preset["base_url"]
+
+    requested_api_mode = _clean_text(runtime_config.get("apiMode"))
+    api_mode = _resolve_api_mode(
+        requested_api_mode or (None if provider_changed else config.api_mode),
+        provider,
+        base_url,
+    )
+
+    request_api_key = _clean_secret(runtime_config.get("apiKey"))
+    api_key = request_api_key or config.api_key
+
+    return replace(
+        config,
+        provider=provider,
+        model=model,
+        base_url=base_url,
+        api_mode=api_mode,
+        api_key=api_key,
+        api_key_configured=bool(api_key),
+        api_key_source="request" if request_api_key else config.api_key_source,
     )
 
 
@@ -263,6 +370,18 @@ def build_agent_tools(project_root: Path | None = None) -> list[Any]:
 
         return forming_solver_kinematic_plan(afd_path, threads=threads)
 
+    @function_tool
+    def autoform_resolve_project_tool(example_name: str = "Solver_R13", afd_path: str = "") -> dict[str, Any]:
+        """Resolve an official example name or explicit .afd path for project runs."""
+
+        return resolve_project_input(afd_path=afd_path or None, example_name=example_name)
+
+    @function_tool
+    def autoform_project_run_plan_tool(example_name: str = "Solver_R13", mode: str = "kinematic", threads: int = 1) -> dict[str, Any]:
+        """Plan a reproducible AutoForm project run without executing the solver."""
+
+        return project_run_workflow(example_name=example_name, mode=mode, threads=threads, execute=False)
+
     return [
         autoform_discover_installation_tool,
         autoform_environment_snapshot_tool,
@@ -272,6 +391,8 @@ def build_agent_tools(project_root: Path | None = None) -> list[Any]:
         autoform_quicklink_exports_tool,
         autoform_afd_summary_tool,
         autoform_kinematic_plan_tool,
+        autoform_resolve_project_tool,
+        autoform_project_run_plan_tool,
     ]
 
 
@@ -331,24 +452,33 @@ def _run_openai_agents_sdk_turn(
         runtime={
             "name": "autoform-openai-agents-runtime",
             "provider": config.provider,
+            "providerLabel": _provider_label(config.provider),
             "model": config.model,
+            "baseUrl": config.base_url,
+            "apiMode": config.api_mode,
             "openaiCalled": True,
             "sdkAvailable": True,
             "apiKeyConfigured": True,
+            "apiKeySource": config.api_key_source,
             "frontendOwnsControl": False,
         },
     )
 
 
 def _configure_openai_agents_sdk(config: AgentRuntimeConfig) -> None:
-    """Configure the Agents SDK client for the Responses API."""
+    """Configure the Agents SDK client for the selected provider.
+
+    OpenAI's default path uses the Responses API.  OpenAI-compatible providers
+    that only expose chat completion semantics can switch the SDK to
+    `chat_completions`, which is the mode used by the DeepSeek page preset.
+    """
 
     from agents import set_default_openai_api, set_default_openai_client, set_tracing_disabled
     from openai import AsyncOpenAI
 
-    client = AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"], base_url=config.base_url)
+    client = AsyncOpenAI(api_key=config.api_key or "", base_url=config.base_url)
     set_default_openai_client(client, use_for_tracing=config.tracing_enabled)
-    set_default_openai_api("responses")
+    set_default_openai_api(config.api_mode)  # type: ignore[arg-type]
     set_tracing_disabled(not config.tracing_enabled)
 
 
@@ -369,7 +499,7 @@ def _build_local_runtime_result(
         f" 当前本地检查读取到 {snapshot['install_count']} 条安装记录、"
         f"{snapshot['tool_count']} 个工具入口、{snapshot['example_count']} 个示例工程、"
         f"{snapshot['quicklink_export_count']} 条 QuickLink 导出记录。"
-        " 配置 OPENAI_API_KEY 并安装 openai-agents 后，同一路径会调用 OpenAI Agents SDK。"
+        " 配置 API key 并安装 openai-agents 后，同一路径会调用 OpenAI Agents SDK。"
     )
 
     return AgentRuntimeResult(
@@ -389,10 +519,14 @@ def _build_local_runtime_result(
         runtime={
             "name": "autoform-openai-agents-runtime",
             "provider": config.provider,
+            "providerLabel": _provider_label(config.provider),
             "model": config.model,
+            "baseUrl": config.base_url,
+            "apiMode": config.api_mode,
             "openaiCalled": False,
             "sdkAvailable": config.sdk_available,
             "apiKeyConfigured": config.api_key_configured,
+            "apiKeySource": config.api_key_source,
             "frontendOwnsControl": False,
             "reason": reason,
         },
@@ -408,9 +542,9 @@ def _runtime_timeline(
 
     runtime_state = "complete" if openai_called else "ready"
     if openai_called:
-        runtime_detail = "OpenAI Agents SDK 已执行"
+        runtime_detail = f"{_provider_label(config.provider) if config else 'OpenAI'} 已通过 Agents SDK 执行"
     elif config is not None and config.sdk_available and not config.api_key_configured:
-        runtime_detail = "等待 OPENAI_API_KEY"
+        runtime_detail = "等待 API key"
     elif config is not None and not config.sdk_available:
         runtime_detail = "等待 openai-agents"
     else:
@@ -471,15 +605,18 @@ def _runtime_metrics(
     elif not config.sdk_available:
         connection = "缺少 openai-agents"
     elif not config.api_key_configured:
-        connection = "缺少 OPENAI_API_KEY"
+        connection = "缺少 API key"
     else:
         connection = "后端本地模式"
 
     return {
         "connection": connection,
+        "provider": _provider_label(config.provider),
         "tools": str(snapshot["tool_count"]),
         "queue": snapshot["queue_summary"],
         "model": config.model,
+        "apiMode": config.api_mode,
+        "baseUrl": config.base_url or "OpenAI default",
     }
 
 
@@ -518,6 +655,78 @@ def _clean_base_url(value: str | None) -> str | None:
 
     cleaned = (value or "").strip().rstrip("/")
     return cleaned or None
+
+
+def _clean_text(value: Any) -> str:
+    """Return a stripped text value for provider, model and API-mode fields."""
+
+    return str(value or "").strip()
+
+
+def _clean_secret(value: Any) -> str | None:
+    """Return a stripped secret without logging, displaying or persisting it."""
+
+    cleaned = _clean_text(value)
+    if cleaned.lower() in PLACEHOLDER_API_KEYS:
+        return None
+    return cleaned or None
+
+
+def _normalize_provider(value: Any) -> str:
+    """Map user-facing provider names to the small set the runtime supports.
+
+    The project currently keeps one SDK wiring path based on OpenAI's Python
+    client.  Unknown providers are treated as `custom`, which lets users enter
+    an OpenAI-compatible Base URL and model without adding new Python branches.
+    """
+
+    normalized = _clean_text(value).lower().replace(" ", "_") or "openai"
+    aliases = {
+        "openai_compatible": "custom",
+        "compatible": "custom",
+        "other": "custom",
+        "custom_provider": "custom",
+    }
+    normalized = aliases.get(normalized, normalized)
+    return normalized if normalized in PROVIDER_PRESETS else "custom"
+
+
+def _provider_preset(provider: str) -> dict[str, str | None]:
+    """Return provider defaults used by both `.env` and frontend overrides."""
+
+    return PROVIDER_PRESETS.get(provider, PROVIDER_PRESETS["custom"])
+
+
+def _provider_label(provider: str) -> str:
+    """Return a display label for status summaries and terminal output."""
+
+    return str(_provider_preset(provider)["label"])
+
+
+def _resolve_api_mode(value: Any, provider: str, base_url: str | None) -> str:
+    """Resolve the Agents SDK API mode for the selected provider.
+
+    The installed Agents SDK exposes `responses` and `chat_completions` as the
+    supported values.  OpenAI keeps the Responses API default, while DeepSeek
+    and custom OpenAI-compatible endpoints default to Chat Completions because
+    that is the more widely implemented compatibility surface.
+    """
+
+    requested = _clean_text(value).lower()
+    if requested in SUPPORTED_AGENT_API_MODES:
+        return requested
+    if provider == "openai" and not base_url:
+        return "responses"
+    return str(_provider_preset(provider)["api_mode"])
+
+
+def _sanitize_runtime_error(exc: Exception, config: AgentRuntimeConfig) -> str:
+    """Strip obvious secrets from live provider errors before showing the UI."""
+
+    message = str(exc).strip() or exc.__class__.__name__
+    if config.api_key:
+        message = message.replace(config.api_key, "[redacted-api-key]")
+    return message[:900]
 
 
 def _safe_call(func: Callable[[], Any], fallback: Any) -> tuple[Any, str | None]:

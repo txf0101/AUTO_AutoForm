@@ -5,7 +5,7 @@ import urllib.request
 from autoform_agent.http_bridge import build_agent_runtime_reply, create_server
 
 
-def test_build_codex_adapter_reply_matches_frontend_contract() -> None:
+def test_build_agent_runtime_reply_matches_frontend_contract() -> None:
     snapshot = {
         "install_count": 1,
         "installations": [],
@@ -28,12 +28,12 @@ def test_build_codex_adapter_reply_matches_frontend_contract() -> None:
     assert reply["role"] == "assistant"
     assert "conv-test" in reply["text"]
     assert reply["runtime"]["frontendOwnsControl"] is False
-    assert reply["metrics"]["connection"] in {"缺少 openai-agents", "缺少 OPENAI_API_KEY"}
+    assert reply["metrics"]["connection"] in {"缺少 openai-agents", "缺少 API key"}
     assert reply["preview"]["activeTool"] == "autoform_agent_runtime"
     assert [item["state"] for item in reply["timeline"]] == ["complete", "ready", "ready"]
 
 
-def test_http_bridge_serves_health_and_codex_post() -> None:
+def test_http_bridge_serves_health_and_agent_post() -> None:
     def responder(payload: dict) -> dict:
         return {
             "role": "assistant",
@@ -55,7 +55,7 @@ def test_http_bridge_serves_health_and_codex_post() -> None:
             health = json.loads(response.read().decode("utf-8"))
 
         request = urllib.request.Request(
-            f"{base_url}/codex",
+            f"{base_url}/api/agent",
             data=json.dumps({"prompt": "hello"}).encode("utf-8"),
             headers={"Content-Type": "application/json"},
             method="POST",
@@ -64,7 +64,7 @@ def test_http_bridge_serves_health_and_codex_post() -> None:
             reply = json.loads(response.read().decode("utf-8"))
 
         assert health["ok"] is True
-        assert health["codex_endpoint"] == "/codex"
+        assert health["agent_endpoint"] == "/api/agent"
         assert reply["text"] == "received hello"
     finally:
         server.shutdown()

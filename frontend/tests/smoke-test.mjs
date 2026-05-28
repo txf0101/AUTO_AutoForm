@@ -13,12 +13,17 @@ const requiredHtmlMarkers = [
   "data-terminal-output",
   "data-api-input",
   "data-api-response",
+  "data-provider-select",
+  "data-provider-api-key",
+  "data-api-mode",
 ];
 
 const requiredJsMarkers = [
   "class AgentRuntimeBridge",
   "async sendPrompt(prompt)",
+  "buildRuntimeConfigForRequest",
   "applyRuntimeReply",
+  "redactPayloadForDisplay",
   "renderTerminal",
   "renderApiPanel",
   "bindEvents",
@@ -28,6 +33,7 @@ const requiredCssMarkers = [
   ".console-panel",
   ".status-summary",
   ".terminal-output",
+  ".api-config-grid",
   ".api-grid",
   "@media (max-width: 980px)",
 ];

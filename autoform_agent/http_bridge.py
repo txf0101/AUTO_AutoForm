@@ -3,7 +3,7 @@
 Browser JavaScript should not own AutoForm workflow control.  This bridge only
 accepts frontend prompts on localhost and forwards them into
 `autoform_agent.agent_runtime`, where OpenAI Agents SDK configuration and
-AutoForm tool selection are handled in Python.
+AutoForm tool selection are handled in Python through the API runtime path.
 """
 
 from __future__ import annotations
@@ -18,6 +18,7 @@ from .agent_runtime import collect_agent_runtime_snapshot, run_agent_runtime_tur
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 4317
+AGENT_ENDPOINT = "/api/agent"
 MAX_REQUEST_BYTES = 1024 * 1024
 
 Responder = Callable[[dict[str, Any]], dict[str, Any]]
@@ -34,15 +35,6 @@ def build_agent_runtime_reply(
     local fallback result.
     """
     return run_agent_runtime_turn(payload, snapshot=snapshot)
-
-
-def build_codex_adapter_reply(
-    payload: dict[str, Any],
-    snapshot: dict[str, Any] | None = None,
-) -> dict[str, Any]:
-    """Backward-compatible alias for older imports and tests."""
-
-    return build_agent_runtime_reply(payload, snapshot=snapshot)
 
 
 def collect_agent_snapshot() -> dict[str, Any]:
@@ -64,7 +56,7 @@ def create_server(
 
 
 class AgentRuntimeRequestHandler(BaseHTTPRequestHandler):
-    """Serve `/health` and `/codex` for the static frontend."""
+    """Serve `/health` and the API runtime endpoint for the static frontend."""
 
     server_version = "AutoFormAgentHTTPBridge/0.1"
 
@@ -84,14 +76,14 @@ class AgentRuntimeRequestHandler(BaseHTTPRequestHandler):
             {
                 "ok": True,
                 "service": "autoform-agent-http-bridge",
-                "codex_endpoint": "/codex",
+                "agent_endpoint": AGENT_ENDPOINT,
             }
         )
 
     def do_POST(self) -> None:
-        """Accept frontend prompts on `/codex` and return adapter JSON."""
+        """Accept frontend prompts on the API runtime endpoint."""
 
-        if self.path.rstrip("/") != "/codex":
+        if self.path.rstrip("/") != AGENT_ENDPOINT:
             self._send_json({"error": "unknown endpoint"}, status=404)
             return
 
@@ -102,7 +94,7 @@ class AgentRuntimeRequestHandler(BaseHTTPRequestHandler):
         except ValueError as exc:
             self._send_json({"error": str(exc)}, status=400)
         except Exception as exc:  # pragma: no cover - defensive boundary
-            self._send_json({"error": f"adapter failed: {exc}"}, status=500)
+            self._send_json({"error": f"runtime failed: {exc}"}, status=500)
 
     def log_message(self, format: str, *args: Any) -> None:
         """Keep the bridge quiet during tests and local frontend demos."""
@@ -154,7 +146,7 @@ def run_server(host: str = DEFAULT_HOST, port: int = DEFAULT_PORT) -> None:
     """Start the blocking HTTP bridge loop."""
 
     server = create_server(host=host, port=port)
-    print(f"AutoForm Agent HTTP bridge listening on http://{host}:{port}/codex")
+    print(f"AutoForm Agent HTTP bridge listening on http://{host}:{port}{AGENT_ENDPOINT}")
     try:
         server.serve_forever()
     finally:

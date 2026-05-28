@@ -9,13 +9,13 @@ def test_power_shell_launcher_contains_required_menu_and_commands() -> None:
     script = (ROOT / "start_autoform_agent.ps1").read_text(encoding="utf-8")
 
     for marker in [
-        "检查 Codex MCP 入口",
-        "后端 Agent runtime",
+        "检查后端 Agent API runtime",
+        "后端 Agent API runtime",
         "打开可视化前端",
-        "autoform_agent.mcp_server",
         "autoform_agent.agent_runtime",
         "autoform_agent.http_bridge",
         "http.server",
+        "/api/agent",
         "4317",
         "8765",
         "?bridge=http",

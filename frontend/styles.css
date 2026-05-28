@@ -29,6 +29,7 @@ body {
 
 button,
 input,
+select,
 textarea {
   font: inherit;
 }
@@ -110,7 +111,8 @@ label {
 }
 
 textarea,
-input {
+input,
+select {
   width: 100%;
   border: 1px solid var(--line-strong);
   border-radius: 6px;
@@ -120,7 +122,8 @@ input {
 }
 
 textarea:focus,
-input:focus {
+input:focus,
+select:focus {
   border-color: var(--blue);
   box-shadow: 0 0 0 3px rgba(23, 105, 224, 0.13);
 }
@@ -135,6 +138,11 @@ textarea {
 input {
   height: 38px;
   padding: 0 10px;
+}
+
+select {
+  height: 38px;
+  padding: 0 9px;
 }
 
 .input-row {
@@ -170,7 +178,7 @@ input {
 
 .status-summary {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
   margin: 0;
 }
@@ -193,7 +201,7 @@ input {
 .status-summary dd {
   margin: 0;
   overflow-wrap: anywhere;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
 }
 
@@ -215,6 +223,46 @@ input {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+}
+
+.api-config-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.api-field {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+}
+
+.span-two {
+  grid-column: 1 / -1;
+}
+
+.api-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.api-actions button {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  color: var(--ink);
+  background: #ffffff;
+}
+
+.api-actions span {
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .api-grid div,
@@ -281,7 +329,12 @@ code {
   }
 
   .status-summary,
+  .api-config-grid,
   .api-grid {
     grid-template-columns: 1fr;
+  }
+
+  .span-two {
+    grid-column: auto;
   }
 }

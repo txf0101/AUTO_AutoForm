@@ -11,11 +11,20 @@ import json
 import platform
 import re
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any, Callable
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
+    tomllib = None
 
 from .commands import list_command_specs
-from .coverage import module_coverage_matrix
+from .coverage import MODULE_COVERAGE, module_coverage_matrix
 from .paths import AutoFormInstallation, discover_installations, get_default_installation
+from .queue import queue_health_check
+from .quicklink import list_quicklink_exports
 
 
 LOG_EXTENSIONS = {".log", ".txt", ".out", ".err"}
@@ -139,6 +148,92 @@ def environment_snapshot(
     return snapshot
 
 
+def autoform_status_snapshot(
+    project_root: Path | None = None,
+    log_limit: int = 5,
+    preview_bytes: int = 0,
+) -> dict:
+    """Return the read-only status document behind the `autoform://status` MCP resource.
+
+    The status payload is intentionally broader than `environment_snapshot`.
+    `environment_snapshot` is a support dump, while this function is the small
+    live contract that a client can poll before choosing tools.  Every probe is
+    isolated so one unavailable local dependency becomes a structured error
+    instead of preventing the whole status resource from being read.
+    """
+
+    resolved_root = (project_root or Path.cwd()).resolve()
+    errors: list[dict[str, str]] = []
+
+    installations = _status_probe(
+        "installations",
+        lambda: [install.as_dict() for install in discover_installations()],
+        fallback=[],
+        errors=errors,
+    )
+    queue_status = _status_probe("queue_health", queue_health_check, fallback={"processes": []}, errors=errors)
+    quicklink_exports = _status_probe(
+        "quicklink_exports",
+        lambda: list_quicklink_exports(resolved_root),
+        fallback=[],
+        errors=errors,
+    )
+    coverage_rows = _status_probe(
+        "module_coverage",
+        module_coverage_matrix,
+        fallback=[dict(row) for row in MODULE_COVERAGE],
+        errors=errors,
+    )
+    recent_logs = _status_probe(
+        "recent_logs",
+        lambda: collect_recent_autoform_logs(
+            search_roots=None if installations else [_workspace_log_root(resolved_root)],
+            limit=log_limit,
+            preview_bytes=preview_bytes,
+        ),
+        fallback=[],
+        errors=errors,
+    )
+
+    return {
+        "schema_version": "1.0",
+        "resource_uri": "autoform://status",
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "snapshot_ok": not errors,
+        "project": _project_status(resolved_root),
+        "runtime": {
+            "python": sys.executable,
+            "python_version": platform.python_version(),
+            "platform": platform.platform(),
+        },
+        "services": _service_defaults(),
+        "installations": {
+            "count": len(installations),
+            "items": installations,
+        },
+        "queue": _queue_status_summary(queue_status),
+        "quicklink": {
+            "export_count": len(quicklink_exports),
+            "latest_export": quicklink_exports[0] if quicklink_exports else None,
+        },
+        "logs": {
+            "count": len(recent_logs),
+            "latest_log": _compact_log_record(recent_logs[0]) if recent_logs else None,
+            "items": [_compact_log_record(item) for item in recent_logs],
+        },
+        "coverage": _coverage_status(coverage_rows),
+        "errors": errors,
+        "evidence": {
+            "project_metadata": str(resolved_root / "pyproject.toml"),
+            "installation_probe": "autoform_agent.paths.discover_installations",
+            "queue_probe": "autoform_agent.queue.queue_health_check",
+            "quicklink_probe": "autoform_agent.quicklink.list_quicklink_exports",
+            "log_probe": "autoform_agent.diagnostics.collect_recent_autoform_logs",
+            "coverage_probe": "autoform_agent.coverage.module_coverage_matrix",
+        },
+    }
+
+
 def _default_log_roots(install: AutoFormInstallation | None = None) -> list[Path]:
     """Return likely log locations for the selected AutoForm installation."""
     selected = install or get_default_installation()
@@ -205,3 +300,108 @@ def _parse_gui_log(log_path: Path) -> list[dict]:
             current["job_status_available"] = False
             current["job_status_path"] = job_status_match.group("path")
     return events
+
+
+def _status_probe(
+    name: str,
+    func: Callable[[], Any],
+    fallback: Any,
+    errors: list[dict[str, str]],
+) -> Any:
+    """Run one status probe and capture its failure as structured data."""
+    try:
+        return func()
+    except Exception as exc:  # pragma: no cover - depends on local AutoForm state
+        errors.append({"probe": name, "error": str(exc)})
+        return fallback
+
+
+def _workspace_log_root(project_root: Path) -> Path:
+    """Return the bounded workspace log root used when AutoForm is not found."""
+    output_root = project_root / "output"
+    return output_root if output_root.exists() else project_root
+
+
+def _project_status(project_root: Path) -> dict:
+    """Read project identity from `pyproject.toml` with a text fallback."""
+    pyproject = project_root / "pyproject.toml"
+    status = {"root": str(project_root), "pyproject": str(pyproject), "pyproject_exists": pyproject.exists()}
+    if not pyproject.exists():
+        return {**status, "name": None, "version": None}
+
+    try:
+        if tomllib is not None:
+            parsed = tomllib.loads(pyproject.read_text(encoding="utf-8"))
+            project = parsed.get("project", {})
+            return {**status, "name": project.get("name"), "version": project.get("version")}
+        return {**status, **_read_pyproject_text_metadata(pyproject)}
+    except Exception as exc:  # pragma: no cover - malformed local metadata
+        return {**status, "name": None, "version": None, "metadata_error": str(exc)}
+
+
+def _read_pyproject_text_metadata(pyproject: Path) -> dict:
+    """Extract package name and version on Python versions without `tomllib`."""
+    metadata = {"name": None, "version": None}
+    for line in pyproject.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        for key in ["name", "version"]:
+            if stripped.startswith(f"{key} ="):
+                metadata[key] = stripped.split("=", 1)[1].strip().strip('"')
+    return metadata
+
+
+def _service_defaults() -> dict:
+    """Return localhost service defaults used by the launcher and frontend."""
+    return {
+        "http_bridge": {
+            "host": "127.0.0.1",
+            "port": 4317,
+            "health_endpoint": "/health",
+            "prompt_endpoint": "/api/agent",
+            "evidence": "autoform_agent/http_bridge.py DEFAULT_HOST and DEFAULT_PORT",
+        },
+        "frontend": {
+            "host": "127.0.0.1",
+            "port": 8765,
+            "url": "http://127.0.0.1:8765/index.html?bridge=http",
+            "evidence": "start_autoform_agent.ps1 BridgePort/FrontendPort and frontend/README.md",
+        },
+    }
+
+
+def _queue_status_summary(queue_status: dict) -> dict:
+    """Summarize queue and remote-service process state for status polling."""
+    processes = queue_status.get("processes", []) if isinstance(queue_status, dict) else []
+    running = [item for item in processes if item.get("running")]
+    return {
+        "process_count": len(processes),
+        "running_process_count": len(running),
+        "processes": processes,
+    }
+
+
+def _compact_log_record(log_record: dict) -> dict:
+    """Drop bulky previews from log records before putting them in status."""
+    return {
+        key: value
+        for key, value in log_record.items()
+        if key in {"name", "path", "size_bytes", "last_modified"}
+    }
+
+
+def _coverage_status(coverage_rows: list[dict]) -> dict:
+    """Summarize Agent capability coverage plus the status resource itself."""
+    tools = sorted(
+        {
+            tool
+            for row in coverage_rows
+            for tool in row.get("tools", [])
+        }
+    )
+    return {
+        "module_count": len(coverage_rows),
+        "tool_reference_count": len(tools),
+        "tool_references": tools,
+        "resource_count": 1,
+        "resources": ["autoform://status"],
+    }

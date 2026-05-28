@@ -8,9 +8,8 @@
   </head>
   <body>
     <!--
-      这个页面只保留四个工作区：用户输入、状态总结、终端式输出、API 输入与使用情况。
-      AutoForm 工具选择和 OpenAI Agents SDK 调用都在 Python 后端完成，前端只负责提交
-      prompt 和渲染后端返回的事实。
+      页面仍然只保留四个工作区：用户输入、状态总结、终端式输出、API 输入和使用情况。
+      供应商、Base URL、模型和 API key 属于第四区的 API 配置，不重新引入复杂导航或工具面板。
     -->
     <main class="console-shell" data-app-shell>
       <section class="console-panel input-panel" aria-label="用户输入">
@@ -30,7 +29,7 @@
 
           <div class="input-row">
             <label for="bridge-endpoint">Runtime API</label>
-            <input id="bridge-endpoint" data-bridge-endpoint value="http://127.0.0.1:4317/codex" />
+            <input id="bridge-endpoint" data-bridge-endpoint value="http://127.0.0.1:4317/api/agent" />
           </div>
 
           <div class="input-actions">
@@ -52,12 +51,16 @@
             <dd data-summary-connection>待发送</dd>
           </div>
           <div>
-            <dt>运行时</dt>
-            <dd data-summary-runtime>AutoForm Agent Runtime</dd>
+            <dt>供应商</dt>
+            <dd data-summary-provider>DeepSeek</dd>
           </div>
           <div>
             <dt>模型</dt>
-            <dd data-summary-model>gpt-4.1-mini</dd>
+            <dd data-summary-model>deepseek-v4-flash</dd>
+          </div>
+          <div>
+            <dt>API 模式</dt>
+            <dd data-summary-api-mode>chat_completions</dd>
           </div>
           <div>
             <dt>工具</dt>
@@ -68,8 +71,12 @@
             <dd data-summary-queue>待检查</dd>
           </div>
           <div>
-            <dt>OpenAI</dt>
-            <dd data-summary-openai>未调用</dd>
+            <dt>SDK</dt>
+            <dd data-summary-sdk>待检查</dd>
+          </div>
+          <div>
+            <dt>Key</dt>
+            <dd data-summary-key>未输入</dd>
           </div>
         </dl>
       </section>
@@ -80,7 +87,8 @@
           <h2>状态报告和输出</h2>
         </div>
         <pre class="terminal-output" data-terminal-output aria-live="polite">AutoForm Agent Console ready.
-Runtime endpoint: http://127.0.0.1:4317/codex
+Runtime endpoint: http://127.0.0.1:4317/api/agent
+Provider preset: DeepSeek, chat_completions
 Waiting for prompt...</pre>
       </section>
 
@@ -90,10 +98,53 @@ Waiting for prompt...</pre>
           <h2>API 输入以及 API 使用情况</h2>
         </div>
 
+        <div class="api-config-grid">
+          <div class="api-field">
+            <label for="provider-select">Provider</label>
+            <select id="provider-select" data-provider-select>
+              <option value="deepseek">DeepSeek</option>
+              <option value="openai">OpenAI</option>
+              <option value="custom">OpenAI-compatible</option>
+            </select>
+          </div>
+          <div class="api-field">
+            <label for="provider-model">Model</label>
+            <input id="provider-model" data-provider-model value="deepseek-v4-flash" />
+          </div>
+          <div class="api-field span-two">
+            <label for="provider-base-url">Base URL</label>
+            <input id="provider-base-url" data-provider-base-url value="https://api.deepseek.com" />
+          </div>
+          <div class="api-field">
+            <label for="api-mode">Agents SDK API</label>
+            <select id="api-mode" data-api-mode>
+              <option value="auto">auto</option>
+              <option value="chat_completions" selected>chat_completions</option>
+              <option value="responses">responses</option>
+            </select>
+          </div>
+          <div class="api-field">
+            <label for="provider-api-key">API Key</label>
+            <input
+              id="provider-api-key"
+              data-provider-api-key
+              type="password"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="粘贴 IT 提供的 key"
+            />
+          </div>
+          <div class="api-actions span-two">
+            <button type="button" data-apply-provider-preset>使用预设</button>
+            <button type="button" data-clear-api-key>清空 key</button>
+            <span data-api-key-note>key 只随本次请求发送，不写入仓库。</span>
+          </div>
+        </div>
+
         <div class="api-grid">
           <div>
             <label>Endpoint</label>
-            <code data-api-endpoint>http://127.0.0.1:4317/codex</code>
+            <code data-api-endpoint>http://127.0.0.1:4317/api/agent</code>
           </div>
           <div>
             <label>SDK</label>
@@ -101,11 +152,19 @@ Waiting for prompt...</pre>
           </div>
           <div>
             <label>API Key</label>
-            <code data-api-key>待检查</code>
+            <code data-api-key>未输入</code>
           </div>
           <div>
-            <label>OpenAI Call</label>
+            <label>Key Source</label>
+            <code data-api-key-source>none</code>
+          </div>
+          <div>
+            <label>SDK Call</label>
             <code data-api-openai-called>false</code>
+          </div>
+          <div>
+            <label>Base URL</label>
+            <code data-api-base-url>https://api.deepseek.com</code>
           </div>
         </div>
 

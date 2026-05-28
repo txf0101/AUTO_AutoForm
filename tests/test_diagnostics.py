@@ -1,6 +1,13 @@
 from pathlib import Path
 
-from autoform_agent.diagnostics import collect_gui_project_events, collect_recent_autoform_logs, diagnostic_bundle_plan
+import autoform_agent.diagnostics as diagnostics
+from autoform_agent.diagnostics import (
+    autoform_status_snapshot,
+    collect_gui_project_events,
+    collect_recent_autoform_logs,
+    diagnostic_bundle_plan,
+)
+from autoform_agent.paths import AutoFormInstallation
 
 
 def test_collect_recent_autoform_logs_reads_preview(tmp_path: Path) -> None:
@@ -55,3 +62,62 @@ def test_collect_gui_project_events_reads_open_event(tmp_path: Path) -> None:
     assert events[0]["created_revision"] == "165760"
     assert events[0]["last_saved_revision"] == "abcdef"
     assert events[0]["job_status_available"] is False
+
+
+def test_autoform_status_snapshot_collects_read_only_summary(tmp_path: Path, monkeypatch) -> None:
+    project_root = tmp_path / "workspace"
+    project_root.mkdir()
+    (project_root / "pyproject.toml").write_text(
+        "\n".join(
+            [
+                "[project]",
+                'name = "autoform-agent"',
+                'version = "0.1.0"',
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    install_root = tmp_path / "AutoForm" / "AFplus" / "R13F"
+    install = AutoFormInstallation("AutoForm Forming R13", "13.0.1.02", install_root)
+
+    monkeypatch.setattr(diagnostics, "discover_installations", lambda: [install])
+    monkeypatch.setattr(
+        diagnostics,
+        "queue_health_check",
+        lambda: {"processes": [{"name": "AFQueueServer.exe", "running": True}]},
+    )
+    monkeypatch.setattr(
+        diagnostics,
+        "list_quicklink_exports",
+        lambda workspace: [{"name": "export-001", "directory": str(workspace)}],
+    )
+    monkeypatch.setattr(
+        diagnostics,
+        "module_coverage_matrix",
+        lambda: [{"module": "Diagnostics", "tools": ["autoform_status_snapshot"]}],
+    )
+    monkeypatch.setattr(
+        diagnostics,
+        "collect_recent_autoform_logs",
+        lambda **kwargs: [
+            {
+                "name": "af.log",
+                "path": str(project_root / "output" / "af.log"),
+                "size_bytes": 12,
+                "last_modified": 1.0,
+                "preview": "not included in compact status",
+            }
+        ],
+    )
+
+    status = autoform_status_snapshot(project_root=project_root)
+
+    assert status["resource_uri"] == "autoform://status"
+    assert status["snapshot_ok"] is True
+    assert status["project"]["name"] == "autoform-agent"
+    assert status["installations"]["count"] == 1
+    assert status["queue"]["running_process_count"] == 1
+    assert status["quicklink"]["export_count"] == 1
+    assert status["coverage"]["resources"] == ["autoform://status"]
+    assert "preview" not in status["logs"]["latest_log"]

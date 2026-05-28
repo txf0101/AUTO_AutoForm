@@ -3,27 +3,25 @@
     [switch]$Help,
 
     # Mode 允许自动化调用时跳过菜单；普通双击或手动运行时可以不填，脚本会显示两个选项。
-    [ValidateSet("McpOnly", "McpWithFrontend")]
+    [ValidateSet("ApiOnly", "ApiWithFrontend")]
     [string]$Mode
 )
 
 # AutoForm Agent 本地启动器。
 #
 # 本脚本的目标是把常用启动步骤收拢到一个入口里：
-# 1. 检查 Codex 使用的 stdio MCP server 入口和后端 Agent runtime。
-# 2. 检查上述入口，同时启动可视化前端需要的 HTTP bridge。
+# 1. 检查后端 Agent API runtime。
+# 2. 检查后端 Agent API runtime，同时启动可视化前端需要的 HTTP bridge。
 #
 # 关键分工：
-# - Codex 通过配置启动 `python -m autoform_agent.mcp_server`，并通过 stdio
-#   与该 MCP server 通信。
 # - 浏览器前端通过 `autoform_agent.http_bridge` 访问本地 HTTP 服务。HTTP
 #   bridge 会把 prompt 转交给 `autoform_agent.agent_runtime`，由 Python 后端
-#   负责 OpenAI Agents SDK 调用和 AutoForm 工具选择。
+#   负责 OpenAI-compatible API、OpenAI Agents SDK 调用和 AutoForm 工具选择。
 #
 # 进程隔离原则：
 # - 本脚本只负责启动服务和打开页面。
 # - 服务使用 Start-Process 独立启动，脚本窗口关闭后服务仍继续运行。
-# - 脚本不会结束已有 Python、AutoForm、Codex 或浏览器进程。
+# - 脚本不会结束已有 Python、AutoForm 或浏览器进程。
 # - 如果目标端口已经在监听，脚本会复用该服务，避免重复启动和误伤现有运行。
 
 Set-StrictMode -Version Latest
@@ -39,8 +37,6 @@ $HostAddress = "127.0.0.1"
 $BridgePort = 4317
 $FrontendPort = 8765
 $FrontendUrl = "http://$HostAddress`:$FrontendPort/index.html?bridge=http"
-$CodexMcpConfigSnippet = Join-Path $WorkspaceRoot "codex_mcp_config.autoform-agent.toml"
-$CodexConfigPath = Join-Path $env:USERPROFILE ".codex\config.toml"
 
 # 日志按启动时间分目录存放，避免覆盖正在运行服务仍在写入的旧日志。
 $RunStamp = Get-Date -Format "yyyyMMdd_HHmmss"
@@ -60,13 +56,13 @@ function Show-Help {
     Write-Host "交互式运行："
     Write-Host "  powershell -ExecutionPolicy Bypass -File .\start_autoform_agent.ps1"
     Write-Host ""
-    Write-Host "检查 Codex MCP 入口和后端 Agent runtime："
-    Write-Host "  powershell -ExecutionPolicy Bypass -File .\start_autoform_agent.ps1 -Mode McpOnly"
+    Write-Host "检查后端 Agent API runtime："
+    Write-Host "  powershell -ExecutionPolicy Bypass -File .\start_autoform_agent.ps1 -Mode ApiOnly"
     Write-Host ""
-    Write-Host "检查 Codex MCP 入口、后端 Agent runtime 并打开可视化前端："
-    Write-Host "  powershell -ExecutionPolicy Bypass -File .\start_autoform_agent.ps1 -Mode McpWithFrontend"
+    Write-Host "检查后端 Agent API runtime 并打开可视化前端："
+    Write-Host "  powershell -ExecutionPolicy Bypass -File .\start_autoform_agent.ps1 -Mode ApiWithFrontend"
     Write-Host ""
-    Write-Host "说明：Codex MCP server 由 Codex 按配置启动；前端 HTTP bridge 会调用 Python 后端 Agent runtime。"
+    Write-Host "说明：前端 HTTP bridge 会调用 Python 后端 Agent API runtime。"
 }
 
 function Initialize-LauncherFolders {
@@ -192,44 +188,12 @@ function Start-DetachedPythonProcess {
     Write-Host "日志目录: $LogDir"
 }
 
-function Test-CodexMcpEntrypoint {
-    <#
-      检查 Codex 要使用的 stdio MCP server 模块是否可以被当前 Python 导入。
-      这里不直接运行 `python -m autoform_agent.mcp_server`，因为 stdio MCP
-      server 应由 Codex 或其他 MCP host 作为子进程启动并接管标准输入输出。
-    #>
-    $python = Get-PythonExecutable
-    $checkCode = "import autoform_agent.mcp_server; print('autoform_agent.mcp_server import ok')"
-    Push-Location $WorkspaceRoot
-    try {
-        & $python -c $checkCode
-        if ($LASTEXITCODE -ne 0) {
-            throw "Codex MCP 入口导入检查失败，退出码 $LASTEXITCODE。"
-        }
-    }
-    finally {
-        Pop-Location
-    }
-
-    Write-Host "Codex MCP server 命令："
-    Write-Host "  $python -m autoform_agent.mcp_server"
-    Write-Host "配置模板："
-    Write-Host "  $CodexMcpConfigSnippet"
-
-    if (Test-CodexMcpConfigRegistered) {
-        Write-Host "Codex 配置状态：已检测到 autoform-agent。重启 Codex 后应加载该 MCP server。"
-    }
-    else {
-        Write-Host "Codex 配置状态：尚未检测到 autoform-agent。请把配置模板内容加入："
-        Write-Host "  $CodexConfigPath"
-    }
-}
-
 function Test-AgentRuntimeEntrypoint {
     <#
       检查后端 Agent runtime 是否可以被当前 Python 导入，并打印配置状态。
       这里不强制要求 OPENAI_API_KEY，因为离线开发和自动化测试仍应能看到本地
-      降级响应。真实 OpenAI Agents SDK 调用需要安装 openai-agents 并配置 API key。
+      降级响应。真实 Agents SDK 调用需要安装 openai-agents，并通过 .env 或页面
+      临时请求提供 API key。
     #>
     $python = Get-PythonExecutable
     $checkCode = @"
@@ -238,7 +202,9 @@ config = load_agent_runtime_config()
 print('autoform_agent.agent_runtime import ok')
 print(f'agent_runtime_sdk_available={config.sdk_available}')
 print(f'agent_runtime_api_key_configured={config.api_key_configured}')
+print(f'agent_runtime_provider={config.provider}')
 print(f'agent_runtime_model={config.model}')
+print(f'agent_runtime_api_mode={config.api_mode}')
 "@
     Push-Location $WorkspaceRoot
     try {
@@ -252,24 +218,11 @@ print(f'agent_runtime_model={config.model}')
     }
 }
 
-function Test-CodexMcpConfigRegistered {
-    <#
-      检查用户级 Codex 配置是否已经包含 AutoForm MCP server 段落。
-      该函数只读配置文件，用于给用户显示下一步是否还需要手动复制模板。
-    #>
-    if (-not (Test-Path $CodexConfigPath)) {
-        return $false
-    }
-
-    $configText = Get-Content -LiteralPath $CodexConfigPath -Raw -Encoding UTF8
-    return $configText -match '\[mcp_servers\."autoform-agent"\]'
-}
-
 function Start-HttpBridge {
     <#
       启动浏览器前端使用的本地 HTTP bridge。
-      该服务提供 /health 和 /codex 两个 HTTP 路由，前端在 HTTP 模式下会向
-      /codex 发送 prompt，并把返回结果渲染到页面。
+      该服务提供 /health 和 /api/agent 两个 HTTP 路由，前端在 HTTP 模式下会向
+      /api/agent 发送 prompt，并把返回结果渲染到页面。
     #>
     if (Test-LocalPortListening -Port $BridgePort) {
         Write-Host "HTTP bridge 已经在 http://$HostAddress`:$BridgePort 监听，继续复用现有服务。"
@@ -321,20 +274,20 @@ function Open-FrontendPage {
 function Read-LauncherMode {
     <#
       显示用户要求的两个选项。
-      输入 1 时检查 Codex stdio MCP server 入口和后端 Agent runtime；输入 2 时
-      检查上述入口，并启动网页所需的 HTTP bridge、静态前端和浏览器页面。
+      输入 1 时检查后端 Agent API runtime；输入 2 时检查该入口，并启动网页所需
+      的 HTTP bridge、静态前端和浏览器页面。
     #>
     Write-Host ""
     Write-Host "请选择启动方式："
-    Write-Host "  1. 检查 Codex MCP 入口和后端 Agent runtime"
-    Write-Host "  2. 检查 Codex MCP 入口、后端 Agent runtime 并打开可视化前端"
+    Write-Host "  1. 检查后端 Agent API runtime"
+    Write-Host "  2. 检查后端 Agent API runtime 并打开可视化前端"
     Write-Host ""
 
     while ($true) {
         $choice = Read-Host "请输入 1 或 2"
         switch ($choice) {
-            "1" { return "McpOnly" }
-            "2" { return "McpWithFrontend" }
+            "1" { return "ApiOnly" }
+            "2" { return "ApiWithFrontend" }
             default { Write-Host "输入无效，请输入 1 或 2。" }
         }
     }
@@ -352,19 +305,17 @@ if ([string]::IsNullOrWhiteSpace($Mode)) {
 }
 
 switch ($Mode) {
-    "McpOnly" {
-        Test-CodexMcpEntrypoint
+    "ApiOnly" {
         Test-AgentRuntimeEntrypoint
         Write-Host ""
-        Write-Host "Codex MCP 入口和后端 Agent runtime 检查完成。"
+        Write-Host "后端 Agent API runtime 检查完成。"
     }
-    "McpWithFrontend" {
-        Test-CodexMcpEntrypoint
+    "ApiWithFrontend" {
         Test-AgentRuntimeEntrypoint
         Start-HttpBridge
         Start-FrontendServer
         Open-FrontendPage
         Write-Host ""
-        Write-Host "Codex MCP 入口和后端 Agent runtime 已检查，可视化前端已处理完成。关闭本启动器窗口不会停止 HTTP bridge 或前端服务。"
+        Write-Host "后端 Agent API runtime 已检查，可视化前端已处理完成。关闭本启动器窗口不会停止 HTTP bridge 或前端服务。"
     }
 }

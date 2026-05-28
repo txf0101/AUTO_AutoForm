@@ -158,6 +158,36 @@ def parse_quicklink_xml(source: Path) -> dict:
     }
 
 
+def quicklink_schema(source: Path) -> dict:
+    """Return a stable V1 schema view over a QuickLink export.
+
+    `parse_quicklink_xml()` intentionally keeps a close shape to the source XML.
+    This function provides the public 1.0 contract used by baselines, reports and
+    downstream tools: section counts, named items, project data and geometry are
+    normalized into predictable keys.
+    """
+
+    parsed = parse_quicklink_xml(source)
+    return {
+        "schema_version": "1.0",
+        "source": parsed["source"],
+        "archive_path": parsed["archive_path"],
+        "quicklink_namespace": parsed["quicklink_namespace"],
+        "title": parsed["title"],
+        "project_data": _project_data_map(parsed["project_data"]),
+        "blank": parsed.get("blank") or {},
+        "sections": {
+            "process_items": _section_schema(parsed["process_items"]),
+            "process_definition": _section_schema(parsed["process_definition"]),
+            "process_plan": _section_schema(parsed["process_plan"]),
+            "die_face": _section_schema(parsed["die_face"]),
+            "evaluation": _section_schema(parsed["evaluation"]),
+        },
+        "geometry_files": parsed["geometry_files"],
+        "archive_member_count": len(parsed["archive_members"]),
+    }
+
+
 def get_project_data(source: Path) -> list[dict]:
     """Return the parsed `ProjectData` entries from any supported source."""
     return parse_quicklink_xml(source)["project_data"]
@@ -632,3 +662,30 @@ def _section_count_snapshot(parsed: dict) -> dict:
         section = parsed.get(name) or {}
         sections[name] = dict(section.get("counts") or {})
     return sections
+
+
+def _project_data_map(project_data: list[dict]) -> dict:
+    """Normalize ProjectData rows by key while preserving display names."""
+
+    normalized = {}
+    for item in project_data:
+        key = item.get("key") or item.get("name")
+        if not key:
+            continue
+        normalized[key] = {
+            "group": item.get("group"),
+            "name": item.get("name"),
+            "value": item.get("value"),
+        }
+    return normalized
+
+
+def _section_schema(section: dict) -> dict:
+    """Return one compact section schema with stable default fields."""
+
+    return {
+        "present": bool(section.get("present")),
+        "children": section.get("children", []),
+        "counts": section.get("counts", {}),
+        "named_items": section.get("named_items", []),
+    }

@@ -30,11 +30,13 @@ from .commands import (
 from .config import get_logging_config, get_queue_config, get_remote_hosts
 from .coverage import help_topic_agent_mapping, module_coverage_matrix
 from .diagnostics import (
+    autoform_status_snapshot,
     collect_gui_project_events,
     collect_recent_autoform_logs,
     diagnostic_bundle_plan,
     environment_snapshot,
 )
+from .extension import internal_extension_boundary
 from .inventory import (
     get_afd_project_summary,
     get_afd_readable_index,
@@ -43,6 +45,7 @@ from .inventory import (
     list_executables,
     list_help_topics,
 )
+from .jobs import archive_job, cancel_job, job_logs, job_status, list_jobs, submit_job, wait_for_job
 from .materials import (
     archive_members,
     find_duplicate_material_files,
@@ -54,6 +57,7 @@ from .materials import (
 )
 from .paths import discover_installations, get_default_installation
 from .process import collect_forming_job_logs, forming_job_plan, open_afd, run_forming_job, start_forming_ui
+from .project_workflow import example_project_baseline, project_run_workflow, resolve_project_input
 from .queue import lsf_command_plan, queue_client_probe, queue_command_plan, queue_health_check
 from .quicklink import (
     compare_quicklink_exports,
@@ -70,9 +74,13 @@ from .quicklink import (
     parse_quicklink_xml,
     quicklink_archive_inventory,
     quicklink_bridge_status,
+    quicklink_schema,
     validate_quicklink_standard,
 )
+from .release import install_check_plan, release_package_plan, release_readiness_check
 from .report import report_inventory, report_log_events
+from .results import copy_result_evidence, report_delivery_plan, result_inventory
+from .safety import public_release_scan, write_safety_plan
 from .solver import (
     forming_job_check_plan,
     forming_solver_full_batch_probe,
@@ -94,6 +102,9 @@ def main(argv: list[str] | None = None) -> int:
 
     subparsers.add_parser("discover", help="Find local AutoForm installations.")
 
+    status_parser = subparsers.add_parser("status", help="Print the read-only AutoForm Agent status snapshot.")
+    status_parser.add_argument("--workspace", type=Path, help="Workspace root used to locate QuickLink exports and logs.")
+
     agent_parser = subparsers.add_parser("agent-turn", help="Run one prompt through the backend OpenAI Agents SDK runtime.")
     agent_parser.add_argument("prompt", help="User prompt for the backend AutoForm Agent runtime.")
     agent_parser.add_argument("--conversation-id", default="cli", help="Stable id included in runtime metadata.")
@@ -114,6 +125,26 @@ def main(argv: list[str] | None = None) -> int:
     open_parser.add_argument("afd", type=Path)
     open_parser.add_argument("--dry-run", action="store_true")
 
+    resolve_project_parser = subparsers.add_parser("resolve-project", help="Resolve an explicit .afd path or official example name.")
+    resolve_project_parser.add_argument("--afd", type=Path)
+    resolve_project_parser.add_argument("--example", default="Solver_R13")
+
+    project_run_parser = subparsers.add_parser("project-run", help="Plan or execute a reproducible project open-and-run workflow.")
+    project_run_parser.add_argument("--afd", type=Path)
+    project_run_parser.add_argument("--example", default="Solver_R13")
+    project_run_parser.add_argument("--mode", default="kinematic", choices=["kinematic", "full"])
+    project_run_parser.add_argument("--threads", type=int, default=1)
+    project_run_parser.add_argument("--output-root", type=Path, default=Path("output") / "project_runs")
+    project_run_parser.add_argument("--execute", action="store_true")
+    project_run_parser.add_argument("--timeout", type=int)
+    project_run_parser.add_argument("--open-gui", action="store_true")
+    project_run_parser.add_argument("--workspace", type=Path, default=Path.cwd())
+
+    baseline_parser = subparsers.add_parser("example-baseline", help="Build official example project baseline data.")
+    baseline_parser.add_argument("--output", type=Path)
+    baseline_parser.add_argument("--execute", action="store_true")
+    baseline_parser.add_argument("--threads", type=int, default=1)
+
     job_parser = subparsers.add_parser("run-job", help="Run AFFormingJob with raw arguments.")
     job_parser.add_argument("args", nargs=argparse.REMAINDER)
     job_parser.add_argument("--dry-run", action="store_true")
@@ -127,6 +158,34 @@ def main(argv: list[str] | None = None) -> int:
     job_logs_parser = subparsers.add_parser("job-logs", help="List local AFFormingJob log files.")
     job_logs_parser.add_argument("--search-dir", type=Path, default=Path.cwd())
     job_logs_parser.add_argument("--limit", type=int, default=20)
+
+    lifecycle_submit_parser = subparsers.add_parser("job-submit", help="Register or start one lifecycle-managed command.")
+    lifecycle_submit_parser.add_argument("command_args", nargs=argparse.REMAINDER)
+    lifecycle_submit_parser.add_argument("--name")
+    lifecycle_submit_parser.add_argument("--working-dir", type=Path)
+    lifecycle_submit_parser.add_argument("--execute", action="store_true")
+
+    lifecycle_status_parser = subparsers.add_parser("job-status", help="Read one lifecycle-managed job status.")
+    lifecycle_status_parser.add_argument("job_id")
+
+    lifecycle_wait_parser = subparsers.add_parser("job-wait", help="Wait for one lifecycle-managed job.")
+    lifecycle_wait_parser.add_argument("job_id")
+    lifecycle_wait_parser.add_argument("--timeout", type=float)
+
+    lifecycle_cancel_parser = subparsers.add_parser("job-cancel", help="Request cancellation for one lifecycle-managed job.")
+    lifecycle_cancel_parser.add_argument("job_id")
+    lifecycle_cancel_parser.add_argument("--force", action="store_true")
+
+    lifecycle_logs_parser = subparsers.add_parser("job-registered-logs", help="Read logs for one lifecycle-managed job.")
+    lifecycle_logs_parser.add_argument("job_id")
+    lifecycle_logs_parser.add_argument("--preview-bytes", type=int, default=2048)
+
+    lifecycle_archive_parser = subparsers.add_parser("job-archive", help="Plan or create a lifecycle job archive.")
+    lifecycle_archive_parser.add_argument("job_id")
+    lifecycle_archive_parser.add_argument("output_dir", type=Path)
+    lifecycle_archive_parser.add_argument("--write", action="store_true")
+
+    subparsers.add_parser("jobs", help="List lifecycle-managed jobs.")
 
     material_parser = subparsers.add_parser("install-materials", help="Install .mat/.mtb materials.")
     material_parser.add_argument("source", type=Path)
@@ -150,6 +209,9 @@ def main(argv: list[str] | None = None) -> int:
 
     ql_parse_parser = subparsers.add_parser("quicklink-parse", help="Parse a QuickLink XML, zip, manifest, or export directory.")
     ql_parse_parser.add_argument("source", type=Path)
+
+    ql_schema_parser = subparsers.add_parser("quicklink-schema", help="Normalize a QuickLink export into the AutoForm Agent 1.0 schema.")
+    ql_schema_parser.add_argument("source", type=Path)
 
     ql_project_parser = subparsers.add_parser("quicklink-project-data", help="Print QuickLink ProjectData values.")
     ql_project_parser.add_argument("source", type=Path)
@@ -376,6 +438,41 @@ def main(argv: list[str] | None = None) -> int:
     report_log_parser.add_argument("--log-dir", type=Path)
     report_log_parser.add_argument("--limit", type=int, default=100)
 
+    result_inventory_parser = subparsers.add_parser("result-inventory", help="Read result-like files, logs and QuickLink evidence.")
+    result_inventory_parser.add_argument("--search-dir", type=Path)
+    result_inventory_parser.add_argument("--workspace", type=Path)
+    result_inventory_parser.add_argument("--limit", type=int, default=100)
+
+    report_delivery_parser = subparsers.add_parser("report-delivery-plan", help="Plan or create a lightweight result evidence report package.")
+    report_delivery_parser.add_argument("output_dir", type=Path)
+    report_delivery_parser.add_argument("--search-dir", type=Path)
+    report_delivery_parser.add_argument("--workspace", type=Path)
+    report_delivery_parser.add_argument("--limit", type=int, default=100)
+    report_delivery_parser.add_argument("--write", action="store_true")
+
+    evidence_copy_parser = subparsers.add_parser("result-evidence-copy", help="Plan or copy result evidence files.")
+    evidence_copy_parser.add_argument("output_dir", type=Path)
+    evidence_copy_parser.add_argument("--search-dir", type=Path)
+    evidence_copy_parser.add_argument("--limit", type=int, default=100)
+    evidence_copy_parser.add_argument("--write", action="store_true")
+
+    subparsers.add_parser("release-readiness", help="Check 1.0 release readiness files and package plan.")
+
+    release_package_parser = subparsers.add_parser("release-package-plan", help="Plan or create a source release directory.")
+    release_package_parser.add_argument("output_dir", type=Path)
+    release_package_parser.add_argument("--write", action="store_true")
+
+    subparsers.add_parser("install-check-plan", help="Print install verification commands.")
+
+    subparsers.add_parser("public-release-scan", help="Scan source files for common public-release blockers.")
+
+    safety_parser = subparsers.add_parser("write-safety-plan", help="Plan backup and rollback records for write targets.")
+    safety_parser.add_argument("target", type=Path, nargs="+")
+    safety_parser.add_argument("--backup-root", type=Path, default=Path("output") / "rollback")
+
+    extension_parser = subparsers.add_parser("extension-boundary", help="Report confirmed AutoForm internal extension boundaries.")
+    extension_parser.add_argument("--workspace", type=Path, default=Path.cwd())
+
     help_topics_parser = subparsers.add_parser("help-topics", help="List or search AutoForm help topic anchors.")
     help_topics_parser.add_argument("--query")
 
@@ -405,13 +502,19 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(installs, ensure_ascii=False, indent=2))
         return 0
 
+    if args.command == "status":
+        _print_json(autoform_status_snapshot(project_root=args.workspace), ensure_ascii=False)
+        return 0
+
     if args.command == "agent-status":
         config = load_agent_runtime_config()
         status = {
             "provider": config.provider,
             "model": config.model,
             "base_url": config.base_url,
+            "api_mode": config.api_mode,
             "api_key_configured": config.api_key_configured,
+            "api_key_source": config.api_key_source,
             "sdk_available": config.sdk_available,
             "project_root": str(config.project_root),
             "tracing_enabled": config.tracing_enabled,
@@ -421,8 +524,10 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print(f"provider: {status['provider']}")
             print(f"model: {status['model']}")
+            print(f"api_mode: {status['api_mode']}")
             print(f"sdk_available: {status['sdk_available']}")
             print(f"api_key_configured: {status['api_key_configured']}")
+            print(f"api_key_source: {status['api_key_source']}")
             print(f"project_root: {status['project_root']}")
         return 0
 
@@ -457,6 +562,34 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(command, ensure_ascii=False))
         return 0
 
+    if args.command == "resolve-project":
+        _print_json(resolve_project_input(afd_path=args.afd, example_name=args.example), ensure_ascii=False)
+        return 0
+
+    if args.command == "project-run":
+        _print_json(
+            project_run_workflow(
+                afd_path=args.afd,
+                example_name=args.example,
+                mode=args.mode,
+                threads=args.threads,
+                output_root=args.output_root,
+                execute=args.execute,
+                timeout=args.timeout,
+                open_gui=args.open_gui,
+                workspace=args.workspace,
+            ),
+            ensure_ascii=False,
+        )
+        return 0
+
+    if args.command == "example-baseline":
+        _print_json(
+            example_project_baseline(output_path=args.output, execute=args.execute, threads=args.threads),
+            ensure_ascii=False,
+        )
+        return 0
+
     if args.command == "run-job":
         raw_args = args.args
         if raw_args and raw_args[0] == "--":
@@ -478,6 +611,42 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "job-logs":
         print(json.dumps(collect_forming_job_logs(args.search_dir, limit=args.limit), ensure_ascii=False, indent=2))
+        return 0
+
+    if args.command == "job-submit":
+        _print_json(
+            submit_job(
+                _strip_remainder_separator(args.command_args),
+                job_name=args.name,
+                working_dir=args.working_dir,
+                execute=args.execute,
+            ),
+            ensure_ascii=False,
+        )
+        return 0
+
+    if args.command == "job-status":
+        _print_json(job_status(args.job_id), ensure_ascii=False)
+        return 0
+
+    if args.command == "job-wait":
+        _print_json(wait_for_job(args.job_id, timeout=args.timeout), ensure_ascii=False)
+        return 0
+
+    if args.command == "job-cancel":
+        _print_json(cancel_job(args.job_id, force=args.force), ensure_ascii=False)
+        return 0
+
+    if args.command == "job-registered-logs":
+        _print_json(job_logs(args.job_id, preview_bytes=args.preview_bytes), ensure_ascii=False)
+        return 0
+
+    if args.command == "job-archive":
+        _print_json(archive_job(args.job_id, args.output_dir, dry_run=not args.write), ensure_ascii=False)
+        return 0
+
+    if args.command == "jobs":
+        _print_json(list_jobs(), ensure_ascii=False)
         return 0
 
     if args.command == "install-materials":
@@ -520,6 +689,10 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "quicklink-parse":
         print(json.dumps(parse_quicklink_xml(args.source), ensure_ascii=False, indent=2))
+        return 0
+
+    if args.command == "quicklink-schema":
+        _print_json(quicklink_schema(args.source), ensure_ascii=False)
         return 0
 
     if args.command == "quicklink-project-data":
@@ -911,6 +1084,57 @@ def main(argv: list[str] | None = None) -> int:
             report_log_events(log_dir=args.log_dir, limit=args.limit),
             ensure_ascii=False,
         )
+        return 0
+
+    if args.command == "result-inventory":
+        _print_json(
+            result_inventory(search_dir=args.search_dir, workspace=args.workspace, limit=args.limit),
+            ensure_ascii=False,
+        )
+        return 0
+
+    if args.command == "report-delivery-plan":
+        _print_json(
+            report_delivery_plan(
+                args.output_dir,
+                search_dir=args.search_dir,
+                workspace=args.workspace,
+                dry_run=not args.write,
+                limit=args.limit,
+            ),
+            ensure_ascii=False,
+        )
+        return 0
+
+    if args.command == "result-evidence-copy":
+        _print_json(
+            copy_result_evidence(args.output_dir, search_dir=args.search_dir, dry_run=not args.write, limit=args.limit),
+            ensure_ascii=False,
+        )
+        return 0
+
+    if args.command == "release-readiness":
+        _print_json(release_readiness_check(), ensure_ascii=False)
+        return 0
+
+    if args.command == "release-package-plan":
+        _print_json(release_package_plan(args.output_dir, dry_run=not args.write), ensure_ascii=False)
+        return 0
+
+    if args.command == "install-check-plan":
+        _print_json(install_check_plan(), ensure_ascii=False)
+        return 0
+
+    if args.command == "public-release-scan":
+        _print_json(public_release_scan(), ensure_ascii=False)
+        return 0
+
+    if args.command == "write-safety-plan":
+        _print_json(write_safety_plan(args.target, backup_root=args.backup_root), ensure_ascii=False)
+        return 0
+
+    if args.command == "extension-boundary":
+        _print_json(internal_extension_boundary(workspace=args.workspace), ensure_ascii=False)
         return 0
 
     if args.command == "help-topics":

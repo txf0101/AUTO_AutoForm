@@ -27,11 +27,13 @@ from .commands import (
 from .config import get_logging_config, get_queue_config, get_remote_hosts
 from .coverage import help_topic_agent_mapping, module_coverage_matrix
 from .diagnostics import (
+    autoform_status_snapshot as build_autoform_status_snapshot,
     collect_gui_project_events,
     collect_recent_autoform_logs,
     diagnostic_bundle_plan,
     environment_snapshot,
 )
+from .extension import internal_extension_boundary
 from .inventory import (
     get_afd_project_summary,
     get_afd_readable_index,
@@ -40,6 +42,7 @@ from .inventory import (
     list_executables,
     list_help_topics,
 )
+from .jobs import archive_job, cancel_job, job_logs, job_status, list_jobs, submit_job, wait_for_job
 from .materials import (
     find_duplicate_material_files,
     inspect_material_file,
@@ -49,6 +52,7 @@ from .materials import (
 )
 from .paths import discover_installations
 from .process import collect_forming_job_logs, forming_job_plan, open_afd, run_forming_job, start_forming_ui
+from .project_workflow import example_project_baseline, project_run_workflow, resolve_project_input
 from .queue import lsf_command_plan, queue_client_probe, queue_command_plan, queue_health_check
 from .quicklink import (
     compare_quicklink_exports,
@@ -65,9 +69,13 @@ from .quicklink import (
     parse_quicklink_xml,
     quicklink_archive_inventory,
     quicklink_bridge_status,
+    quicklink_schema,
     validate_quicklink_standard,
 )
+from .release import install_check_plan, release_package_plan, release_readiness_check
 from .report import report_inventory, report_log_events
+from .results import copy_result_evidence, report_delivery_plan, result_inventory
+from .safety import public_release_scan, write_safety_plan
 from .solver import (
     forming_job_check_plan,
     forming_solver_full_batch_probe,
@@ -98,6 +106,23 @@ mcp = FastMCP("autoform-agent")
 # - Wrappers should return dictionaries/lists directly serializable by MCP.
 
 
+@mcp.resource(
+    "autoform://status",
+    name="autoform-status",
+    description="Read-only AutoForm Agent status, including installation, queue, QuickLink and log probes.",
+    mime_type="application/json",
+)
+def autoform_status_resource() -> dict:
+    """Return the current read-only status document for MCP resource clients."""
+    return build_autoform_status_snapshot()
+
+
+@mcp.tool()
+def autoform_status_snapshot(workspace: str | None = None) -> dict:
+    """Return the same read-only status document exposed as `autoform://status`."""
+    return build_autoform_status_snapshot(project_root=Path(workspace) if workspace else None)
+
+
 @mcp.tool()
 def autoform_discover_installation() -> list[dict]:
     """Return discovered AutoForm Forming installations and key paths."""
@@ -114,6 +139,44 @@ def autoform_start_ui(graphics: str = "directx11", dry_run: bool = True) -> list
 def autoform_open_afd(afd_path: str, dry_run: bool = True) -> list[str]:
     """Open an AutoForm .afd project, returning the command that was used."""
     return open_afd(Path(afd_path), dry_run=dry_run)
+
+
+@mcp.tool()
+def autoform_resolve_project(afd_path: str | None = None, example_name: str | None = "Solver_R13") -> dict:
+    """Resolve an explicit .afd path or official example project name."""
+    return resolve_project_input(afd_path=afd_path, example_name=example_name)
+
+
+@mcp.tool()
+def autoform_project_run(
+    afd_path: str | None = None,
+    example_name: str | None = "Solver_R13",
+    mode: str = "kinematic",
+    threads: int = 1,
+    output_root: str = "output/project_runs",
+    execute: bool = False,
+    timeout: int | None = None,
+    open_gui: bool = False,
+    workspace: str | None = None,
+) -> dict:
+    """Plan or execute one reproducible AutoForm project run workflow."""
+    return project_run_workflow(
+        afd_path=afd_path,
+        example_name=example_name,
+        mode=mode,
+        threads=threads,
+        output_root=output_root,
+        execute=execute,
+        timeout=timeout,
+        open_gui=open_gui,
+        workspace=workspace,
+    )
+
+
+@mcp.tool()
+def autoform_example_project_baseline(output_path: str | None = None, execute: bool = False, threads: int = 1) -> dict:
+    """Build the official example project baseline table for 1.0 validation."""
+    return example_project_baseline(output_path=output_path, execute=execute, threads=threads)
 
 
 @mcp.tool()
@@ -154,6 +217,53 @@ def autoform_forming_job_plan(args: list[str], working_dir: str | None = None) -
 def autoform_collect_forming_job_logs(search_dir: str, limit: int = 20) -> list[dict]:
     """Return local AFFormingJob log files and short previews."""
     return collect_forming_job_logs(Path(search_dir), limit=limit)
+
+
+@mcp.tool()
+def autoform_job_submit(
+    command: list[str],
+    job_name: str | None = None,
+    working_dir: str | None = None,
+    execute: bool = False,
+) -> dict:
+    """Plan or start one lifecycle-managed AutoForm-related command."""
+    return submit_job(command, job_name=job_name, working_dir=working_dir, execute=execute)
+
+
+@mcp.tool()
+def autoform_job_status(job_id: str) -> dict:
+    """Return the latest known status for one lifecycle-managed job."""
+    return job_status(job_id)
+
+
+@mcp.tool()
+def autoform_job_wait(job_id: str, timeout: float | None = None) -> dict:
+    """Wait for one lifecycle-managed job and persist its final status."""
+    return wait_for_job(job_id, timeout=timeout)
+
+
+@mcp.tool()
+def autoform_job_cancel(job_id: str, force: bool = False) -> dict:
+    """Request cancellation for one lifecycle-managed job."""
+    return cancel_job(job_id, force=force)
+
+
+@mcp.tool()
+def autoform_job_logs(job_id: str, preview_bytes: int = 2048) -> dict:
+    """Return stdout, stderr and nearby AutoForm logs for one job."""
+    return job_logs(job_id, preview_bytes=preview_bytes)
+
+
+@mcp.tool()
+def autoform_job_archive(job_id: str, output_dir: str, dry_run: bool = True) -> dict:
+    """Plan or create an archive directory for one lifecycle-managed job."""
+    return archive_job(job_id, Path(output_dir), dry_run=dry_run)
+
+
+@mcp.tool()
+def autoform_list_jobs() -> list[dict]:
+    """Return lifecycle-managed jobs, newest first."""
+    return list_jobs()
 
 
 @mcp.tool()
@@ -208,6 +318,12 @@ def autoform_list_quicklink_exports(workspace: str) -> list[dict]:
 def autoform_parse_quicklink_xml(source: str) -> dict:
     """Parse a QuickLink XML file, zip archive, manifest, or export directory."""
     return parse_quicklink_xml(Path(source))
+
+
+@mcp.tool()
+def autoform_quicklink_schema(source: str) -> dict:
+    """Return the normalized AutoForm Agent 1.0 schema for a QuickLink export."""
+    return quicklink_schema(Path(source))
 
 
 @mcp.tool()
@@ -673,6 +789,90 @@ def autoform_report_inventory(
 def autoform_report_log_events(log_dir: str | None = None, limit: int = 100) -> list[dict]:
     """Parse AutoForm GUI logs for report, export and postprocessing events."""
     return report_log_events(log_dir=Path(log_dir) if log_dir else None, limit=limit)
+
+
+@mcp.tool()
+def autoform_result_inventory(
+    search_dir: str | None = None,
+    workspace: str | None = None,
+    limit: int = 100,
+) -> dict:
+    """Return result-like files, log events and QuickLink evidence."""
+    return result_inventory(
+        search_dir=Path(search_dir) if search_dir else None,
+        workspace=Path(workspace) if workspace else None,
+        limit=limit,
+    )
+
+
+@mcp.tool()
+def autoform_report_delivery_plan(
+    output_dir: str,
+    search_dir: str | None = None,
+    workspace: str | None = None,
+    dry_run: bool = True,
+    limit: int = 100,
+) -> dict:
+    """Plan or create a lightweight result evidence report package."""
+    return report_delivery_plan(
+        Path(output_dir),
+        search_dir=Path(search_dir) if search_dir else None,
+        workspace=Path(workspace) if workspace else None,
+        dry_run=dry_run,
+        limit=limit,
+    )
+
+
+@mcp.tool()
+def autoform_copy_result_evidence(
+    output_dir: str,
+    search_dir: str | None = None,
+    dry_run: bool = True,
+    limit: int = 100,
+) -> dict:
+    """Plan or copy discovered result evidence files."""
+    return copy_result_evidence(
+        Path(output_dir),
+        search_dir=Path(search_dir) if search_dir else None,
+        dry_run=dry_run,
+        limit=limit,
+    )
+
+
+@mcp.tool()
+def autoform_release_readiness_check() -> dict:
+    """Check files and package plan required for a 1.0 release candidate."""
+    return release_readiness_check()
+
+
+@mcp.tool()
+def autoform_release_package_plan(output_dir: str, dry_run: bool = True) -> dict:
+    """Plan or create a source release directory."""
+    return release_package_plan(Path(output_dir), dry_run=dry_run)
+
+
+@mcp.tool()
+def autoform_install_check_plan() -> dict:
+    """Return install verification commands grounded in project files."""
+    return install_check_plan()
+
+
+@mcp.tool()
+def autoform_public_release_scan() -> dict:
+    """Scan source files for common blockers before making the repository public."""
+    return public_release_scan()
+
+
+@mcp.tool()
+def autoform_write_safety_plan(targets: list[str], backup_root: str = "output/rollback") -> dict:
+    """Plan backup and rollback records for write targets."""
+    return write_safety_plan([Path(target) for target in targets], backup_root=backup_root)
+
+
+@mcp.tool()
+def autoform_internal_extension_boundary(workspace: str | None = None) -> dict:
+    """Return confirmed AutoForm extension paths and the 1.0 automation boundary."""
+    return internal_extension_boundary(workspace=workspace)
 
 
 @mcp.tool()

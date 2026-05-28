@@ -16,6 +16,17 @@ from pathlib import Path
 from typing import Iterable
 
 
+ENV_INSTALL_DIR = "AUTOFORM_INSTALL_DIR"
+ENV_PROGRAM_DATA_DIR = "AUTOFORM_PROGRAM_DATA_DIR"
+ENV_VERSION_DIR = "AUTOFORM_VERSION_DIR"
+ENV_MATERIALS_DIR = "AUTOFORM_MATERIALS_DIR"
+ENV_SCRIPTS_DIR = "AUTOFORM_SCRIPTS_DIR"
+ENV_TEST_DIR = "AUTOFORM_TEST_DIR"
+ENV_QUICKLINK_TEMPLATES_DIR = "AUTOFORM_QUICKLINK_TEMPLATES_DIR"
+ENV_SYSTEM_CONFIG_FILE = "AUTOFORM_SYSTEM_CONFIG_FILE"
+ENV_HELP_LINKS_FILE = "AUTOFORM_HELP_LINKS_FILE"
+
+
 @dataclass(frozen=True)
 class AutoFormInstallation:
     """Resolved paths and registry metadata for one AutoForm Forming install.
@@ -40,6 +51,9 @@ class AutoFormInstallation:
         installation evidence and is the first place to revisit for other
         AutoForm product layouts.
         """
+        override = _env_path_text(ENV_VERSION_DIR)
+        if override:
+            return override
         return self.install_location.name
 
     @property
@@ -75,6 +89,9 @@ class AutoFormInstallation:
     @property
     def autoform_program_data(self) -> Path:
         """Return the ProgramData root for this AutoForm version directory."""
+        exact_override = _env_path(ENV_PROGRAM_DATA_DIR)
+        if exact_override is not None:
+            return exact_override
         # AutoForm keeps mutable product data under ProgramData, while executables
         # live under the installation directory in Program Files.
         program_data = Path(os.environ.get("PROGRAMDATA", r"C:\ProgramData"))
@@ -83,31 +100,49 @@ class AutoFormInstallation:
     @property
     def materials_dir(self) -> Path:
         """Return the mutable material library root used by AutoForm."""
+        override = _env_path(ENV_MATERIALS_DIR)
+        if override is not None:
+            return override
         return self.autoform_program_data / "materials"
 
     @property
     def scripts_dir(self) -> Path:
         """Return the QuickLink and automation script directory."""
+        override = _env_path(ENV_SCRIPTS_DIR)
+        if override is not None:
+            return override
         return self.autoform_program_data / "scripts"
 
     @property
     def test_dir(self) -> Path:
         """Return the official sample project directory under ProgramData."""
+        override = _env_path(ENV_TEST_DIR)
+        if override is not None:
+            return override
         return self.autoform_program_data / "test"
 
     @property
     def quicklink_templates_dir(self) -> Path:
         """Return the QuickLink template and standard definition directory."""
+        override = _env_path(ENV_QUICKLINK_TEMPLATES_DIR)
+        if override is not None:
+            return override
         return self.autoform_program_data / "templates" / "quicklink"
 
     @property
     def system_config_file(self) -> Path:
         """Return the queue, remote computing and logging configuration file."""
+        override = _env_path(ENV_SYSTEM_CONFIG_FILE)
+        if override is not None:
+            return override
         return self.autoform_program_data / "systemConfigFile.xml"
 
     @property
     def help_links_file(self) -> Path:
         """Return the help topic mapping file shipped with the installation."""
+        override = _env_path(ENV_HELP_LINKS_FILE)
+        if override is not None:
+            return override
         return self.install_location / "help" / "helpLinks.cfg"
 
     def package_info(self) -> dict:
@@ -162,7 +197,8 @@ class AutoFormInstallation:
 def discover_installations() -> list[AutoFormInstallation]:
     """Find AutoForm through Windows uninstall metadata, then known fallbacks."""
 
-    installs = list(_discover_from_registry())
+    installs = _explicit_installations()
+    installs.extend(_discover_from_registry())
     installs.extend(_fallback_installations())
     return _dedupe_installations(installs)
 
@@ -258,6 +294,21 @@ def _fallback_installations() -> list[AutoFormInstallation]:
     ]
 
 
+def _explicit_installations() -> list[AutoFormInstallation]:
+    """Return the user-configured installation when `AUTOFORM_INSTALL_DIR` is set."""
+
+    install_dir = _env_path(ENV_INSTALL_DIR)
+    if install_dir is None:
+        return []
+    return [
+        AutoFormInstallation(
+            display_name=f"AutoForm Forming ({ENV_INSTALL_DIR})",
+            version=None,
+            install_location=install_dir,
+        )
+    ]
+
+
 def _dedupe_installations(installs: Iterable[AutoFormInstallation]) -> list[AutoFormInstallation]:
     """Merge registry and fallback discoveries by normalized install path."""
     deduped: dict[str, AutoFormInstallation] = {}
@@ -268,3 +319,20 @@ def _dedupe_installations(installs: Iterable[AutoFormInstallation]) -> list[Auto
         if existing is None or (existing.version is None and install.version is not None):
             deduped[key] = install
     return list(deduped.values())
+
+
+def _env_path(name: str) -> Path | None:
+    """Read one path override from the environment and normalize blank values."""
+
+    value = _env_path_text(name)
+    return Path(value).expanduser() if value else None
+
+
+def _env_path_text(name: str) -> str | None:
+    """Return a stripped environment value, preserving Windows path text."""
+
+    value = os.environ.get(name)
+    if value is None:
+        return None
+    value = value.strip().strip('"')
+    return value or None

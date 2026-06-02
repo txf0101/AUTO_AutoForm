@@ -1,8 +1,6 @@
-"""Process-level entry points for AutoForm GUI and batch commands.
+"""这个文件处理 AutoForm 进程级动作，例如打开 Forming、打开 `.afd` 工程和运行求解器。它把命令、进程号和输出记录为后续证据。
 
-This module owns the boundary where Python starts AutoForm processes.  Callers
-should prefer the planning or dry-run modes first, because launching GUI or job
-processes may consume licenses, create logs, or modify project state.
+This file handles AutoForm process-level actions such as opening Forming, opening `.afd` projects, and running the solver. It records commands, process IDs, and output as later evidence.
 """
 
 from __future__ import annotations
@@ -39,15 +37,55 @@ def open_afd(
     """Open an .afd file in AutoForm Forming and return the launch command."""
 
     install = install or get_default_installation()
-    afd_path = afd_path.resolve()
-    if not afd_path.exists():
-        raise FileNotFoundError(afd_path)
-    command = [str(install.forming_ui), "-file", str(afd_path)]
+    afd_path = _existing_afd_path(afd_path)
+    command = _open_afd_command(install, afd_path)
     if not dry_run:
         # Opening a project is a GUI action, so the caller should not block on
         # process exit.
         subprocess.Popen(command, cwd=str(install.bin_dir))
     return command
+
+
+def open_afd_observer(
+    afd_path: Path,
+    install: AutoFormInstallation | None = None,
+    dry_run: bool = True,
+) -> dict:
+    """Plan or launch an AutoForm GUI window for observing a project run.
+
+    The direct solver remains the verified execution path.  This helper opens
+    the copied `.afd` project in AutoForm Forming so a user can watch whatever
+    the local AutoForm UI refreshes while the solver process writes results.
+    The returned dictionary records the exact command, process id when known,
+    and the evidence boundary for later debugging.
+    """
+
+    install = install or get_default_installation()
+    afd_path = _existing_afd_path(afd_path)
+    command = _open_afd_command(install, afd_path)
+    observation = {
+        "mode": "gui_project_observer",
+        "dry_run": dry_run,
+        "command": command,
+        "cwd": str(install.bin_dir),
+        "project_path": str(afd_path),
+        "launched": False,
+        "pid": None,
+        "progress_visibility": "best_effort",
+        "evidence": "The command uses AFFormingUI.exe -file with the same copied .afd project that the direct solver run uses.",
+        "limitations": [
+            "AutoForm controls whether an already opened project view refreshes live solver output.",
+            "Solver success and failure are still determined from AFFormingSolver return code and stdout summary.",
+        ],
+    }
+    if dry_run:
+        return observation
+
+    # `Popen` returns immediately so the MCP or CLI caller can continue to the
+    # solver step while the GUI stays available as an interactive user window.
+    process = subprocess.Popen(command, cwd=str(install.bin_dir))
+    observation.update({"launched": True, "pid": process.pid})
+    return observation
 
 
 def run_forming_job(
@@ -123,3 +161,16 @@ def _graphics_argument(graphics: str) -> str:
     if normalized in {"opengl", "opengl2", "gl2"}:
         return "-opengl2"
     raise ValueError("graphics must be directx11 or opengl2")
+
+
+def _existing_afd_path(afd_path: Path) -> Path:
+    """Resolve an `.afd` path and fail early before starting AutoForm."""
+    resolved = afd_path.resolve()
+    if not resolved.exists():
+        raise FileNotFoundError(resolved)
+    return resolved
+
+
+def _open_afd_command(install: AutoFormInstallation, afd_path: Path) -> list[str]:
+    """Build the stable AutoForm UI command used by dry runs and launches."""
+    return [str(install.forming_ui), "-file", str(afd_path)]

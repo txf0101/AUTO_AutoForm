@@ -1,3 +1,8 @@
+"""这个工具脚本用于从当前项目资料生成辅助报告或参考资料。运行前应先确认输入路径和输出路径，避免覆盖人工整理的文件。
+
+This utility script generates helper reports or reference material from the current project data. Check input and output paths before running it so manually curated files are not overwritten.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -11,7 +16,7 @@ from docx.oxml.ns import qn
 from docx.shared import Cm, Pt, RGBColor
 
 
-WORKSPACE = Path(r"F:\【项目和任务】\EIT\2026\AUTO_AutoForm")
+WORKSPACE = Path(__file__).resolve().parents[1]
 OUTPUT_PATH = WORKSPACE / "output" / "doc" / "AutoForm官方命令与Agent指令对照表.docx"
 
 
@@ -105,7 +110,7 @@ def add_source_table(document: Document) -> None:
         ["S9", r"D:\Program Files\AutoForm\AFplus\R13F\AF_API\af_friction.h", "用户摩擦模块的编译命令、启用控制变量和导出函数声明。"],
         ["S10", r"D:\Program Files\AutoForm\AFplus\R13F\AF_API\af_heattransfer.h", "用户传热模块的编译命令、启用控制变量和导出函数声明。"],
         ["S11", r"D:\Program Files\AutoForm\AFplus\R13F\AF_API\af_oneelementpost.h", "用户后处理模块的初始化、结束和逐增量后处理函数声明。"],
-        ["S12", r"F:\【项目和任务】\EIT\2026\AUTO_AutoForm\autoform_agent\*.py", "当前 Agent 的 CLI、MCP、AutoForm 路径发现、进程调用、材料库和 QuickLink 桥接实现。"],
+        ["S12", r"<repo-root>\autoform_agent\*.py", "当前 Agent 的 CLI、MCP、AutoForm 路径发现、进程调用、材料库和 QuickLink 桥接实现。"],
     ]
     add_table(document, ["编号", "来源位置", "可验证内容"], rows, [1.8, 10.0, 14.7])
 
@@ -502,10 +507,10 @@ def add_appendix(document: Document) -> None:
         ["发现安装", r"python -m autoform_agent.cli discover"],
         ["预演启动 GUI", r"python -m autoform_agent.cli start-ui --graphics directx11 --dry-run"],
         ["预演打开工程", r"python -m autoform_agent.cli open-afd C:\ProgramData\AutoForm\AFplus\R13F\test\Solver_R13.afd --dry-run"],
-        ["查看材料包", r"python -m autoform_agent.cli archive-list C:\Users\Tang Xufeng\Desktop\主机厂材料库.rar --limit 50"],
-        ["预演安装材料库", r"python -m autoform_agent.cli install-materials C:\Users\Tang Xufeng\Desktop\主机厂材料库.rar --library-name 主机厂材料库 --dry-run"],
-        ["输出完整安装计划", r"python -m autoform_agent.cli install-materials C:\Users\Tang Xufeng\Desktop\主机厂材料库.rar --library-name 主机厂材料库 --dry-run --json"],
-        ["预演安装 QuickLink 桥接", r"python -m autoform_agent.cli install-quicklink-bridge --workspace F:\【项目和任务】\EIT\2026\AUTO_AutoForm --dry-run"],
+        ["查看材料包", r"python -m autoform_agent.cli archive-list <material-archive> --limit 50"],
+        ["预演安装材料库", r"python -m autoform_agent.cli install-materials <material-archive> --library-name 主机厂材料库 --dry-run"],
+        ["输出完整安装计划", r"python -m autoform_agent.cli install-materials <material-archive> --library-name 主机厂材料库 --dry-run --json"],
+        ["预演安装 QuickLink 桥接", r"python -m autoform_agent.cli install-quicklink-bridge --workspace <repo-root> --dry-run"],
         ["启动 MCP 服务", r"python -m autoform_agent.mcp_server"],
     ]
     add_table(document, ["用途", "命令"], rows, [5.0, 21.5])

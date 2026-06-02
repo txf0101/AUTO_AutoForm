@@ -7,7 +7,7 @@
 1. 进入项目目录：
 
 ```powershell
-cd "<path-to-cloned-repo>"
+cd "<repo-root>"
 ```
 
 2. 创建 Conda 环境：
@@ -86,7 +86,7 @@ http://127.0.0.1:8765/index.html?bridge=http
 python -m autoform_agent.mcp_server
 ```
 
-如果希望 MCP host 自动启动服务，请把根目录的 `codex_mcp_config.autoform-agent.toml` 内容加入客户端配置。模板中的 `<path-to-cloned-repo>` 需要替换为你自己电脑上的仓库绝对路径；如果客户端找不到 `conda`，把模板里的 `command` 改成 `afagent` 环境中 `python.exe` 的绝对路径。
+如果希望 MCP host 自动启动服务，请把根目录的 `codex_mcp_config.autoform-agent.toml` 内容加入客户端配置。模板中推荐的 MCP host 配置名是 `autoform-mcp`。模板中的 `<repo-root>` 需要替换为当前电脑上的仓库绝对路径；如果客户端找不到 `conda`，把模板里的 `command` 改成 `afagent` 环境中 `python.exe` 的绝对路径。
 
 支持 resources 的 MCP host 可读取 `autoform://status`。只显示工具列表的客户端可调用 `autoform_status_snapshot`。
 

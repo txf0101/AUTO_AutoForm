@@ -1,3 +1,8 @@
+"""这个工具脚本用于从当前项目资料生成辅助报告或参考资料。运行前应先确认输入路径和输出路径，避免覆盖人工整理的文件。
+
+This utility script generates helper reports or reference material from the current project data. Check input and output paths before running it so manually curated files are not overwritten.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -11,7 +16,7 @@ from docx.oxml.ns import qn
 from docx.shared import Cm, Pt, RGBColor
 
 
-WORKSPACE = Path(r"F:\【项目和任务】\EIT\2026\AUTO_AutoForm")
+WORKSPACE = Path(__file__).resolve().parents[1]
 OUTPUT_PATH = WORKSPACE / "output" / "doc" / "AutoForm_MCP项目状态与1.0发布差距汇报_20260525.docx"
 
 
@@ -112,7 +117,7 @@ def add_basis_section(document: Document) -> None:
         [
             "B5",
             "当前测试结果",
-            "在 TEMP 与 TMP 指向工作区 tmp\\pytest_runtime_final_<timestamp>，并显式设置 --basetemp tmp\\pytest_basetemp_final_<timestamp> 后执行 C:\\Users\\Tang Xufeng\\.conda\\envs\\afagent\\python.exe -m pytest -q，最终结果为 81 passed in 2.81s。",
+            "在 TEMP 与 TMP 指向工作区 tmp\\pytest_runtime_final_<timestamp>，并显式设置 --basetemp tmp\\pytest_basetemp_final_<timestamp> 后执行 <python> -m pytest -q，最终结果为 81 passed in 2.81s。",
         ],
         [
             "B6",
@@ -609,11 +614,11 @@ def add_appendix_section(document: Document) -> None:
         ["检查发布就绪", r"python -m autoform_agent.cli release-readiness"],
         ["公开发布扫描", r"python -m autoform_agent.cli public-release-scan"],
         ["生成写入回滚计划", r"python -m autoform_agent.cli write-safety-plan C:\ProgramData\AutoForm\AFplus\R13F\scripts\CodexAgentBridge.cmd --backup-root output\rollback"],
-        ["说明扩展边界", r"python -m autoform_agent.cli extension-boundary --workspace F:\【项目和任务】\EIT\2026\AUTO_AutoForm"],
+        ["说明扩展边界", r"python -m autoform_agent.cli extension-boundary --workspace <repo-root>"],
         ["预演发布包", r"python -m autoform_agent.cli release-package-plan output\release\autoform-agent-1.0"],
-        ["列出 QuickLink 导出", r"python -m autoform_agent.cli quicklink-list --workspace F:\【项目和任务】\EIT\2026\AUTO_AutoForm"],
+        ["列出 QuickLink 导出", r"python -m autoform_agent.cli quicklink-list --workspace <repo-root>"],
         ["列出材料库", r"python -m autoform_agent.cli material-libraries"],
-        ["运行测试", r"$env:TEMP='F:\【项目和任务】\EIT\2026\AUTO_AutoForm\tmp\pytest_runtime_final_<timestamp>'; $env:TMP=$env:TEMP; C:\Users\Tang Xufeng\.conda\envs\afagent\python.exe -m pytest -q --basetemp tmp\pytest_basetemp_final_<timestamp>"],
+        ["运行测试", r"$env:TEMP='<repo-root>\tmp\pytest_runtime_final_<timestamp>'; $env:TMP=$env:TEMP; <python> -m pytest -q --basetemp tmp\pytest_basetemp_final_<timestamp>"],
     ]
     add_table(document, ["用途", "命令"], command_rows, [5.0, 21.5])
 

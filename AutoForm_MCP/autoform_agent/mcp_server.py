@@ -16,7 +16,7 @@ from .mcp_tools import *  # Re-export MCP wrapper functions for older direct imp
 from .mcp_tools import EXPORTED_FUNCTION_NAMES, register_all_tools
 
 
-mcp = FastMCP("autoform-agent")
+mcp = FastMCP("autoform-mcp")
 register_all_tools(mcp)
 
 __all__ = ["mcp", "register_all_tools", *EXPORTED_FUNCTION_NAMES]

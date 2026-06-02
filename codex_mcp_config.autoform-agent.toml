@@ -3,9 +3,10 @@
 # Copy this block into:
 #   %USERPROFILE%\.codex\config.toml
 #
-# Replace <path-to-cloned-repo> with the absolute path of this repository
-# on your computer. Then restart the MCP host so it can launch the stdio
-# MCP server.
+# Replace <path-to-cloned-repo> with the absolute path of this repository on your
+# computer. If you are using the independent AutoForm_MCP subproject, use
+# that folder path instead. Then restart the MCP host so it can launch the
+# stdio MCP server.
 #
 # If the host cannot find conda, replace command with the full path to
 # your afagent environment python.exe and change args to:

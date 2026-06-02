@@ -1,51 +1,41 @@
 # AutoForm Agent
 
-## Start Here: Open AutoForm MCP / 先从这里打开 AutoForm MCP
+## Start Here: AutoForm_MCP / 先从 AutoForm_MCP 开始
 
-Use this section when you want Codex or another MCP host to call AutoForm Agent tools directly.
+The MCP subproject lives in `AutoForm_MCP/`. If somebody wants only the MCP server, publish or clone that folder as the independent GitHub repository `AutoForm_MCP`; do not copy the full `AUTO_AutoForm` workspace into the independent MCP repository.
 
-中文说明：如果你要让 Codex 或其他 MCP host 直接调用 AutoForm Agent 工具，请先按本节操作。本节就是 AutoForm MCP 的打开入口。
+MCP 子项目位于 `AutoForm_MCP/`。如果别人只想使用 MCP server，应该把这个文件夹作为独立 GitHub 仓库 `AutoForm_MCP` 发布或克隆；不要把整个 `AUTO_AutoForm` 工作区复制成独立 MCP 仓库。
 
-1. Open PowerShell in the cloned repository:
+Fast MCP setup from the full workspace:
 
-```powershell
-cd "<path-to-cloned-repo>"
-```
-
-2. Create and activate the recommended environment:
+从完整工作区快速安装 MCP：
 
 ```powershell
+cd AutoForm_MCP
 conda env create -f environment.yml
 conda activate afagent
-```
-
-3. Check that the MCP module can be imported:
-
-```powershell
-python -c "import autoform_agent.mcp_server; print('autoform_agent.mcp_server import ok')"
+python -c "import autoform_agent.mcp_server; print('mcp import ok')"
 python -m autoform_agent.cli status
 ```
 
-4. Add this MCP server block to your MCP host configuration. For Codex on Windows, the user config file is usually `%USERPROFILE%\.codex\config.toml`.
+Codex config for the independent MCP folder:
+
+独立 MCP 文件夹的 Codex 配置：
 
 ```toml
-[mcp_servers."autoform-agent"]
+[mcp_servers."autoform-mcp"]
 command = 'conda'
 args = ['run', '-n', 'afagent', 'python', '-m', 'autoform_agent.mcp_server']
 startup_timeout_sec = 60
 enabled = true
 
-[mcp_servers."autoform-agent".env]
+[mcp_servers."autoform-mcp".env]
 PYTHONPATH = '<path-to-cloned-repo>'
 ```
 
-Replace `<path-to-cloned-repo>` with the absolute path of this repository on your computer. If your MCP host cannot find `conda`, set `command` to your own `afagent` environment Python executable and keep `args = ['-m', 'autoform_agent.mcp_server']`.
+Replace `<path-to-cloned-repo>` with the absolute path of the `AutoForm_MCP` folder on the current computer. More Codex, Claude Code, OpenCalw, cmd, and PowerShell examples are in `AutoForm_MCP/README.md` and `AutoForm_MCP/README.zh-CN.md`.
 
-中文说明：把 `<path-to-cloned-repo>` 替换成你自己电脑上的仓库绝对路径。如果 MCP host 找不到 `conda`，就把 `command` 改成你自己 `afagent` 环境里的 `python.exe` 绝对路径，并把 `args` 保持为 `['-m', 'autoform_agent.mcp_server']`。
-
-5. Restart the MCP host, then read `autoform://status` or call `autoform_status_snapshot`. To run a tested official example, call `autoform_project_run` with `example=Solver_R13`, `mode=kinematic`, and `execute=true`.
-
-中文说明：重启 MCP host 后，先读取 `autoform://status` 或调用 `autoform_status_snapshot`。需要运行已经验证过的官方示例时，可调用 `autoform_project_run`，参数使用 `example=Solver_R13`、`mode=kinematic`、`execute=true`。
+把 `<path-to-cloned-repo>` 替换成当前电脑上 `AutoForm_MCP` 文件夹的绝对路径。更多 Codex、Claude Code、OpenCalw、cmd 和 PowerShell 示例见 `AutoForm_MCP/README.md` 与 `AutoForm_MCP/README.zh-CN.md`。
 
 AutoForm Agent is a local automation helper for AutoForm Forming. It exposes verified AutoForm workflows through a Python CLI, an optional MCP server, and a local OpenAI-compatible Agent runtime.
 
@@ -62,7 +52,7 @@ The V1.0 validation evidence comes from this repository, local command output, a
 - `python -m autoform_agent.cli release-readiness` returns `ready=true`.
 - `python -m autoform_agent.cli public-release-scan` returns `safe_to_publish=true` and `finding_count=0`.
 - Full Python test suite passed with `81 passed in 2.81s`.
-- The MCP stdio server exposes `88` tools and the `autoform://status` resource.
+- The MCP stdio server exposes `112` tools and the `autoform://status` resource in the MCP_V1.1 tool layer.
 - Three official AutoForm example projects were executed through the MCP tool `autoform_project_run` in kinematic mode.
 
 Tested official examples:

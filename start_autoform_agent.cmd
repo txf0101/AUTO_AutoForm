@@ -1,3 +1,6 @@
+@REM 这个批处理文件是 Windows 双击启动入口，会转交给 PowerShell 启动脚本。修改时要保持路径和执行策略参数简单清楚。
+@REM This batch file is the Windows double-click entry point and forwards work to the PowerShell launcher. Keep paths and execution-policy arguments simple and clear when editing it.
+
 @echo off
 rem AutoForm Agent 启动入口。
 rem

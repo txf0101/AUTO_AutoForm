@@ -1,4 +1,7 @@
-"""Coverage summaries that help plan long-term AutoForm MCP expansion."""
+"""这个文件生成能力覆盖矩阵和帮助主题映射。它回答一个朴素问题：项目现在有哪些能力，每项能力由哪些模块和命令支持。
+
+This file builds the capability coverage matrix and help-topic mapping. It answers a plain question: what can the project do now, and which modules or commands support each capability.
+"""
 
 from __future__ import annotations
 
@@ -188,6 +191,33 @@ MODULE_COVERAGE = [
             "autoform_module_coverage_matrix",
         ],
         "evidence": ["helpLinks.cfg"],
+    },
+    {
+        "module": "Result review and guarded GUI control",
+        "status": "implemented-guarded-r12-demo",
+        "tools": [
+            "autoform_gui_window_snapshot",
+            "autoform_gui_restore_window",
+            "autoform_gui_click",
+            "autoform_gui_drag",
+            "autoform_computer_use_probe",
+            "autoform_gui_control_demo",
+            "autoform_r12_project_view_demo",
+            "autoform_result_query_capabilities",
+            "autoform_result_gui_evidence",
+            "autoform_result_blockers",
+            "autoform_result_open_latest",
+            "autoform_result_open_project",
+            "autoform_result_show_variable",
+            "autoform_result_set_view",
+            "autoform_result_view_evidence",
+            "autoform_result_play_forming_animation",
+            "autoform_result_capture_evidence",
+            "autoform_result_route_task",
+            "autoform_result_plan_review",
+            "autoform_result_readiness",
+        ],
+        "evidence": ["autoform_agent/gui_automation.py", "autoform_agent/result_viewer.py", "autoform_agent/r12_demo.py"],
     },
 ]
 

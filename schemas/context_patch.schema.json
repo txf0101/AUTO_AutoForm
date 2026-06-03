@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autoform-agent.schemas.context_patch.v1",
+  "title": "ContextPatch",
+  "type": "object",
+  "required": [
+    "patch_id",
+    "task_id",
+    "proposer_agent",
+    "target_path",
+    "operation",
+    "candidate_value",
+    "evidence_refs",
+    "risk_level",
+    "review_status",
+    "rollback_plan",
+    "created_at"
+  ],
+  "properties": {
+    "object_type": {
+      "const": "ContextPatch"
+    },
+    "patch_id": {
+      "type": "string",
+      "pattern": "^patch_[a-z0-9_]+$"
+    },
+    "task_id": {
+      "type": "string",
+      "pattern": "^task_[a-z0-9_]+$"
+    },
+    "proposer_agent": {
+      "type": "string"
+    },
+    "target_path": {
+      "type": "string"
+    },
+    "operation": {
+      "type": "string",
+      "enum": [
+        "add",
+        "replace",
+        "remove"
+      ]
+    },
+    "candidate_value": {},
+    "evidence_refs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "risk_level": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "review_status": {
+      "type": "string",
+      "enum": [
+        "candidate",
+        "needs_evidence",
+        "needs_human_confirmation",
+        "approved_low_risk",
+        "rejected"
+      ]
+    },
+    "rollback_plan": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": true
+}

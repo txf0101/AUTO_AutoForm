@@ -1,0 +1,328 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autoform.process_knowledge_card.r15.v1",
+  "title": "ProcessKnowledgeCard",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "object_type",
+    "phase",
+    "card_id",
+    "card_type",
+    "title",
+    "source_id",
+    "evidence_refs",
+    "version",
+    "owner",
+    "review_status",
+    "license_status",
+    "allowed_usage",
+    "created_at",
+    "valid_from",
+    "valid_until",
+    "applicability",
+    "limitation",
+    "key_parameter_windows",
+    "quality_risks",
+    "human_confirmation",
+    "payload"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "autoform.process_knowledge_card.r15.v1"
+    },
+    "object_type": {
+      "const": "ProcessKnowledgeCard"
+    },
+    "phase": {
+      "const": "R15"
+    },
+    "card_id": {
+      "type": "string",
+      "pattern": "^pkc_[a-z0-9_]+$"
+    },
+    "card_type": {
+      "type": "string",
+      "enum": [
+        "MaterialCard",
+        "OperationRoute",
+        "ParameterWindow",
+        "ProcessCase",
+        "QualityCriteria"
+      ]
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_id": {
+      "type": "string",
+      "pattern": "^source_[a-z0-9_]+$"
+    },
+    "evidence_refs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "evidence_id",
+          "source_id",
+          "source_hash",
+          "artifact_uri",
+          "evidence_type"
+        ],
+        "properties": {
+          "evidence_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_id": {
+            "type": "string",
+            "pattern": "^source_[a-z0-9_]+$"
+          },
+          "source_hash": {
+            "type": "string",
+            "minLength": 1
+          },
+          "artifact_uri": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence_type": {
+            "type": "string",
+            "enum": [
+              "cleaned_record",
+              "manual_review",
+              "source_document"
+            ]
+          }
+        }
+      }
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "owner": {
+      "type": "string",
+      "minLength": 1
+    },
+    "review_status": {
+      "type": "string",
+      "enum": [
+        "candidate",
+        "needs_human_confirmation",
+        "needs_license_review",
+        "reviewed",
+        "blocked"
+      ]
+    },
+    "license_status": {
+      "type": "string",
+      "minLength": 1
+    },
+    "allowed_usage": {
+      "type": "string",
+      "enum": [
+        "candidate_knowledge_card_only",
+        "catalog_only",
+        "formal_retrieval_index"
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "valid_from": {
+      "type": "string",
+      "format": "date"
+    },
+    "valid_until": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "applicability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "applicable_materials",
+        "part_features",
+        "process_actions",
+        "applicable_lines",
+        "conflict_status"
+      ],
+      "properties": {
+        "applicable_materials": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "part_features": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "process_actions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "applicable_lines": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "conflict_status": {
+          "const": "none"
+        }
+      }
+    },
+    "limitation": {
+      "type": "string",
+      "minLength": 1
+    },
+    "key_parameter_windows": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/parameter_window"
+      }
+    },
+    "quality_risks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "risk_type",
+          "severity",
+          "basis_evidence_refs"
+        ],
+        "properties": {
+          "risk_type": {
+            "type": "string",
+            "minLength": 1
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "needs_review",
+              "blocked"
+            ]
+          },
+          "basis_evidence_refs": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "human_confirmation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required",
+        "status",
+        "owner"
+      ],
+      "properties": {
+        "required": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "confirmed",
+            "rejected",
+            "not_required"
+          ]
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "payload": {
+      "type": "object"
+    }
+  },
+  "$defs": {
+    "parameter_window": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "parameter",
+        "unit",
+        "lower",
+        "upper",
+        "basis_evidence_refs",
+        "review_status"
+      ],
+      "properties": {
+        "parameter": {
+          "type": "string",
+          "minLength": 1
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "lower": {
+          "type": [
+            "number",
+            "integer",
+            "null"
+          ]
+        },
+        "upper": {
+          "type": [
+            "number",
+            "integer",
+            "null"
+          ]
+        },
+        "basis_evidence_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "review_status": {
+          "type": "string",
+          "enum": [
+            "candidate",
+            "needs_human_confirmation",
+            "reviewed",
+            "blocked"
+          ]
+        }
+      }
+    }
+  }
+}

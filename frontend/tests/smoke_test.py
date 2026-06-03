@@ -1,11 +1,10 @@
-"""Dependency-free smoke test for the static frontend.
+"""这个测试文件检查前端或 HTTP bridge 的轻量冒烟路径。它帮助确认页面和后端在本机启动后能完成最基本的通信。
 
-This Python version exists because some Windows environments block `node.exe`.
-It checks the same maintainability markers as the JavaScript smoke test, so the
-frontend can be verified with the existing `afagent` Python environment.
+This test file checks a lightweight smoke path for the frontend or HTTP bridge. It helps confirm that the page and backend can complete basic local communication after startup.
 """
 
 from pathlib import Path
+import json
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -31,38 +30,97 @@ def test_static_frontend_contains_required_hooks() -> None:
         "data-app-shell",
         "data-prompt-form",
         "data-status-summary",
+        "data-step-replay",
+        "data-run-replay",
+        "data-agent-graph",
+        "data-edge-list",
         "data-terminal-output",
         "data-api-input",
         "data-api-response",
         "data-provider-select",
         "data-provider-api-key",
+        "data-test-connection",
         "data-api-mode",
-        "data-summary-connection",
+        "data-api-runtime",
+        "data-api-direct-called",
+        "data-api-key-fingerprint",
+        "data-summary-run",
+        "data-usage-total",
     ]:
         _assert_contains(html, marker, "index.html")
 
     for marker in [
         "class AgentRuntimeBridge",
-        "async sendPrompt(prompt)",
+        "async sendPrompt(prompt, options = {})",
         "applyStartupOptions",
+        "loadFixtureFromInput",
+        "parseJsonl",
+        "stepReplay",
+        "runReplayToEnd",
+        "applyRunEvent",
+        "context_view_built",
+        "tool_requested",
+        "tool_completed",
+        "tool_blocked",
+        "approval_required",
+        "edge_transfer",
+        "toolLabel",
         "buildRuntimeConfigForRequest",
         "applyRuntimeReply",
         "redactPayloadForDisplay",
         "renderSummary",
+        "renderGraph",
         "renderTerminal",
+        "previousBottomGap",
+        "shouldFollowTail",
         "renderApiPanel",
+        "renderUsage",
         "bindEvents",
     ]:
         _assert_contains(js, marker, "app.js")
 
     for marker in [
-        ".console-panel",
+        ".workbench-panel",
         ".status-summary",
+        ".agent-graph",
         ".terminal-output",
+        ".agent-node.is-planned",
+        ".agent-node.is-blocked",
+        ".agent-node.is-waiting_for_human",
+        "overscroll-behavior: contain",
+        "scrollbar-gutter: stable",
         ".api-config-grid",
         ".api-grid",
+        ".usage-grid",
         "@media (max-width: 980px)",
     ]:
         _assert_contains(css, marker, "styles.css")
 
     assert js.count("/*") >= 2, "app.js should keep high-level explanatory comments."
+
+
+def test_r11_fixture_is_loadable_by_workbench() -> None:
+    """The UI replay path should have a complete R11 fixture available."""
+
+    fixture = ROOT.parent / "fixtures" / "r11_low_risk_prepare_events.jsonl"
+    events = [json.loads(line) for line in fixture.read_text(encoding="utf-8").splitlines() if line.strip()]
+    event_types = [event["type"] for event in events]
+    agents = {event["source_agent"] for event in events} | {event["target_agent"] for event in events}
+
+    assert event_types[-1] == "stage_summary"
+    assert events[-1]["payload"]["object_type"] == "StageSummary"
+    assert "material_agent" in agents
+    assert "process_planning_agent" in agents
+
+
+def test_r19_fixture_exposes_tool_events_for_workbench() -> None:
+    """The UI replay path should include a tool-aware R19 fixture."""
+
+    fixture = ROOT.parent / "fixtures" / "r19_realtime_multi_agent_executor_events.jsonl"
+    events = [json.loads(line) for line in fixture.read_text(encoding="utf-8").splitlines() if line.strip()]
+    event_types = [event["type"] for event in events]
+
+    assert "tool_requested" in event_types
+    assert "tool_completed" in event_types
+    assert events[-1]["payload"]["object_type"] == "StageSummary"
+    assert events[-1]["payload"]["status"] == "completed"

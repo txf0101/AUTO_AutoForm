@@ -1,0 +1,3 @@
+{"query_id":"eval_r7_prepare_sources","query":"低风险仿真准备需要哪些来源和权限边界","expected_source_ids":["source_main_plan","source_permission_matrix"],"required_object":"EvidenceBundle"}
+{"query_id":"eval_r8_material_candidate","query":"材料候选和人工确认边界","expected_source_ids":["source_main_plan","source_permission_matrix"],"required_object":"MaterialCard"}
+{"query_id":"eval_r10_script_boundary","query":"低风险脚本 L0 L1 L2 运行记录","expected_source_ids":["source_main_plan","source_permission_matrix"],"required_object":"ScriptRunRecord"}

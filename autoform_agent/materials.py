@@ -1,8 +1,6 @@
-"""Material library inspection, staging, installation and backup helpers.
+"""这个文件处理 AutoForm 材料文件和材料库。它优先生成预演计划，再执行复制、检查重复和备份等可能改动文件的动作。
 
-Material operations can touch shared AutoForm ProgramData.  Public functions in
-this module therefore expose dry-run plans, copy summaries and file facts so a
-developer can verify source and destination paths before writing anything.
+This file handles AutoForm material files and material libraries. It prefers dry-run plans before performing file-changing actions such as copying, duplicate checks, and backups.
 """
 
 from __future__ import annotations

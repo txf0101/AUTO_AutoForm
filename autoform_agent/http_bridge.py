@@ -1,9 +1,6 @@
-"""Local HTTP bridge used by the static frontend.
+"""这个文件是浏览器页面和 Python 后端之间的本地 HTTP 桥。前端把请求发到这里，这里再调用 Agent 运行时并返回脱敏后的结果。
 
-Browser JavaScript should not own AutoForm workflow control.  This bridge only
-accepts frontend prompts on localhost and forwards them into
-`autoform_agent.agent_runtime`, where OpenAI Agents SDK configuration and
-AutoForm tool selection are handled in Python through the API runtime path.
+This file is the local HTTP bridge between the browser page and the Python backend. The frontend sends requests here, and this file calls the Agent runtime and returns redacted results.
 """
 
 from __future__ import annotations
@@ -14,6 +11,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Callable
 
 from .agent_runtime import collect_agent_runtime_snapshot, run_agent_runtime_turn
+from .credentials import extract_secret_values, redact_secret_data, redact_secret_text
 
 
 DEFAULT_HOST = "127.0.0.1"
@@ -31,8 +29,8 @@ def build_agent_runtime_reply(
     """Build the response contract consumed by `frontend/app.js`.
 
     The implementation delegates to the backend AutoForm Agent runtime, which
-    calls OpenAI Agents SDK when configured and otherwise returns an explicit
-    local fallback result.
+    calls the configured provider API when a key is available and otherwise
+    returns an explicit local fallback result.
     """
     return run_agent_runtime_turn(payload, snapshot=snapshot)
 
@@ -87,14 +85,18 @@ class AgentRuntimeRequestHandler(BaseHTTPRequestHandler):
             self._send_json({"error": "unknown endpoint"}, status=404)
             return
 
+        payload: dict[str, Any] = {}
+        secret_values: tuple[str, ...] = ()
         try:
             payload = self._read_json_payload()
+            secret_values = extract_secret_values(payload)
             responder: Responder = getattr(self.server, "responder")
-            self._send_json(responder(payload))
+            self._send_json(redact_secret_data(responder(payload), secret_values))
         except ValueError as exc:
-            self._send_json({"error": str(exc)}, status=400)
+            self._send_json({"error": redact_secret_text(exc, secret_values)}, status=400)
         except Exception as exc:  # pragma: no cover - defensive boundary
-            self._send_json({"error": f"runtime failed: {exc}"}, status=500)
+            message = redact_secret_text(exc, secret_values)
+            self._send_json({"error": f"runtime failed: {message}"}, status=500)
 
     def log_message(self, format: str, *args: Any) -> None:
         """Keep the bridge quiet during tests and local frontend demos."""

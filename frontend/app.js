@@ -1,13 +1,18 @@
 /*
- * AutoForm Agent Console frontend.
+这个脚本驱动本地网页界面：读取用户输入，调用 HTTP bridge，展示状态、事件、图谱、证据和错误信息。读它时可以从页面按钮开始找，再顺着 fetch 请求看后端返回如何被渲染。
+
+This script drives the local web interface: it reads user input, calls the HTTP bridge, and renders status, events, graphs, evidence, and errors. Start from the page buttons, then follow the fetch calls to see how backend responses are displayed.
+*/
+
+/*
+ * AutoForm P0 Workbench frontend.
  *
- * The page has four panels and one responsibility: collect the user's prompt,
- * collect request-scoped API settings, and display the Python runtime result.
- * AutoForm workflow decisions stay in `autoform_agent.agent_runtime`; the
- * browser only forwards a small JSON contract to the localhost HTTP bridge.
+ * R3 uses typed RunEvent fixtures before any live multi-agent backend is
+ * connected. The original HTTP bridge path is kept for one-off runtime calls.
  */
 
 const DEFAULT_ENDPOINT = "http://127.0.0.1:4317/api/agent";
+const DEFAULT_FIXTURE_URL = "../fixtures/run_events_demo.jsonl";
 
 const PROVIDER_PRESETS = {
   deepseek: {
@@ -16,30 +21,62 @@ const PROVIDER_PRESETS = {
     model: "deepseek-v4-flash",
     apiMode: "chat_completions",
   },
-  openai: {
-    label: "OpenAI",
-    baseUrl: "",
-    model: "gpt-4.1-mini",
-    apiMode: "responses",
-  },
   custom: {
-    label: "OpenAI-compatible",
+    label: "Chat completions compatible",
     baseUrl: "",
-    model: "gpt-4.1-mini",
+    model: "deepseek-v4-flash",
     apiMode: "chat_completions",
   },
+};
+
+const DEFAULT_AGENTS = [
+  "user",
+  "ui_workbench",
+  "runtime_executor",
+  "center_agent",
+  "demand_triage_agent",
+  "geometry_data_agent",
+  "rag_evidence_agent",
+  "material_agent",
+  "process_planning_agent",
+  "validator",
+  "script_agent",
+  "human_reviewer",
+  "mcp_gateway",
+  "autoform_adapter",
+];
+
+const AGENT_LABELS = {
+  user: "User",
+  ui_workbench: "UI",
+  runtime_executor: "Runtime",
+  center_agent: "Center",
+  demand_triage_agent: "Demand",
+  geometry_data_agent: "Geometry",
+  rag_evidence_agent: "RAG",
+  material_agent: "Material",
+  process_planning_agent: "Process",
+  validator: "Validator",
+  script_agent: "Script",
+  human_reviewer: "Reviewer",
+  mcp_gateway: "Gateway",
+  autoform_adapter: "Adapter",
 };
 
 const appState = {
   conversationId: `web-${Date.now()}`,
   endpoint: DEFAULT_ENDPOINT,
+  fixtureUrl: DEFAULT_FIXTURE_URL,
   lastPayload: {},
   lastResponse: {},
+  replayEvents: [],
+  replayIndex: 0,
+  replayLoaded: false,
+  replayStatus: "fixture idle",
   terminalLines: [
-    "AutoForm Agent Console ready.",
-    `Runtime endpoint: ${DEFAULT_ENDPOINT}`,
-    "Provider preset: DeepSeek, chat_completions",
-    "Waiting for prompt...",
+    "AutoForm P0 Workbench ready.",
+    "Replay fixture: built-in demo",
+    `Local bridge: ${DEFAULT_ENDPOINT}`,
   ],
   apiConfig: {
     provider: "deepseek",
@@ -49,21 +86,32 @@ const appState = {
     apiKey: "",
   },
   summary: {
-    connection: "待发送",
-    provider: "DeepSeek",
-    model: PROVIDER_PRESETS.deepseek.model,
-    apiMode: PROVIDER_PRESETS.deepseek.apiMode,
-    tools: "待读取",
-    queue: "待检查",
-    sdk: "待检查",
+    run: "未加载",
+    task: "未创建",
+    stage: "P0",
+    route: "待定",
+    evidence: 0,
+    patch: 0,
     key: "未输入",
+    token: 0,
   },
   api: {
-    sdk: "待检查",
+    runtime: "待检查",
     apiKey: "未输入",
     apiKeySource: "none",
-    openaiCalled: "false",
+    apiKeyFingerprint: "none",
+    directApiCalled: "false",
     baseUrl: PROVIDER_PRESETS.deepseek.baseUrl,
+  },
+  graph: {
+    nodes: Object.fromEntries(DEFAULT_AGENTS.map((agentId) => [agentId, "idle"])),
+    edges: [],
+  },
+  usage: {
+    input_tokens: 0,
+    output_tokens: 0,
+    cached_tokens: 0,
+    total_tokens: 0,
   },
 };
 
@@ -72,15 +120,15 @@ class AgentRuntimeBridge {
     this.state = state;
   }
 
-  async sendPrompt(prompt) {
-    const runtimeConfig = buildRuntimeConfigForRequest();
+  async sendPrompt(prompt, options = {}) {
+    const runtimeConfig = buildRuntimeConfigForRequest(options);
     const payload = {
       conversationId: this.state.conversationId,
       prompt,
       runtimeConfig,
       uiContext: {
-        surface: "four-panel-console",
-        requestedPanels: ["input", "summary", "terminal", "api"],
+        surface: "p0-run-event-workbench",
+        requestedPanels: ["input", "summary", "graph", "terminal", "credentials", "usage"],
       },
     };
 
@@ -114,78 +162,387 @@ class AgentRuntimeBridge {
 const bridge = new AgentRuntimeBridge(appState);
 
 /*
- * DOM bindings are intentionally grouped here.  When maintainers add a backend
- * response field later, they only need to touch this map and the matching
- * renderer instead of searching event handlers across the file.
+ * Centralized DOM bindings keep the fixture replay and HTTP bridge path aligned.
+ * Tests assert these markers so future UI edits cannot silently drop a panel.
  */
 const elements = {
+  replayStatus: document.querySelector("[data-replay-status]"),
   promptForm: document.querySelector("[data-prompt-form]"),
   promptInput: document.querySelector("[data-prompt-input]"),
   insertExampleButton: document.querySelector("[data-insert-example]"),
-  endpointInput: document.querySelector("[data-bridge-endpoint]"),
+  stepReplayButton: document.querySelector("[data-step-replay]"),
+  runReplayButton: document.querySelector("[data-run-replay]"),
+  resetReplayButton: document.querySelector("[data-reset-replay]"),
   sendButton: document.querySelector("[data-send-button]"),
   terminalOutput: document.querySelector("[data-terminal-output]"),
-  summaryConnection: document.querySelector("[data-summary-connection]"),
-  summaryProvider: document.querySelector("[data-summary-provider]"),
-  summaryModel: document.querySelector("[data-summary-model]"),
-  summaryApiMode: document.querySelector("[data-summary-api-mode]"),
-  summaryTools: document.querySelector("[data-summary-tools]"),
-  summaryQueue: document.querySelector("[data-summary-queue]"),
-  summarySdk: document.querySelector("[data-summary-sdk]"),
+  summaryRun: document.querySelector("[data-summary-run]"),
+  summaryTask: document.querySelector("[data-summary-task]"),
+  summaryStage: document.querySelector("[data-summary-stage]"),
+  summaryRoute: document.querySelector("[data-summary-route]"),
+  summaryEvidence: document.querySelector("[data-summary-evidence]"),
+  summaryPatch: document.querySelector("[data-summary-patch]"),
   summaryKey: document.querySelector("[data-summary-key]"),
+  summaryToken: document.querySelector("[data-summary-token]"),
+  agentGraph: document.querySelector("[data-agent-graph]"),
+  edgeList: document.querySelector("[data-edge-list]"),
   providerSelect: document.querySelector("[data-provider-select]"),
   providerBaseUrl: document.querySelector("[data-provider-base-url]"),
   providerModel: document.querySelector("[data-provider-model]"),
   apiMode: document.querySelector("[data-api-mode]"),
   providerApiKey: document.querySelector("[data-provider-api-key]"),
   applyProviderPreset: document.querySelector("[data-apply-provider-preset]"),
+  testConnectionButton: document.querySelector("[data-test-connection]"),
   clearApiKey: document.querySelector("[data-clear-api-key]"),
   apiEndpoint: document.querySelector("[data-api-endpoint]"),
-  apiSdk: document.querySelector("[data-api-sdk]"),
+  apiRuntime: document.querySelector("[data-api-runtime]"),
   apiKey: document.querySelector("[data-api-key]"),
   apiKeySource: document.querySelector("[data-api-key-source]"),
-  apiOpenaiCalled: document.querySelector("[data-api-openai-called]"),
+  apiKeyFingerprint: document.querySelector("[data-api-key-fingerprint]"),
+  apiDirectCalled: document.querySelector("[data-api-direct-called]"),
   apiBaseUrl: document.querySelector("[data-api-base-url]"),
   apiInput: document.querySelector("[data-api-input]"),
   apiResponse: document.querySelector("[data-api-response]"),
+  usageInput: document.querySelector("[data-usage-input]"),
+  usageOutput: document.querySelector("[data-usage-output]"),
+  usageCached: document.querySelector("[data-usage-cached]"),
+  usageTotal: document.querySelector("[data-usage-total]"),
 };
+
+async function loadFixtureFromInput() {
+  try {
+    const response = await fetch(appState.fixtureUrl, { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error(`fixture returned HTTP ${response.status}`);
+    }
+    const events = parseJsonl(await response.text());
+    if (!events.length) {
+      throw new Error("fixture has no events");
+    }
+    appState.replayEvents = events;
+    appState.replayLoaded = true;
+    resetReplayState(false);
+    appState.replayStatus = `loaded ${events.length} events`;
+    appendTerminal(`FIXTURE loaded ${events.length} events from ${appState.fixtureUrl}`);
+  } catch (error) {
+    appState.replayStatus = "fixture load failed";
+    appendTerminal(`ERROR fixture load failed: ${error.message}`);
+  } finally {
+    renderAll();
+  }
+}
+
+function parseJsonl(source) {
+  return source
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => JSON.parse(line));
+}
+
+function resetReplayState(writeLog = true) {
+  appState.replayIndex = 0;
+  appState.summary = {
+    run: appState.replayEvents[0]?.run_id || "未加载",
+    task: "未创建",
+    stage: "P0",
+    route: "待定",
+    evidence: 0,
+    patch: 0,
+    key: appState.apiConfig.apiKey ? "页面会话 key 已输入" : "未输入",
+    token: 0,
+  };
+  appState.graph = {
+    nodes: Object.fromEntries(DEFAULT_AGENTS.map((agentId) => [agentId, "idle"])),
+    edges: [],
+  };
+  appState.usage = {
+    input_tokens: 0,
+    output_tokens: 0,
+    cached_tokens: 0,
+    total_tokens: 0,
+  };
+  appState.lastResponse = {};
+  if (writeLog) {
+    appendTerminal("REPLAY reset");
+  }
+  renderAll();
+}
+
+function stepReplay() {
+  if (!appState.replayLoaded || appState.replayIndex >= appState.replayEvents.length) {
+    return;
+  }
+  const event = appState.replayEvents[appState.replayIndex];
+  appState.replayIndex += 1;
+  applyRunEvent(event);
+  appState.replayStatus =
+    appState.replayIndex === appState.replayEvents.length
+      ? `complete ${appState.replayIndex}/${appState.replayEvents.length}`
+      : `event ${appState.replayIndex}/${appState.replayEvents.length}`;
+  renderAll();
+}
+
+function runReplayToEnd() {
+  while (appState.replayLoaded && appState.replayIndex < appState.replayEvents.length) {
+    stepReplay();
+  }
+}
+
+function applyRunEvent(event) {
+  const payload = event.payload || {};
+  markAgent(event.source_agent, "done");
+  markAgent(event.target_agent, event.type === "agent_node_started" ? "running" : "done");
+
+  appState.summary.run = event.run_id;
+  if (payload.task_id) {
+    appState.summary.task = payload.task_id;
+  }
+
+  switch (event.type) {
+    case "run_started":
+      appState.summary.stage = payload.phase || payload.state || appState.summary.stage;
+      appendTerminal(`RUN ${payload.run_id || event.run_id} ${payload.state || "started"}`);
+      break;
+    case "user_input_received":
+      appendTerminal(`EVENT user_input_received ${payload.prompt_summary || ""}`.trim());
+      break;
+    case "task_card_created":
+      appState.summary.task = payload.task_id;
+      appState.summary.stage = payload.phase || appState.summary.stage;
+      appState.summary.route = payload.task_type || appState.summary.route;
+      appendTerminal(`TASK ${payload.task_id} ${payload.task_type} risk=${payload.risk_level}`);
+      break;
+    case "route_decision":
+      if (Array.isArray(payload.route)) {
+        for (const roleId of payload.route) {
+          markAgent(roleId, roleId === "manager" || roleId === "center_agent" ? "running" : "planned");
+        }
+        for (let index = 0; index < payload.route.length - 1; index += 1) {
+          addEdge(`route_${index}_${payload.route[index]}_${payload.route[index + 1]}`, payload.route[index], payload.route[index + 1], "transferring");
+        }
+      }
+      appState.summary.route = (payload.route || []).map(agentLabel).join(" -> ");
+      appendTerminal(`ROUTE ${appState.summary.route}`);
+      break;
+    case "context_view_built":
+      appendTerminal(
+        `CONTEXT roles=${(payload.selected_role_ids || []).length} gateway_tools=${(payload.allowed_gateway_tools || []).length}`,
+      );
+      break;
+    case "agent_node_started":
+      markAgent(payload.agent_id || event.source_agent, payload.state || "running");
+      appendTerminal(`NODE ${payload.agent_id || event.source_agent} ${payload.state || "running"}`);
+      break;
+    case "agent_planned":
+      markAgent(payload.role_id || event.target_agent, "planned");
+      appendTerminal(`NODE ${payload.role_id || event.target_agent} planned`);
+      break;
+    case "agent_started":
+      markAgent(payload.role_id || event.target_agent, "running");
+      appendTerminal(`NODE ${payload.role_id || event.target_agent} running`);
+      break;
+    case "agent_delta":
+      markAgent(payload.role_id || event.source_agent, "running");
+      appendTerminal(`DELTA ${payload.role_id || event.source_agent}: ${payload.summary || ""}`.trim());
+      break;
+    case "agent_completed":
+      markAgent(payload.role_id || event.source_agent, "done");
+      appendTerminal(`NODE ${payload.role_id || event.source_agent} completed`);
+      break;
+    case "agent_blocked":
+      markAgent(payload.role_id || event.target_agent, "blocked");
+      appendTerminal(`NODE ${payload.role_id || event.target_agent} blocked ${payload.reason || ""}`.trim());
+      break;
+    case "agent_edge_transfer":
+      addEdge(payload.edge_id || `${event.source_agent}->${event.target_agent}`, event.source_agent, event.target_agent, payload.state || "transferring");
+      appendTerminal(`EDGE ${event.source_agent} -> ${event.target_agent} ${payload.state || "transferring"}`);
+      break;
+    case "edge_transfer":
+      addEdge(
+        payload.edge_id || `${event.source_agent}->${event.target_agent}`,
+        event.source_agent,
+        event.target_agent,
+        payload.status || payload.state || "transferring",
+      );
+      appendTerminal(`EDGE ${event.source_agent} -> ${event.target_agent} ${payload.status || payload.state || "transferring"}`);
+      break;
+    case "tool_requested":
+      markAgent(event.source_agent, "running");
+      markAgent(event.target_agent, "running");
+      addEdge(`tool_${payload.node_id || event.event_id}_${payload.sequence || 1}`, event.source_agent, event.target_agent, "transferring");
+      appendTerminal(`TOOL request ${payload.tool} by ${payload.role_id || event.source_agent}`);
+      break;
+    case "tool_completed":
+      markAgent(event.source_agent, "done");
+      markAgent(event.target_agent, "running");
+      addEdge(`tool_${payload.node_id || event.event_id}_${payload.sequence || 1}`, event.source_agent, event.target_agent, "completed");
+      appendTerminal(`TOOL complete ${toolLabel(payload)}`);
+      break;
+    case "tool_blocked":
+      markAgent(event.source_agent, "blocked");
+      markAgent(event.target_agent, "blocked");
+      addEdge(`tool_${payload.node_id || event.event_id}_${payload.sequence || 1}`, event.source_agent, event.target_agent, "blocked");
+      appendTerminal(`TOOL blocked ${toolLabel(payload)}`);
+      break;
+    case "tool_failed":
+      markAgent(event.source_agent, "blocked");
+      markAgent(event.target_agent, "blocked");
+      addEdge(`tool_${payload.node_id || event.event_id}_${payload.sequence || 1}`, event.source_agent, event.target_agent, "blocked");
+      appendTerminal(`TOOL failed ${toolLabel(payload)}`);
+      break;
+    case "approval_required":
+      markAgent(event.target_agent || "human_reviewer", "running");
+      appState.summary.stage = "waiting_for_human";
+      appendTerminal(`APPROVAL ${payload.required_decision || "required"} ${payload.reason || ""}`.trim());
+      break;
+    case "evidence_bundle_packed":
+      appState.summary.evidence += 1;
+      appendTerminal(`EVIDENCE ${payload.evidence_bundle_id} confidence=${payload.confidence}`);
+      break;
+    case "context_patch_proposed":
+      appState.summary.patch += 1;
+      appendTerminal(`PATCH ${patchLabel(payload)}`);
+      break;
+    case "patch_reviewed":
+      appendTerminal(`REVIEW ${reviewLabel(payload)} allowed=${payload.allowed_to_merge}`);
+      break;
+    case "command_line":
+      appendTerminal(scriptConsoleLabel(payload));
+      break;
+    case "token_usage_snapshot":
+      applyUsage(payload);
+      appendTerminal(`USAGE ${payload.agent_id} total=${payload.total_tokens}`);
+      break;
+    case "stage_summary":
+      appState.summary.stage = payload.status || appState.summary.stage;
+      closeRunningAgents();
+      if (!appState.lastResponse || Object.keys(appState.lastResponse).length === 0 || appState.lastResponse.object_type === "StageSummary") {
+        appState.lastResponse = payload;
+      }
+      appendTerminal(`SUMMARY ${payload.status}: ${payload.summary}`);
+      break;
+    case "run_paused":
+    case "run_resumed":
+    case "run_blocked":
+    case "run_completed":
+      appState.summary.stage = payload.state || event.type.replace("run_", "");
+      if (event.type === "run_blocked") {
+        markAgent(event.source_agent, "blocked");
+      }
+      if (event.type === "run_completed") {
+        closeRunningAgents();
+      }
+      appendTerminal(`RUN ${event.type.replace("run_", "")} ${payload.state || ""}`.trim());
+      break;
+    case "error":
+      appendTerminal(`ERROR ${payload.message || "unknown error"}`);
+      break;
+    default:
+      appendTerminal(`EVENT ${event.type}`);
+  }
+}
+
+function patchLabel(payload) {
+  const patch =
+    payload.context_patches?.[0] ||
+    payload.material_patch?.context_patch ||
+    payload.process_context_patch ||
+    payload;
+  return `${patch.patch_id || payload.object_type || "candidate"} ${patch.target_path || payload.task_id || ""} status=${patch.review_status || "candidate"}`;
+}
+
+function reviewLabel(payload) {
+  return payload.patch_id || payload.task_id || payload.reviewed_by || payload.object_type || "patch_review";
+}
+
+function scriptConsoleLabel(payload) {
+  const consoleLine = Array.isArray(payload.console_lines) ? payload.console_lines[0] : null;
+  const level = payload.level || consoleLine?.level || "info";
+  const text = payload.text || consoleLine?.text || payload.status || "";
+  return `${level.toUpperCase()} ${text}`.trim();
+}
+
+function toolLabel(payload) {
+  const summary = payload.result_summary || {};
+  const status = payload.status || payload.gateway_result?.status || "unknown";
+  const tool = payload.tool || payload.intent?.tool || "tool";
+  const detail = summary.result_type ? ` result=${summary.result_type}` : "";
+  return `${tool} status=${status}${detail}`;
+}
+
+function closeRunningAgents() {
+  for (const [agentId, state] of Object.entries(appState.graph.nodes)) {
+    if (state === "running") {
+      appState.graph.nodes[agentId] = "done";
+    }
+  }
+}
+
+function markAgent(agentId, state) {
+  if (!agentId) {
+    return;
+  }
+  appState.graph.nodes[agentId] = state;
+}
+
+function addEdge(edgeId, sourceAgent, targetAgent, state) {
+  const existingIndex = appState.graph.edges.findIndex((edge) => edge.edge_id === edgeId);
+  const edge = { edge_id: edgeId, source_agent: sourceAgent, target_agent: targetAgent, state };
+  if (existingIndex >= 0) {
+    appState.graph.edges[existingIndex] = edge;
+  } else {
+    appState.graph.edges.push(edge);
+  }
+}
+
+function applyUsage(payload) {
+  appState.usage = {
+    input_tokens: Number(payload.input_tokens || 0),
+    output_tokens: Number(payload.output_tokens || 0),
+    cached_tokens: Number(payload.cached_tokens || 0),
+    total_tokens: Number(payload.total_tokens || 0),
+  };
+  appState.summary.token = appState.usage.total_tokens;
+}
 
 function applyRuntimeReply(reply, elapsedMs) {
   const runtime = reply.runtime || {};
   const metrics = reply.metrics || {};
 
-  appState.summary = {
-    connection: metrics.connection || "已返回",
-    provider: metrics.provider || runtime.providerLabel || providerLabel(appState.apiConfig.provider),
-    model: metrics.model || runtime.model || appState.apiConfig.model || "未返回",
-    apiMode: metrics.apiMode || runtime.apiMode || appState.apiConfig.apiMode,
-    tools: metrics.tools || "未返回",
-    queue: metrics.queue || "未返回",
-    sdk: booleanLabel(runtime.sdkAvailable),
-    key: keyStatusLabel(runtime),
-  };
-
+  appState.summary.run = metrics.runId || appState.summary.run;
+  appState.summary.route = metrics.tools || "runtime response";
+  appState.summary.key = keyStatusLabel(runtime);
   appState.api = {
-    sdk: booleanLabel(runtime.sdkAvailable),
+    runtime: booleanLabel(runtime.directApiAvailable),
     apiKey: keyStatusLabel(runtime),
     apiKeySource: runtime.apiKeySource || (appState.apiConfig.apiKey ? "request" : "none"),
-    openaiCalled: String(Boolean(runtime.openaiCalled)),
-    baseUrl: runtime.baseUrl || metrics.baseUrl || appState.apiConfig.baseUrl || "OpenAI default",
+    apiKeyFingerprint: runtime.apiKeyFingerprint || "none",
+    directApiCalled: String(Boolean(runtime.directApiCalled)),
+    baseUrl: runtime.baseUrl || metrics.baseUrl || appState.apiConfig.baseUrl || "provider default",
   };
 
   appendTerminal(`HTTP 200 in ${elapsedMs} ms`);
   appendTerminal(
-    `RUNTIME provider=${runtime.providerLabel || runtime.provider || "unknown"} model=${runtime.model || "unknown"} api_mode=${runtime.apiMode || "unknown"} base_url=${runtime.baseUrl || "OpenAI default"} sdk=${appState.api.sdk} key=${appState.api.apiKeySource} sdk_call=${appState.api.openaiCalled}`,
+    `RUNTIME provider=${runtime.providerLabel || runtime.provider || "unknown"} model=${runtime.model || "unknown"} api_mode=${runtime.apiMode || "unknown"} direct_api=${appState.api.runtime} key=${appState.api.apiKeySource}`,
   );
-  for (const step of reply.timeline || []) {
-    appendTerminal(`STEP ${step.state}: ${step.title} - ${step.detail}`);
+  if (reply.usage) {
+    applyUsage(reply.usage);
+  }
+  if (Array.isArray(reply.events) && reply.events.length) {
+    for (const event of reply.events) {
+      applyRunEvent(event);
+    }
+  } else {
+    for (const step of reply.timeline || []) {
+      appendTerminal(`STEP ${step.state}: ${step.title} - ${step.detail}`);
+    }
   }
   appendTerminal(`AGENT> ${reply.text || "(empty response)"}`);
 
   renderAll();
 }
 
-function buildRuntimeConfigForRequest() {
+function buildRuntimeConfigForRequest(options = {}) {
   syncApiConfigFromDom();
   const runtimeConfig = {
     provider: appState.apiConfig.provider,
@@ -194,6 +551,9 @@ function buildRuntimeConfigForRequest() {
     apiMode: appState.apiConfig.apiMode,
   };
 
+  if (options.connectionTest) {
+    runtimeConfig.connectionTest = true;
+  }
   if (appState.apiConfig.apiKey) {
     runtimeConfig.apiKey = appState.apiConfig.apiKey;
   }
@@ -225,10 +585,7 @@ function applyProviderPreset(force = false) {
   }
 
   syncApiConfigFromDom();
-  appState.summary.provider = preset.label;
-  appState.summary.model = appState.apiConfig.model || preset.model;
-  appState.summary.apiMode = appState.apiConfig.apiMode;
-  appState.api.baseUrl = appState.apiConfig.baseUrl || "OpenAI default";
+  appState.api.baseUrl = appState.apiConfig.baseUrl || "provider default";
   renderAll();
 }
 
@@ -239,43 +596,96 @@ function appendTerminal(line) {
     second: "2-digit",
   }).format(new Date());
   appState.terminalLines.push(`[${time}] ${line}`);
-  if (appState.terminalLines.length > 180) {
-    appState.terminalLines = appState.terminalLines.slice(-180);
+  if (appState.terminalLines.length > 220) {
+    appState.terminalLines = appState.terminalLines.slice(-220);
   }
   renderTerminal();
 }
 
 function renderSummary() {
-  elements.summaryConnection.textContent = appState.summary.connection;
-  elements.summaryProvider.textContent = appState.summary.provider;
-  elements.summaryModel.textContent = appState.summary.model;
-  elements.summaryApiMode.textContent = appState.summary.apiMode;
-  elements.summaryTools.textContent = appState.summary.tools;
-  elements.summaryQueue.textContent = appState.summary.queue;
-  elements.summarySdk.textContent = appState.summary.sdk;
-  elements.summaryKey.textContent = appState.summary.key;
+  elements.summaryRun.textContent = appState.summary.run;
+  elements.summaryTask.textContent = appState.summary.task;
+  elements.summaryStage.textContent = appState.summary.stage;
+  elements.summaryRoute.textContent = appState.summary.route;
+  elements.summaryEvidence.textContent = String(appState.summary.evidence);
+  elements.summaryPatch.textContent = String(appState.summary.patch);
+  elements.summaryKey.textContent = appState.apiConfig.apiKey ? "页面会话 key 已输入" : appState.summary.key;
+  elements.summaryToken.textContent = String(appState.summary.token);
+}
+
+function renderGraph() {
+  const nodeEntries = Object.entries(appState.graph.nodes);
+  elements.agentGraph.replaceChildren(
+    ...nodeEntries.map(([agentId, state]) => {
+      const node = document.createElement("div");
+      node.className = `agent-node is-${state}`;
+      node.dataset.agentId = agentId;
+      node.innerHTML = `<strong>${agentLabel(agentId)}</strong><span>${state}</span>`;
+      return node;
+    }),
+  );
+
+  if (!appState.graph.edges.length) {
+    const empty = document.createElement("div");
+    empty.className = "edge-item";
+    empty.textContent = "no transfer";
+    elements.edgeList.replaceChildren(empty);
+    return;
+  }
+
+  elements.edgeList.replaceChildren(
+    ...appState.graph.edges.map((edge) => {
+      const item = document.createElement("div");
+      item.className = `edge-item is-${edge.state}`;
+      item.textContent = `${agentLabel(edge.source_agent)} -> ${agentLabel(edge.target_agent)} / ${edge.state}`;
+      return item;
+    }),
+  );
 }
 
 function renderTerminal() {
-  elements.terminalOutput.textContent = appState.terminalLines.join("\n");
-  elements.terminalOutput.scrollTop = elements.terminalOutput.scrollHeight;
+  const output = elements.terminalOutput;
+  const previousScrollTop = output.scrollTop;
+  const previousBottomGap = output.scrollHeight - output.clientHeight - previousScrollTop;
+  const shouldFollowTail = previousBottomGap <= 24;
+
+  output.textContent = appState.terminalLines.join("\n");
+  output.scrollTop = shouldFollowTail ? output.scrollHeight : previousScrollTop;
 }
 
 function renderApiPanel() {
   elements.apiEndpoint.textContent = appState.endpoint;
-  elements.apiSdk.textContent = appState.api.sdk;
+  elements.apiRuntime.textContent = appState.api.runtime;
   elements.apiKey.textContent = appState.apiConfig.apiKey ? "页面会话 key 已输入" : appState.api.apiKey;
   elements.apiKeySource.textContent = appState.apiConfig.apiKey ? "request" : appState.api.apiKeySource;
-  elements.apiOpenaiCalled.textContent = appState.api.openaiCalled;
-  elements.apiBaseUrl.textContent = appState.apiConfig.baseUrl || appState.api.baseUrl || "OpenAI default";
+  elements.apiKeyFingerprint.textContent = fingerprintLabel(appState.api.apiKeyFingerprint);
+  elements.apiDirectCalled.textContent = appState.api.directApiCalled;
+  elements.apiBaseUrl.textContent = appState.apiConfig.baseUrl || appState.api.baseUrl || "provider default";
   elements.apiInput.textContent = prettyJson(appState.lastPayload);
   elements.apiResponse.textContent = prettyJson(trimRuntimeResponse(appState.lastResponse));
 }
 
+function renderUsage() {
+  elements.usageInput.textContent = String(appState.usage.input_tokens);
+  elements.usageOutput.textContent = String(appState.usage.output_tokens);
+  elements.usageCached.textContent = String(appState.usage.cached_tokens);
+  elements.usageTotal.textContent = String(appState.usage.total_tokens);
+}
+
+function renderReplayControls() {
+  elements.replayStatus.textContent = appState.replayStatus;
+  elements.stepReplayButton.disabled = !appState.replayLoaded || appState.replayIndex >= appState.replayEvents.length;
+  elements.runReplayButton.disabled = !appState.replayLoaded || appState.replayIndex >= appState.replayEvents.length;
+  elements.resetReplayButton.disabled = !appState.replayLoaded;
+}
+
 function renderAll() {
+  renderReplayControls();
   renderSummary();
+  renderGraph();
   renderTerminal();
   renderApiPanel();
+  renderUsage();
 }
 
 function applyStartupOptions() {
@@ -283,7 +693,11 @@ function applyStartupOptions() {
   const endpoint = options.get("endpoint");
   if (endpoint) {
     appState.endpoint = endpoint;
-    elements.endpointInput.value = endpoint;
+  }
+
+  const fixture = options.get("fixture");
+  if (fixture) {
+    appState.fixtureUrl = fixture;
   }
 
   const provider = options.get("provider");
@@ -294,9 +708,18 @@ function applyStartupOptions() {
 }
 
 function bindEvents() {
-  elements.endpointInput.addEventListener("input", () => {
-    appState.endpoint = elements.endpointInput.value.trim() || DEFAULT_ENDPOINT;
-    renderApiPanel();
+  elements.stepReplayButton.addEventListener("click", () => {
+    stepReplay();
+  });
+
+  elements.runReplayButton.addEventListener("click", () => {
+    runReplayToEnd();
+  });
+
+  elements.resetReplayButton.addEventListener("click", () => {
+    resetReplayState();
+    appState.replayStatus = `loaded ${appState.replayEvents.length} events`;
+    renderAll();
   });
 
   elements.providerSelect.addEventListener("change", () => {
@@ -307,10 +730,10 @@ function bindEvents() {
     const eventName = input.tagName === "SELECT" ? "change" : "input";
     input.addEventListener(eventName, () => {
       syncApiConfigFromDom();
-      appState.summary.provider = providerLabel(appState.apiConfig.provider);
-      appState.summary.model = appState.apiConfig.model || "待配置";
-      appState.summary.apiMode = appState.apiConfig.apiMode;
       appState.summary.key = appState.apiConfig.apiKey ? "页面会话 key 已输入" : "未输入";
+      appState.api.apiKey = appState.summary.key;
+      appState.api.apiKeySource = appState.apiConfig.apiKey ? "request" : "none";
+      appState.api.apiKeyFingerprint = appState.apiConfig.apiKey ? "等待后端响应" : "none";
       renderAll();
     });
   }
@@ -319,18 +742,32 @@ function bindEvents() {
     applyProviderPreset(true);
   });
 
+  elements.testConnectionButton.addEventListener("click", async () => {
+    elements.testConnectionButton.disabled = true;
+    elements.testConnectionButton.textContent = "测试中";
+    try {
+      await bridge.sendPrompt("provider connection test", { connectionTest: true });
+    } catch (error) {
+      appendTerminal(`ERROR ${error.message}`);
+    } finally {
+      elements.testConnectionButton.disabled = false;
+      elements.testConnectionButton.textContent = "测试连接";
+    }
+  });
+
   elements.clearApiKey.addEventListener("click", () => {
     elements.providerApiKey.value = "";
     syncApiConfigFromDom();
     appState.summary.key = "未输入";
     appState.api.apiKey = "未输入";
     appState.api.apiKeySource = "none";
+    appState.api.apiKeyFingerprint = "none";
     appendTerminal("INFO cleared page session API key");
     renderAll();
   });
 
   elements.insertExampleButton.addEventListener("click", () => {
-    elements.promptInput.value = "请读取当前 AutoForm 安装和队列状态，并规划 kinematic check。";
+    elements.promptInput.value = "准备一个低风险 AutoForm 仿真前检查流程。";
     elements.promptInput.focus();
   });
 
@@ -348,9 +785,7 @@ function bindEvents() {
     try {
       await bridge.sendPrompt(prompt);
     } catch (error) {
-      appState.summary.connection = "请求失败";
       appendTerminal(`ERROR ${error.message}`);
-      renderSummary();
     } finally {
       elements.sendButton.disabled = false;
       elements.sendButton.textContent = "发送";
@@ -362,12 +797,20 @@ function trimRuntimeResponse(reply) {
   if (!reply || Object.keys(reply).length === 0) {
     return {};
   }
+  if (reply.object_type === "StageSummary") {
+    return reply;
+  }
   return {
     role: reply.role,
     text: reply.text,
     metrics: reply.metrics,
     runtime: reply.runtime,
     preview: reply.preview,
+    centerPlan: compactCenterPlanForDisplay(reply.centerPlan),
+    connectionTest: reply.connectionTest,
+    usage: reply.usage,
+    eventCount: Array.isArray(reply.events) ? reply.events.length : 0,
+    eventTypes: Array.isArray(reply.events) ? reply.events.map((event) => event.type).slice(0, 16) : [],
   };
 }
 
@@ -379,11 +822,37 @@ function redactPayloadForDisplay(value) {
     return Object.fromEntries(
       Object.entries(value).map(([key, item]) => [
         key,
-        /apiKey|api_key|OPENAI_API_KEY/i.test(key) && item ? "[redacted]" : redactPayloadForDisplay(item),
+        shouldRedactDisplayKey(key) && item
+          ? "[redacted]"
+          : redactPayloadForDisplay(item),
       ]),
     );
   }
   return value;
+}
+
+function shouldRedactDisplayKey(key) {
+  return /^(apiKey|api_key|apiKeyFingerprint|DeepSeek_V4_API|DEEPSEEK_API_KEY|CHAT_API_KEY|authorization)$/i.test(key);
+}
+
+function compactCenterPlanForDisplay(centerPlan) {
+  if (!centerPlan || typeof centerPlan !== "object") {
+    return undefined;
+  }
+  const contextView = centerPlan.context_view || {};
+  return {
+    schema_version: centerPlan.schema_version,
+    status: centerPlan.status,
+    task_id: centerPlan.task_card?.task_id,
+    task_type: centerPlan.task_card?.task_type,
+    context_id: contextView.context_id,
+    view_level: contextView.view_level,
+    context_scope: contextView.context_scope,
+    selected_role_ids: contextView.selected_role_ids || [],
+    dag_node_count: Array.isArray(centerPlan.task_dag) ? centerPlan.task_dag.length : 0,
+    patch_review_status: centerPlan.patch_reviews?.[0]?.review_status,
+    execution_boundary: centerPlan.execution_boundary,
+  };
 }
 
 function prettyJson(value) {
@@ -410,10 +879,22 @@ function keyStatusLabel(runtime) {
   return "未输入";
 }
 
+function fingerprintLabel(value) {
+  if (!value || value === "none") {
+    return "none";
+  }
+  return "configured";
+}
+
 function providerLabel(provider) {
   return (PROVIDER_PRESETS[provider] || PROVIDER_PRESETS.custom).label;
+}
+
+function agentLabel(agentId) {
+  return AGENT_LABELS[agentId] || agentId.replaceAll("_", " ");
 }
 
 applyStartupOptions();
 bindEvents();
 renderAll();
+loadFixtureFromInput();

@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autoform-agent.schemas.connection_test_status.v1",
+  "title": "ConnectionTestStatus",
+  "type": "object",
+  "required": [
+    "object_type",
+    "provider",
+    "model",
+    "apiKeyConfigured",
+    "apiKeySource",
+    "apiKeyFingerprint",
+    "status",
+    "summary",
+    "checkedAt"
+  ],
+  "properties": {
+    "object_type": {
+      "const": "ConnectionTestStatus"
+    },
+    "provider": {
+      "type": "string"
+    },
+    "model": {
+      "type": "string"
+    },
+    "baseUrl": {
+      "type": "string"
+    },
+    "apiMode": {
+      "type": "string"
+    },
+    "apiKeyConfigured": {
+      "type": "boolean"
+    },
+    "apiKeySource": {
+      "type": "string"
+    },
+    "apiKeyFingerprint": {
+      "type": ["string", "null"]
+    },
+    "status": {
+      "enum": ["skipped", "passed", "failed"]
+    },
+    "httpStatus": {
+      "type": ["integer", "null"]
+    },
+    "latencyMs": {
+      "type": ["integer", "null"],
+      "minimum": 0
+    },
+    "summary": {
+      "type": "string"
+    },
+    "checkedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "usageSnapshot": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": true
+}

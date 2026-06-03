@@ -1,8 +1,6 @@
-"""Diagnostics, log discovery and environment snapshot helpers.
+"""这个文件收集本机状态快照、AutoForm 安装信息、日志、队列和诊断包计划。它是排查环境问题时最先看的证据入口。
 
-The diagnostic layer collects evidence for support and future development.  It
-keeps default behavior read-only and uses dry-run plans for bundle creation so a
-caller can review paths before copying logs.
+This file collects local status snapshots, AutoForm installation details, logs, queue information, and diagnostic bundle plans. It is the first evidence entry point when the environment needs troubleshooting.
 """
 
 from __future__ import annotations

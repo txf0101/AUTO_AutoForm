@@ -1,8 +1,6 @@
-"""Queue and LSF command planning utilities.
+"""这个文件处理 LSF 或其他队列相关的探测和命令计划。它帮助用户判断队列环境能否用于后续求解任务。
 
-Queue commands are machine-specific and may affect active jobs.  This module
-keeps status reads and command plans structured, and leaves real execution
-behind explicit caller intent.
+This file handles probes and command plans for LSF or other queue systems. It helps users decide whether a queue environment can support later solver jobs.
 """
 
 from __future__ import annotations

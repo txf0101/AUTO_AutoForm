@@ -1,9 +1,6 @@
-"""Read-only accessors for AutoForm `systemConfigFile.xml`.
+"""这个文件集中读取项目配置，例如日志、队列和远程主机设置。它让其他模块不用到处查环境变量或配置字段。
 
-The XML file is part of AutoForm ProgramData and contains machine-specific
-settings such as local queue definitions, remote compute hosts and logging
-preferences.  This module intentionally returns plain dictionaries so the same
-data can be reused by CLI commands, MCP tools and tests without UI dependencies.
+This file centralizes project configuration such as logging, queue, and remote-host settings. Other modules can read stable helpers instead of looking up environment variables everywhere.
 """
 
 from __future__ import annotations

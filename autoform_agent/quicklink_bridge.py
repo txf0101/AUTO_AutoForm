@@ -1,4 +1,7 @@
-"""Runtime bridge called by AutoForm QuickLink Export scripts."""
+"""这个文件为 QuickLink 相关能力提供一个轻量桥接入口。它把旧入口或外部调用转到当前稳定的 QuickLink 解析函数。
+
+This file provides a lightweight bridge for QuickLink-related capabilities. It forwards legacy or external calls to the current stable QuickLink parsing functions.
+"""
 
 from __future__ import annotations
 

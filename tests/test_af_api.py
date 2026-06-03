@@ -1,3 +1,8 @@
+"""这个测试文件检查AF API 探测、模板和构建计划。读测试时可以把每个断言看成一条项目承诺：输入什么、应该返回什么、哪些危险动作默认不能发生。
+
+This test file checks AF API discovery, templates, and build plans. Read each assertion as one project promise: what input is accepted, what output must come back, and which risky actions must stay disabled by default.
+"""
+
 from pathlib import Path
 
 from autoform_agent.af_api import af_api_build_preview, af_api_template_plan, check_af_api_build_env, list_af_api_modules

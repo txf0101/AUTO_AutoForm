@@ -1,0 +1,226 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autoform.process_rag_evidence_bundle.r16.v1",
+  "title": "ProcessRagEvidenceBundle",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "object_type",
+    "phase",
+    "evidence_bundle_id",
+    "query",
+    "filters",
+    "source_refs",
+    "evidence_refs",
+    "card_refs",
+    "summary",
+    "applicability",
+    "limitation",
+    "confidence",
+    "review_status",
+    "human_review_status",
+    "conflict_status",
+    "retrieval_run",
+    "created_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "autoform.process_rag_evidence_bundle.r16.v1"
+    },
+    "object_type": {
+      "const": "EvidenceBundle"
+    },
+    "phase": {
+      "const": "R16"
+    },
+    "evidence_bundle_id": {
+      "type": "string",
+      "pattern": "^evidence_[a-z0-9_]+$"
+    },
+    "query": {
+      "type": "string"
+    },
+    "filters": {
+      "type": "object"
+    },
+    "source_refs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "source_id",
+          "title",
+          "path_or_url",
+          "source_type",
+          "captured_at",
+          "reviewed",
+          "permission_level",
+          "license_status",
+          "review_status",
+          "applicability",
+          "limitation"
+        ],
+        "properties": {
+          "source_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "path_or_url": {
+            "type": "string"
+          },
+          "source_type": {
+            "type": "string"
+          },
+          "captured_at": {
+            "type": "string"
+          },
+          "reviewed": {
+            "type": "boolean"
+          },
+          "permission_level": {
+            "type": "string"
+          },
+          "license_status": {
+            "type": "string"
+          },
+          "review_status": {
+            "type": "string"
+          },
+          "applicability": {
+            "type": "string"
+          },
+          "limitation": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "evidence_id",
+          "source_id",
+          "source_hash",
+          "artifact_uri",
+          "evidence_type"
+        ]
+      }
+    },
+    "card_refs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "card_id",
+          "card_type",
+          "source_id",
+          "source_permission_level",
+          "version",
+          "review_status",
+          "license_status",
+          "allowed_usage",
+          "applicability",
+          "limitation",
+          "score",
+          "ranking_reasons",
+          "formal_index_allowed"
+        ]
+      }
+    },
+    "summary": {
+      "type": "string"
+    },
+    "applicability": {
+      "type": "string"
+    },
+    "limitation": {
+      "type": "string"
+    },
+    "confidence": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "review_status": {
+      "const": "candidate"
+    },
+    "human_review_status": {
+      "type": "string",
+      "enum": [
+        "required",
+        "not_required"
+      ]
+    },
+    "conflict_status": {
+      "type": "string",
+      "enum": [
+        "none",
+        "no_result",
+        "blocked_evidence_present",
+        "conflicting_parameter_window"
+      ]
+    },
+    "retrieval_run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "retrieval_run_id",
+        "index_version",
+        "candidate_card_count",
+        "matched_card_count",
+        "formal_index_allowed_count",
+        "filters_applied",
+        "ranking_explanation",
+        "excluded_cards",
+        "blocked_actions"
+      ],
+      "properties": {
+        "retrieval_run_id": {
+          "type": "string"
+        },
+        "index_version": {
+          "const": "autoform.process_rag.r16.v1"
+        },
+        "candidate_card_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "matched_card_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "formal_index_allowed_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "filters_applied": {
+          "type": "object"
+        },
+        "ranking_explanation": {
+          "type": "array"
+        },
+        "excluded_cards": {
+          "type": "array"
+        },
+        "blocked_actions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autoform-agent.schemas.ui_event.v1",
+  "title": "RunEvent",
+  "type": "object",
+  "required": [
+    "event_id",
+    "run_id",
+    "type",
+    "source_agent",
+    "target_agent",
+    "payload",
+    "timestamp"
+  ],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "pattern": "^evt_[a-z0-9_]+$"
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^run_[a-z0-9_]+$"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "user_input_received",
+        "task_card_created",
+        "route_decision",
+        "context_view_built",
+        "agent_node_started",
+        "agent_edge_transfer",
+        "evidence_bundle_packed",
+        "context_patch_proposed",
+        "patch_reviewed",
+        "command_line",
+        "token_usage_snapshot",
+        "stage_summary",
+        "error"
+      ]
+    },
+    "source_agent": {
+      "type": "string"
+    },
+    "target_agent": {
+      "type": "string"
+    },
+    "payload": {
+      "type": "object"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": true
+}

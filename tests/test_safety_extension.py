@@ -1,3 +1,8 @@
+"""这个测试文件检查安全扫描和扩展边界。读测试时可以把每个断言看成一条项目承诺：输入什么、应该返回什么、哪些危险动作默认不能发生。
+
+This test file checks safety scans and extension boundaries. Read each assertion as one project promise: what input is accepted, what output must come back, and which risky actions must stay disabled by default.
+"""
+
 from pathlib import Path
 
 from autoform_agent.extension import internal_extension_boundary
@@ -7,7 +12,7 @@ from autoform_agent.safety import public_release_scan, write_safety_plan
 
 def test_public_release_scan_detects_secret_like_values(tmp_path: Path) -> None:
     fake_key = "sk-" + "testSecretValue0123456789"
-    (tmp_path / "README.md").write_text(f"OPENAI_API_KEY={fake_key}", encoding="utf-8")
+    (tmp_path / "README.md").write_text(f"DEEPSEEK_API_KEY={fake_key}", encoding="utf-8")
 
     scan = public_release_scan(tmp_path)
 

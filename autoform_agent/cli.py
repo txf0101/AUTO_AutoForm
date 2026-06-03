@@ -1,8 +1,6 @@
-"""Command-line interface for AutoForm Agent.
+"""这个文件定义 AutoForm Agent 的命令行界面。它负责解析用户在终端输入的命令，把参数交给对应业务模块，并尽量用 JSON 返回可审计结果。
 
-The CLI is a thin orchestration layer around implementation modules.  Keep
-argument parsing here, keep AutoForm business logic in the dedicated modules,
-and prefer JSON output for commands that are also useful to MCP clients.
+This file defines the AutoForm Agent command-line interface. It parses terminal commands, forwards arguments to the right business module, and usually returns JSON so results can be audited.
 """
 
 from __future__ import annotations
@@ -19,6 +17,7 @@ from .af_api import (
     list_af_api_modules,
 )
 from .agent_runtime import load_agent_runtime_config, run_agent_runtime_turn
+from .agent_system import build_center_agent_plan, build_default_agent_registry, plan_agent_system_turn
 from .commands import (
     executable_command_plan,
     executable_help_probe,
@@ -29,6 +28,7 @@ from .commands import (
 )
 from .config import get_logging_config, get_queue_config, get_remote_hosts
 from .coverage import help_topic_agent_mapping, module_coverage_matrix
+from .credentials import credential_fingerprint
 from .diagnostics import (
     autoform_status_snapshot,
     collect_gui_project_events,
@@ -37,6 +37,16 @@ from .diagnostics import (
     environment_snapshot,
 )
 from .extension import internal_extension_boundary
+from .gui_automation import (
+    autoform_window_snapshot,
+    capture_desktop_screenshot,
+    click_autoform_window,
+    computer_use_probe,
+    drag_autoform_window,
+    focus_autoform_window,
+    restore_autoform_window,
+    visible_window_control_demo,
+)
 from .inventory import (
     get_afd_project_summary,
     get_afd_readable_index,
@@ -56,8 +66,14 @@ from .materials import (
     result_to_json,
 )
 from .paths import discover_installations, get_default_installation
+from .preparation_agents import (
+    build_r11_low_risk_replay,
+    retrieve_evidence_bundle,
+    run_low_risk_script,
+    triage_request,
+)
 from .process import collect_forming_job_logs, forming_job_plan, open_afd, run_forming_job, start_forming_ui
-from .project_workflow import example_project_baseline, project_run_workflow, resolve_project_input
+from .project_workflow import example_project_baseline, official_sample_run_summary, project_run_workflow, resolve_project_input
 from .queue import lsf_command_plan, queue_client_probe, queue_command_plan, queue_health_check
 from .quicklink import (
     compare_quicklink_exports,
@@ -77,9 +93,26 @@ from .quicklink import (
     quicklink_schema,
     validate_quicklink_standard,
 )
+from .r12_demo import r12_project_view_demo
 from .release import install_check_plan, release_package_plan, release_readiness_check
 from .report import report_inventory, report_log_events
 from .results import copy_result_evidence, report_delivery_plan, result_inventory
+from .result_viewer import (
+    assess_result_review_readiness,
+    build_result_review_plan,
+    capture_result_evidence,
+    find_latest_result_project,
+    open_latest_result_project,
+    open_result_project,
+    play_forming_animation,
+    result_gui_evidence,
+    result_review_blockers,
+    result_review_capabilities,
+    route_result_task,
+    select_result_variable,
+    set_result_view,
+    view_control_evidence_protocol,
+)
 from .safety import public_release_scan, write_safety_plan
 from .solver import (
     forming_job_check_plan,
@@ -97,6 +130,11 @@ from .solver import (
 
 def main(argv: list[str] | None = None) -> int:
     """Parse command-line arguments, dispatch one subcommand, and return an exit code."""
+
+    # 这个函数的前半段只是在登记“用户可以输入哪些命令”和“每个命令要哪些参数”。
+    # 真正的 AutoForm 业务逻辑在下面的分发区和各业务模块里，读代码时可以先按命令名搜索。
+    # The first half of this function only registers command names and their arguments.
+    # The real AutoForm work happens in the dispatch section below and in business modules; search by command name when reading.
     parser = argparse.ArgumentParser(prog="autoform-agent")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -105,13 +143,49 @@ def main(argv: list[str] | None = None) -> int:
     status_parser = subparsers.add_parser("status", help="Print the read-only AutoForm Agent status snapshot.")
     status_parser.add_argument("--workspace", type=Path, help="Workspace root used to locate QuickLink exports and logs.")
 
-    agent_parser = subparsers.add_parser("agent-turn", help="Run one prompt through the backend OpenAI Agents SDK runtime.")
-    agent_parser.add_argument("prompt", help="User prompt for the backend AutoForm Agent runtime.")
+    agent_parser = subparsers.add_parser("agent-turn", help="Run one prompt through the backend direct API runtime.")
+    agent_parser.add_argument("prompt", help="User prompt for the backend AutoForm API runtime.")
     agent_parser.add_argument("--conversation-id", default="cli", help="Stable id included in runtime metadata.")
-    agent_parser.add_argument("--max-turns", type=int, default=8, help="Maximum Agents SDK turns when cloud runtime is configured.")
+    agent_parser.add_argument("--max-turns", type=int, default=1, help="Compatibility option retained for old scripts.")
 
     agent_status_parser = subparsers.add_parser("agent-status", help="Inspect backend agent runtime configuration.")
     agent_status_parser.add_argument("--json", action="store_true", help="Print machine-readable runtime status.")
+
+    agent_connection_parser = subparsers.add_parser(
+        "agent-connection-test",
+        help="Run an explicit provider connection test without accepting a key argument.",
+    )
+    agent_connection_parser.add_argument("--conversation-id", default="cli-connection-test")
+    agent_connection_parser.add_argument("--provider", choices=["deepseek", "custom"])
+    agent_connection_parser.add_argument("--base-url")
+    agent_connection_parser.add_argument("--model")
+    agent_connection_parser.add_argument("--api-mode", choices=["auto", "chat_completions"])
+
+    subparsers.add_parser("agent-roles", help="List reserved multi agent role definitions.")
+
+    agent_system_parser = subparsers.add_parser("agent-system-plan", help="Preview future multi agent routing for one prompt.")
+    agent_system_parser.add_argument("prompt", help="User prompt used to select reserved agent roles.")
+    agent_system_parser.add_argument("--role", action="append", default=[], help="Explicit role id to include in the route.")
+    agent_system_parser.add_argument("--mode", default="routing_preview", help="Execution mode label recorded in the plan.")
+
+    center_agent_parser = subparsers.add_parser("agent-center-plan", help="Build the R5 center Agent task DAG, context view and gateway policy.")
+    center_agent_parser.add_argument("prompt", help="User prompt used to build the R5 center Agent plan.")
+    center_agent_parser.add_argument("--conversation-id", default="cli-center")
+    center_agent_parser.add_argument("--role", action="append", default=[], help="Explicit role id to include in the center route.")
+
+    prepare_triage_parser = subparsers.add_parser("prepare-triage", help="Build the R6 demand triage card for a low-risk preparation prompt.")
+    prepare_triage_parser.add_argument("prompt")
+
+    prepare_evidence_parser = subparsers.add_parser("prepare-evidence", help="Build the R7 minimal EvidenceBundle from source_registry.csv.")
+    prepare_evidence_parser.add_argument("query")
+
+    prepare_script_parser = subparsers.add_parser("prepare-script-run", help="Run or reject an R10 low-risk script registry entry.")
+    prepare_script_parser.add_argument("skill_id")
+    prepare_script_parser.add_argument("--param", action="append", default=[], help="key=value parameter passed to the script record.")
+
+    prepare_replay_parser = subparsers.add_parser("prepare-r11-replay", help="Build the R11 low-risk end-to-end preparation replay.")
+    prepare_replay_parser.add_argument("prompt")
+    prepare_replay_parser.add_argument("--run-id", default="run_r11_prepare_demo")
 
     archive_parser = subparsers.add_parser("archive-list", help="List archive members with bsdtar.")
     archive_parser.add_argument("archive", type=Path)
@@ -124,6 +198,172 @@ def main(argv: list[str] | None = None) -> int:
     open_parser = subparsers.add_parser("open-afd", help="Open an AutoForm .afd project.")
     open_parser.add_argument("afd", type=Path)
     open_parser.add_argument("--dry-run", action="store_true")
+
+    subparsers.add_parser("gui-window-snapshot", help="List visible AutoForm GUI windows for local desktop automation.")
+
+    gui_focus_parser = subparsers.add_parser("gui-focus", help="Bring the largest visible AutoForm GUI window to the front.")
+
+    gui_restore_parser = subparsers.add_parser("gui-restore-window", help="Restore a visible AutoForm project window and verify interaction readiness.")
+    gui_restore_parser.add_argument("--title-contains")
+    gui_restore_parser.add_argument("--wait", type=float, default=0.5)
+
+    gui_screenshot_parser = subparsers.add_parser("gui-screenshot", help="Capture the desktop after optionally focusing AutoForm.")
+    gui_screenshot_parser.add_argument("output", type=Path)
+    gui_screenshot_parser.add_argument("--no-focus", action="store_true")
+    gui_screenshot_parser.add_argument("--wait", type=float, default=0.5)
+
+    gui_click_parser = subparsers.add_parser("gui-click", help="Click a coordinate in the visible AutoForm GUI window.")
+    gui_click_parser.add_argument("x", type=float)
+    gui_click_parser.add_argument("y", type=float)
+    gui_click_parser.add_argument("--absolute", action="store_true", help="Treat x and y as absolute screen coordinates.")
+    gui_click_parser.add_argument("--no-focus", action="store_true")
+    gui_click_parser.add_argument("--no-restore", action="store_true")
+    gui_click_parser.add_argument("--wait", type=float, default=0.2)
+
+    gui_drag_parser = subparsers.add_parser("gui-drag", help="Drag between two coordinates in the visible AutoForm GUI window.")
+    gui_drag_parser.add_argument("start_x", type=float)
+    gui_drag_parser.add_argument("start_y", type=float)
+    gui_drag_parser.add_argument("end_x", type=float)
+    gui_drag_parser.add_argument("end_y", type=float)
+    gui_drag_parser.add_argument("--absolute", action="store_true", help="Treat coordinates as absolute screen positions.")
+    gui_drag_parser.add_argument("--no-focus", action="store_true")
+    gui_drag_parser.add_argument("--no-restore", action="store_true")
+    gui_drag_parser.add_argument("--duration", type=float, default=0.4)
+    gui_drag_parser.add_argument("--steps", type=int, default=12)
+    gui_drag_parser.add_argument("--wait", type=float, default=0.2)
+
+    computer_probe_parser = subparsers.add_parser("computer-use-probe", help="Probe desktop screenshot and AutoForm window readiness.")
+    computer_probe_parser.add_argument("--capture", action="store_true", help="Attempt a desktop screenshot.")
+    computer_probe_parser.add_argument("--output", type=Path, default=Path("tmp") / "computer_use_probe" / "desktop_probe.png")
+    computer_probe_parser.add_argument("--focus-autoform", action="store_true")
+    computer_probe_parser.add_argument("--wait", type=float, default=0.2)
+
+    gui_demo_parser = subparsers.add_parser("gui-control-demo", help="Plan or run the R12 visible AutoForm window control demo.")
+    gui_demo_parser.add_argument("--output-dir", type=Path, default=Path("tmp") / "r12_visible_window_control_demo")
+    gui_demo_parser.add_argument("--execute", action="store_true")
+    gui_demo_parser.add_argument("--action", default="restore_focus", choices=["restore_focus", "screenshot", "keystroke", "click", "drag"])
+    gui_demo_parser.add_argument("--title-contains")
+    gui_demo_parser.add_argument("--keystroke")
+    gui_demo_parser.add_argument("--click-x", type=float, default=0.5)
+    gui_demo_parser.add_argument("--click-y", type=float, default=0.5)
+    gui_demo_parser.add_argument("--drag-start-x", type=float, default=0.40)
+    gui_demo_parser.add_argument("--drag-start-y", type=float, default=0.90)
+    gui_demo_parser.add_argument("--drag-end-x", type=float, default=0.60)
+    gui_demo_parser.add_argument("--drag-end-y", type=float, default=0.90)
+    gui_demo_parser.add_argument("--absolute", action="store_true", help="Treat click and drag coordinates as absolute screen positions.")
+    gui_demo_parser.add_argument("--wait", type=float, default=0.2)
+
+    r12_project_view_parser = subparsers.add_parser(
+        "r12-project-view-demo",
+        help="Plan or run the R12 demo that opens a project, switches top view, then returns to isometric.",
+    )
+    r12_project_view_parser.add_argument("--example", default="Solver_R13")
+    r12_project_view_parser.add_argument("--afd", type=Path)
+    r12_project_view_parser.add_argument("--execute", action="store_true")
+    r12_project_view_parser.add_argument("--wait", type=float, default=2.0)
+    r12_project_view_parser.add_argument("--view-wait", type=float, default=0.5)
+    r12_project_view_parser.add_argument("--no-screenshot", action="store_true")
+    r12_project_view_parser.add_argument("--output-dir", type=Path, default=Path("tmp") / "r12_project_view_demo")
+
+    result_capabilities_parser = subparsers.add_parser("result-capabilities", help="List V1.1 result review variables, views and routes.")
+    result_capabilities_parser.add_argument("--autoform-version")
+
+    result_gui_evidence_parser = subparsers.add_parser("result-gui-evidence", help="List local V1.1 GUI control evidence and remaining gaps.")
+    result_gui_evidence_parser.add_argument("--scope", default="all")
+    result_gui_evidence_parser.add_argument("--workspace", type=Path)
+
+    result_blockers_parser = subparsers.add_parser("result-blockers", help="List V1.1 blockers, countermeasures and user assistance requests.")
+    result_blockers_parser.add_argument("--scope", default="v1_1")
+    result_blockers_parser.add_argument("--include-completed", action="store_true")
+
+    result_latest_parser = subparsers.add_parser("result-find-latest", help="Find the latest .afd result project candidate.")
+    result_latest_parser.add_argument("--search-dir", type=Path)
+    result_latest_parser.add_argument("--workspace", type=Path)
+    result_latest_parser.add_argument("--limit", type=int, default=200)
+
+    result_open_latest_parser = subparsers.add_parser("result-open-latest", help="Open or plan opening the latest result project.")
+    result_open_latest_parser.add_argument("--search-dir", type=Path)
+    result_open_latest_parser.add_argument("--workspace", type=Path)
+    result_open_latest_parser.add_argument("--execute", action="store_true")
+    result_open_latest_parser.add_argument("--wait", type=float, default=1.0)
+    result_open_latest_parser.add_argument("--no-screenshot", action="store_true")
+    result_open_latest_parser.add_argument("--output-dir", type=Path, default=Path("tmp") / "result_review")
+
+    result_open_project_parser = subparsers.add_parser("result-open-project", help="Open or plan opening one result project.")
+    result_open_project_parser.add_argument("project", type=Path)
+    result_open_project_parser.add_argument("--execute", action="store_true")
+    result_open_project_parser.add_argument("--wait", type=float, default=1.0)
+    result_open_project_parser.add_argument("--no-screenshot", action="store_true")
+    result_open_project_parser.add_argument("--output-dir", type=Path, default=Path("tmp") / "result_review")
+
+    result_show_parser = subparsers.add_parser("result-show-variable", help="Map and plan a result variable switch.")
+    result_show_parser.add_argument("result_name")
+    result_show_parser.add_argument("--operation")
+    result_show_parser.add_argument("--project-hint", default="current")
+    result_show_parser.add_argument("--view")
+    result_show_parser.add_argument("--execute", action="store_true")
+    result_show_parser.add_argument("--no-screenshot", action="store_true")
+    result_show_parser.add_argument("--output-dir", type=Path, default=Path("tmp") / "result_review")
+
+    result_view_parser = subparsers.add_parser("result-set-view", help="Map and plan a result view change.")
+    result_view_parser.add_argument("view")
+    result_view_parser.add_argument("--execute", action="store_true")
+    result_view_parser.add_argument("--no-screenshot", action="store_true")
+    result_view_parser.add_argument("--output-dir", type=Path, default=Path("tmp") / "result_review")
+
+    result_view_evidence_parser = subparsers.add_parser(
+        "result-view-evidence",
+        help="Plan, capture, or compare manual evidence for result view controls.",
+    )
+    result_view_evidence_parser.add_argument("--view")
+    result_view_evidence_parser.add_argument("--phase", default="plan", choices=("plan", "before", "after", "compare"))
+    result_view_evidence_parser.add_argument("--execute", action="store_true")
+    result_view_evidence_parser.add_argument("--output-dir", type=Path, default=Path("tmp") / "result_review_view_controls")
+
+    result_animation_parser = subparsers.add_parser(
+        "result-play-animation",
+        help="Plan a forming animation request, guarded click, or manual playback observation.",
+    )
+    result_animation_parser.add_argument("--operation")
+    result_animation_parser.add_argument("--action", default="play")
+    result_animation_parser.add_argument("--start-frame", type=int)
+    result_animation_parser.add_argument("--end-frame", type=int)
+    result_animation_parser.add_argument("--speed", type=float)
+    result_animation_parser.add_argument("--duration", type=float, dest="duration_seconds")
+    result_animation_parser.add_argument("--capture-mode", default="keyframes")
+    result_animation_parser.add_argument("--keyframe-count", type=int, default=3)
+    result_animation_parser.add_argument("--execute", action="store_true")
+    result_animation_parser.add_argument("--control-profile", default="autocomp_r13_bottom_strip")
+    result_animation_parser.add_argument("--click-x", type=float)
+    result_animation_parser.add_argument("--click-y", type=float)
+    result_animation_parser.add_argument("--output-dir", type=Path, default=Path("tmp") / "result_review")
+
+    result_evidence_parser = subparsers.add_parser("result-capture-evidence", help="Capture or plan result review evidence.")
+    result_evidence_parser.add_argument("--project", type=Path)
+    result_evidence_parser.add_argument("--variable")
+    result_evidence_parser.add_argument("--view")
+    result_evidence_parser.add_argument("--operation")
+    result_evidence_parser.add_argument("--output-dir", type=Path, default=Path("tmp") / "result_review")
+    result_evidence_parser.add_argument("--execute", action="store_true")
+
+    result_route_parser = subparsers.add_parser("result-route-task", help="Map a user request to a V1.1 result review route.")
+    result_route_parser.add_argument("intent")
+
+    result_plan_parser = subparsers.add_parser("result-plan", help="Build a P1 result review plan from one user request.")
+    result_plan_parser.add_argument("intent")
+    result_plan_parser.add_argument("--search-dir", type=Path)
+    result_plan_parser.add_argument("--workspace", type=Path)
+    result_plan_parser.add_argument("--operation")
+    result_plan_parser.add_argument("--view")
+
+    result_readiness_parser = subparsers.add_parser("result-readiness", help="Assess result review readiness from project, window and plan evidence.")
+    result_readiness_parser.add_argument("--intent")
+    result_readiness_parser.add_argument("--search-dir", type=Path)
+    result_readiness_parser.add_argument("--workspace", type=Path)
+    result_readiness_parser.add_argument("--operation")
+    result_readiness_parser.add_argument("--view")
+    result_readiness_parser.add_argument("--no-require-window", action="store_true")
+    result_readiness_parser.add_argument("--limit", type=int, default=200)
 
     resolve_project_parser = subparsers.add_parser("resolve-project", help="Resolve an explicit .afd path or official example name.")
     resolve_project_parser.add_argument("--afd", type=Path)
@@ -138,12 +378,27 @@ def main(argv: list[str] | None = None) -> int:
     project_run_parser.add_argument("--execute", action="store_true")
     project_run_parser.add_argument("--timeout", type=int)
     project_run_parser.add_argument("--open-gui", action="store_true")
+    project_run_parser.add_argument(
+        "--gui-wait-seconds",
+        type=float,
+        default=3.0,
+        help="Seconds to wait after opening AutoForm Forming before starting the solver.",
+    )
     project_run_parser.add_argument("--workspace", type=Path, default=Path.cwd())
 
     baseline_parser = subparsers.add_parser("example-baseline", help="Build official example project baseline data.")
     baseline_parser.add_argument("--output", type=Path)
     baseline_parser.add_argument("--execute", action="store_true")
     baseline_parser.add_argument("--threads", type=int, default=1)
+
+    sample_summary_parser = subparsers.add_parser(
+        "official-sample-run-summary",
+        help="Summarize latest local run evidence for official AutoForm examples.",
+    )
+    sample_summary_parser.add_argument("--search-dir", type=Path, default=Path("output") / "project_runs")
+    sample_summary_parser.add_argument("--mode", default="kinematic", choices=["kinematic", "full", "all"])
+    sample_summary_parser.add_argument("--example", action="append", default=[], help="Expected official example name.")
+    sample_summary_parser.add_argument("--limit", type=int, default=500)
 
     job_parser = subparsers.add_parser("run-job", help="Run AFFormingJob with raw arguments.")
     job_parser.add_argument("args", nargs=argparse.REMAINDER)
@@ -515,9 +770,9 @@ def main(argv: list[str] | None = None) -> int:
             "api_mode": config.api_mode,
             "api_key_configured": config.api_key_configured,
             "api_key_source": config.api_key_source,
-            "sdk_available": config.sdk_available,
+            "api_key_fingerprint": credential_fingerprint(config.api_key),
+            "direct_api_available": True,
             "project_root": str(config.project_root),
-            "tracing_enabled": config.tracing_enabled,
         }
         if args.json:
             _print_json(status, ensure_ascii=False)
@@ -525,9 +780,10 @@ def main(argv: list[str] | None = None) -> int:
             print(f"provider: {status['provider']}")
             print(f"model: {status['model']}")
             print(f"api_mode: {status['api_mode']}")
-            print(f"sdk_available: {status['sdk_available']}")
+            print(f"direct_api_available: {status['direct_api_available']}")
             print(f"api_key_configured: {status['api_key_configured']}")
             print(f"api_key_source: {status['api_key_source']}")
+            print(f"api_key_fingerprint: {status['api_key_fingerprint'] or 'none'}")
             print(f"project_root: {status['project_root']}")
         return 0
 
@@ -542,6 +798,77 @@ def main(argv: list[str] | None = None) -> int:
             ),
             ensure_ascii=False,
         )
+        return 0
+
+    if args.command == "agent-connection-test":
+        runtime_config = {"connectionTest": True}
+        for key, value in {
+            "provider": args.provider,
+            "baseUrl": args.base_url,
+            "model": args.model,
+            "apiMode": args.api_mode,
+        }.items():
+            if value:
+                runtime_config[key] = value
+        _print_json(
+            run_agent_runtime_turn(
+                {
+                    "conversationId": args.conversation_id,
+                    "prompt": "provider connection test",
+                    "runtimeConfig": runtime_config,
+                },
+                max_turns=1,
+            ),
+            ensure_ascii=False,
+        )
+        return 0
+
+    if args.command == "agent-roles":
+        _print_json(build_default_agent_registry().as_dict(), ensure_ascii=False)
+        return 0
+
+    if args.command == "agent-system-plan":
+        _print_json(
+            plan_agent_system_turn(
+                args.prompt,
+                requested_roles=tuple(args.role),
+                execution_mode=args.mode,
+            ).as_dict(),
+            ensure_ascii=False,
+        )
+        return 0
+
+    if args.command == "agent-center-plan":
+        _print_json(
+            build_center_agent_plan(
+                args.prompt,
+                conversation_id=args.conversation_id,
+                requested_roles=tuple(args.role),
+                project_root=Path.cwd(),
+            ),
+            ensure_ascii=False,
+        )
+        return 0
+
+    if args.command == "prepare-triage":
+        _print_json(triage_request(args.prompt), ensure_ascii=False)
+        return 0
+
+    if args.command == "prepare-evidence":
+        _print_json(retrieve_evidence_bundle(args.query), ensure_ascii=False)
+        return 0
+
+    if args.command == "prepare-script-run":
+        params = {}
+        for item in args.param:
+            if "=" in item:
+                key, value = item.split("=", 1)
+                params[key] = value
+        _print_json(run_low_risk_script(args.skill_id, params), ensure_ascii=False)
+        return 0
+
+    if args.command == "prepare-r11-replay":
+        _print_json(build_r11_low_risk_replay(args.prompt, run_id=args.run_id), ensure_ascii=False)
         return 0
 
     if args.command == "archive-list":
@@ -562,6 +889,263 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(command, ensure_ascii=False))
         return 0
 
+    if args.command == "gui-window-snapshot":
+        _print_json(autoform_window_snapshot(), ensure_ascii=False)
+        return 0
+
+    if args.command == "gui-focus":
+        _print_json(focus_autoform_window(), ensure_ascii=False)
+        return 0
+
+    if args.command == "gui-restore-window":
+        _print_json(
+            restore_autoform_window(
+                title_contains=args.title_contains,
+                wait_seconds=args.wait,
+            ),
+            ensure_ascii=False,
+        )
+        return 0
+
+    if args.command == "gui-screenshot":
+        _print_json(
+            capture_desktop_screenshot(args.output, focus_autoform=not args.no_focus, wait_seconds=args.wait),
+            ensure_ascii=False,
+        )
+        return 0
+
+    if args.command == "gui-click":
+        _print_json(
+            click_autoform_window(
+                args.x,
+                args.y,
+                relative=not args.absolute,
+                focus_first=not args.no_focus,
+                restore_window=not args.no_restore,
+                wait_seconds=args.wait,
+            ),
+            ensure_ascii=False,
+        )
+        return 0
+
+    if args.command == "gui-drag":
+        _print_json(
+            drag_autoform_window(
+                args.start_x,
+                args.start_y,
+                args.end_x,
+                args.end_y,
+                relative=not args.absolute,
+                focus_first=not args.no_focus,
+                restore_window=not args.no_restore,
+                duration_seconds=args.duration,
+                steps=args.steps,
+                wait_seconds=args.wait,
+            ),
+            ensure_ascii=False,
+        )
+        return 0
+
+    if args.command == "computer-use-probe":
+        _print_json(
+            computer_use_probe(
+                args.output,
+                capture=args.capture,
+                focus_autoform=args.focus_autoform,
+                wait_seconds=args.wait,
+            ),
+            ensure_ascii=False,
+        )
+        return 0
+
+    if args.command == "gui-control-demo":
+        _print_json(
+            visible_window_control_demo(
+                args.output_dir,
+                execute=args.execute,
+                action=args.action,
+                title_contains=args.title_contains,
+                keystroke=args.keystroke,
+                click_x=args.click_x,
+                click_y=args.click_y,
+                drag_start_x=args.drag_start_x,
+                drag_start_y=args.drag_start_y,
+                drag_end_x=args.drag_end_x,
+                drag_end_y=args.drag_end_y,
+                relative=not args.absolute,
+                wait_seconds=args.wait,
+            ),
+            ensure_ascii=False,
+        )
+        return 0
+
+    if args.command == "r12-project-view-demo":
+        _print_json(
+            r12_project_view_demo(
+                example_name=args.example,
+                afd_path=args.afd,
+                execute=args.execute,
+                wait_seconds=args.wait,
+                view_wait_seconds=args.view_wait,
+                verify_screenshot=not args.no_screenshot,
+                output_dir=args.output_dir,
+            ),
+            ensure_ascii=False,
+        )
+        return 0
+
+    if args.command == "result-capabilities":
+        _print_json(result_review_capabilities(autoform_version=args.autoform_version), ensure_ascii=False)
+        return 0
+
+    if args.command == "result-gui-evidence":
+        _print_json(result_gui_evidence(scope=args.scope, workspace=args.workspace), ensure_ascii=False)
+        return 0
+
+    if args.command == "result-blockers":
+        _print_json(
+            result_review_blockers(scope=args.scope, include_completed=args.include_completed),
+            ensure_ascii=False,
+        )
+        return 0
+
+    if args.command == "result-find-latest":
+        _print_json(find_latest_result_project(search_dir=args.search_dir, workspace=args.workspace, limit=args.limit), ensure_ascii=False)
+        return 0
+
+    if args.command == "result-open-latest":
+        _print_json(
+            open_latest_result_project(
+                search_dir=args.search_dir,
+                workspace=args.workspace,
+                execute=args.execute,
+                wait_seconds=args.wait,
+                screenshot=not args.no_screenshot,
+                output_dir=args.output_dir,
+            ),
+            ensure_ascii=False,
+        )
+        return 0
+
+    if args.command == "result-open-project":
+        _print_json(
+            open_result_project(
+                args.project,
+                execute=args.execute,
+                wait_seconds=args.wait,
+                screenshot=not args.no_screenshot,
+                output_dir=args.output_dir,
+            ),
+            ensure_ascii=False,
+        )
+        return 0
+
+    if args.command == "result-show-variable":
+        _print_json(
+            select_result_variable(
+                args.result_name,
+                operation=args.operation,
+                project_hint=args.project_hint,
+                view=args.view,
+                execute=args.execute,
+                verify_screenshot=not args.no_screenshot,
+                output_dir=args.output_dir,
+            ),
+            ensure_ascii=False,
+        )
+        return 0
+
+    if args.command == "result-set-view":
+        _print_json(
+            set_result_view(
+                args.view,
+                execute=args.execute,
+                verify_screenshot=not args.no_screenshot,
+                output_dir=args.output_dir,
+            ),
+            ensure_ascii=False,
+        )
+        return 0
+
+    if args.command == "result-view-evidence":
+        _print_json(
+            view_control_evidence_protocol(
+                view=args.view,
+                phase=args.phase,
+                output_dir=args.output_dir,
+                execute=args.execute,
+            ),
+            ensure_ascii=False,
+        )
+        return 0
+
+    if args.command == "result-play-animation":
+        _print_json(
+            play_forming_animation(
+                operation=args.operation,
+                action=args.action,
+                start_frame=args.start_frame,
+                end_frame=args.end_frame,
+                speed=args.speed,
+                duration_seconds=args.duration_seconds,
+                capture_mode=args.capture_mode,
+                keyframe_count=args.keyframe_count,
+                execute=args.execute,
+                control_profile=args.control_profile,
+                click_x=args.click_x,
+                click_y=args.click_y,
+                output_dir=args.output_dir,
+            ),
+            ensure_ascii=False,
+        )
+        return 0
+
+    if args.command == "result-capture-evidence":
+        _print_json(
+            capture_result_evidence(
+                project_path=args.project,
+                variable=args.variable,
+                view=args.view,
+                operation=args.operation,
+                output_dir=args.output_dir,
+                execute=args.execute,
+            ),
+            ensure_ascii=False,
+        )
+        return 0
+
+    if args.command == "result-route-task":
+        _print_json(route_result_task(args.intent), ensure_ascii=False)
+        return 0
+
+    if args.command == "result-plan":
+        _print_json(
+            build_result_review_plan(
+                args.intent,
+                search_dir=args.search_dir,
+                workspace=args.workspace,
+                operation=args.operation,
+                view=args.view,
+            ),
+            ensure_ascii=False,
+        )
+        return 0
+
+    if args.command == "result-readiness":
+        _print_json(
+            assess_result_review_readiness(
+                args.intent,
+                search_dir=args.search_dir,
+                workspace=args.workspace,
+                operation=args.operation,
+                view=args.view,
+                require_window=not args.no_require_window,
+                limit=args.limit,
+            ),
+            ensure_ascii=False,
+        )
+        return 0
+
     if args.command == "resolve-project":
         _print_json(resolve_project_input(afd_path=args.afd, example_name=args.example), ensure_ascii=False)
         return 0
@@ -577,6 +1161,7 @@ def main(argv: list[str] | None = None) -> int:
                 execute=args.execute,
                 timeout=args.timeout,
                 open_gui=args.open_gui,
+                gui_wait_seconds=args.gui_wait_seconds,
                 workspace=args.workspace,
             ),
             ensure_ascii=False,
@@ -586,6 +1171,18 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "example-baseline":
         _print_json(
             example_project_baseline(output_path=args.output, execute=args.execute, threads=args.threads),
+            ensure_ascii=False,
+        )
+        return 0
+
+    if args.command == "official-sample-run-summary":
+        _print_json(
+            official_sample_run_summary(
+                search_dir=args.search_dir,
+                mode=args.mode,
+                expected_examples=args.example or None,
+                limit=args.limit,
+            ),
             ensure_ascii=False,
         )
         return 0

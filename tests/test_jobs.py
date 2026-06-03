@@ -1,3 +1,8 @@
+"""这个测试文件检查本地作业提交、状态、等待、取消和归档。读测试时可以把每个断言看成一条项目承诺：输入什么、应该返回什么、哪些危险动作默认不能发生。
+
+This test file checks local job submit, status, wait, cancel, and archive behavior. Read each assertion as one project promise: what input is accepted, what output must come back, and which risky actions must stay disabled by default.
+"""
+
 import sys
 from pathlib import Path
 

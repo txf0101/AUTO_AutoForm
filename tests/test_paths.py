@@ -1,3 +1,8 @@
+"""这个测试文件检查AutoForm 安装路径发现。读测试时可以把每个断言看成一条项目承诺：输入什么、应该返回什么、哪些危险动作默认不能发生。
+
+This test file checks AutoForm installation path discovery. Read each assertion as one project promise: what input is accepted, what output must come back, and which risky actions must stay disabled by default.
+"""
+
 from pathlib import Path
 
 import autoform_agent.paths as paths

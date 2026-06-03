@@ -1,9 +1,6 @@
-"""Result evidence inventory and lightweight report package helpers.
+"""这个文件清点求解结果和结果证据包。它从运行目录、`.afd` 文件、日志和输出材料中收集可用于审阅或报告的事实。
 
-AutoForm result formats are still being verified for this local installation.
-This module therefore exports a conservative P0 result path: collect confirmed
-files, parse QuickLink data when present, summarize solver/report logs, and
-optionally write a small evidence report package that can be inspected later.
+This file inventories solver results and result evidence packages. It collects facts from run folders, `.afd` files, logs, and output materials for review or reporting.
 """
 
 from __future__ import annotations

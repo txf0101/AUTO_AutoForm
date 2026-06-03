@@ -1,7 +1,6 @@
-"""Module entry point for `python -m autoform_agent`.
+"""这个文件让用户可以用 `python -m autoform_agent` 启动项目命令。它本身不放业务逻辑，只把请求交给命令行入口处理。
 
-Keeping this file small makes the command-line package behavior easy to audit:
-all argument parsing and command dispatch lives in `autoform_agent.cli.main`.
+This file lets users start the project with `python -m autoform_agent`. It does not hold business rules; it forwards execution to the command-line entry point.
 """
 
 from .cli import main

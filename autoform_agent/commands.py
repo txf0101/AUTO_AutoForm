@@ -1,10 +1,6 @@
-"""Known AutoForm executable specifications and bounded command probes.
+"""这个文件管理外部命令的说明、帮助探测和安全执行计划。它先把命令拆成可检查的计划，再决定是否允许真正运行。
 
-AutoForm exposes many `.exe` and `.cmd` entries.  This module records only the
-entries for which the project has local evidence.  It deliberately separates
-command planning from command execution so CLI and MCP callers can inspect the
-exact command before touching licenses, queues, material libraries, or output
-files.
+This file manages external command descriptions, help probes, and safe execution plans. It first turns a command into an inspectable plan before any real execution is allowed.
 """
 
 from __future__ import annotations

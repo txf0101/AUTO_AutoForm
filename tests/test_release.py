@@ -1,3 +1,8 @@
+"""这个测试文件检查发布就绪检查和公开发布扫描。读测试时可以把每个断言看成一条项目承诺：输入什么、应该返回什么、哪些危险动作默认不能发生。
+
+This test file checks release readiness checks and public-release scans. Read each assertion as one project promise: what input is accepted, what output must come back, and which risky actions must stay disabled by default.
+"""
+
 from pathlib import Path
 
 from autoform_agent.release import install_check_plan, release_package_plan, release_readiness_check
@@ -18,6 +23,7 @@ def _write_release_files(root: Path) -> None:
         "codex_mcp_config.autoform-agent.toml",
         "docs/beginner_onboarding_zh.md",
         "docs/api_runtime_call_chain.md",
+        "docs/multi_agent_architecture.md",
     ]:
         path = root / relative
         path.parent.mkdir(parents=True, exist_ok=True)

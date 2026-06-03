@@ -1,0 +1,187 @@
+{
+  "schema_version": "autoform.enterprise_data_contract.r13.v1",
+  "object_type": "EnterpriseDataContract",
+  "phase": "R13",
+  "contract_id": "enterprise_contract_r13_initial",
+  "governance": {
+    "owner": "autoform_agent",
+    "review_status": "candidate",
+    "confidentiality_default": "internal_review_required",
+    "allowed_current_actions": [
+      "catalog_metadata",
+      "review_license_and_permission",
+      "prepare_small_batch_samples"
+    ],
+    "blocked_current_actions": [
+      "bulk_crawl",
+      "bulk_download",
+      "auto_ingest"
+    ]
+  },
+  "source_policy": {
+    "source_required": true,
+    "version_required": true,
+    "owner_required": true,
+    "permission_required": true,
+    "hash_required": true
+  },
+  "data_domains": [
+    {
+      "domain_id": "material_properties",
+      "title": "Material properties",
+      "allowed_usage": "candidate_generation",
+      "fields": [
+        {
+          "field_id": "material_grade",
+          "type": "string",
+          "unit_policy": "unitless_grade_name",
+          "source_required": true,
+          "owner_required": true,
+          "version_required": true,
+          "confidentiality": "internal_review_required",
+          "allowed_usage": "candidate_generation",
+          "review_status": "candidate"
+        },
+        {
+          "field_id": "blank_thickness_mm",
+          "type": "number",
+          "unit_policy": "normalize_to_mm",
+          "source_required": true,
+          "owner_required": true,
+          "version_required": true,
+          "confidentiality": "internal_review_required",
+          "allowed_usage": "candidate_generation",
+          "review_status": "candidate"
+        },
+        {
+          "field_id": "flow_curve_ref",
+          "type": "string",
+          "unit_policy": "source_curve_with_original_units",
+          "source_required": true,
+          "owner_required": true,
+          "version_required": true,
+          "confidentiality": "internal_review_required",
+          "allowed_usage": "evidence_bundle_input",
+          "review_status": "candidate"
+        }
+      ]
+    },
+    {
+      "domain_id": "geometry_and_part",
+      "title": "Geometry and part metadata",
+      "allowed_usage": "catalog_only",
+      "fields": [
+        {
+          "field_id": "part_family",
+          "type": "string",
+          "unit_policy": "unitless_category",
+          "source_required": true,
+          "owner_required": true,
+          "version_required": true,
+          "confidentiality": "internal_review_required",
+          "allowed_usage": "catalog_only",
+          "review_status": "candidate"
+        },
+        {
+          "field_id": "geometry_file_ref",
+          "type": "string",
+          "unit_policy": "path_or_file_identifier",
+          "source_required": true,
+          "owner_required": true,
+          "version_required": true,
+          "confidentiality": "restricted",
+          "allowed_usage": "catalog_only",
+          "review_status": "candidate"
+        }
+      ]
+    },
+    {
+      "domain_id": "process_route",
+      "title": "Process route and parameter window",
+      "allowed_usage": "candidate_generation",
+      "fields": [
+        {
+          "field_id": "operation_sequence",
+          "type": "array",
+          "unit_policy": "ordered_operation_ids",
+          "source_required": true,
+          "owner_required": true,
+          "version_required": true,
+          "confidentiality": "internal_review_required",
+          "allowed_usage": "candidate_generation",
+          "review_status": "candidate"
+        },
+        {
+          "field_id": "parameter_window_ref",
+          "type": "string",
+          "unit_policy": "source_bound_parameter_window",
+          "source_required": true,
+          "owner_required": true,
+          "version_required": true,
+          "confidentiality": "internal_review_required",
+          "allowed_usage": "evidence_bundle_input",
+          "review_status": "candidate"
+        }
+      ]
+    },
+    {
+      "domain_id": "historical_case",
+      "title": "Historical simulation or production case",
+      "allowed_usage": "evidence_bundle_input",
+      "fields": [
+        {
+          "field_id": "case_id",
+          "type": "string",
+          "unit_policy": "unitless_identifier",
+          "source_required": true,
+          "owner_required": true,
+          "version_required": true,
+          "confidentiality": "restricted",
+          "allowed_usage": "evidence_bundle_input",
+          "review_status": "candidate"
+        },
+        {
+          "field_id": "outcome_summary",
+          "type": "string",
+          "unit_policy": "text_with_source_ref",
+          "source_required": true,
+          "owner_required": true,
+          "version_required": true,
+          "confidentiality": "restricted",
+          "allowed_usage": "evidence_bundle_input",
+          "review_status": "candidate"
+        }
+      ]
+    },
+    {
+      "domain_id": "quality_rule",
+      "title": "Quality rule and defect criterion",
+      "allowed_usage": "evidence_bundle_input",
+      "fields": [
+        {
+          "field_id": "defect_type",
+          "type": "string",
+          "unit_policy": "unitless_category",
+          "source_required": true,
+          "owner_required": true,
+          "version_required": true,
+          "confidentiality": "internal_review_required",
+          "allowed_usage": "evidence_bundle_input",
+          "review_status": "candidate"
+        },
+        {
+          "field_id": "criterion_ref",
+          "type": "string",
+          "unit_policy": "threshold_reference_with_original_units",
+          "source_required": true,
+          "owner_required": true,
+          "version_required": true,
+          "confidentiality": "internal_review_required",
+          "allowed_usage": "evidence_bundle_input",
+          "review_status": "candidate"
+        }
+      ]
+    }
+  ],
+  "created_at": "2026-06-03T00:00:00+08:00"
+}

@@ -1,0 +1,11 @@
+*
+!.gitignore
+!README.md
+!source_manifest.template.csv
+!manifests/
+!manifests/.gitkeep
+!manifests/*.csv
+!manual_samples/
+!manual_samples/.gitkeep
+!quarantine/
+!quarantine/.gitkeep

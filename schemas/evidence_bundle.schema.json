@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autoform-agent.schemas.evidence_bundle.v1",
+  "title": "EvidenceBundle",
+  "type": "object",
+  "required": [
+    "evidence_bundle_id",
+    "query",
+    "source_refs",
+    "summary",
+    "applicability",
+    "limitation",
+    "confidence",
+    "review_status",
+    "created_at"
+  ],
+  "properties": {
+    "object_type": {
+      "const": "EvidenceBundle"
+    },
+    "evidence_bundle_id": {
+      "type": "string",
+      "pattern": "^evidence_[a-z0-9_]+$"
+    },
+    "query": {
+      "type": "string"
+    },
+    "source_refs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "source_id",
+          "title",
+          "path_or_url",
+          "source_type",
+          "captured_at",
+          "reviewed"
+        ],
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "pattern": "^source_[a-z0-9_]+$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "path_or_url": {
+            "type": "string"
+          },
+          "source_type": {
+            "type": "string"
+          },
+          "captured_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reviewed": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "string"
+    },
+    "applicability": {
+      "type": "string"
+    },
+    "limitation": {
+      "type": "string"
+    },
+    "confidence": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "review_status": {
+      "type": "string",
+      "enum": [
+        "candidate",
+        "reviewed",
+        "rejected"
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": true
+}

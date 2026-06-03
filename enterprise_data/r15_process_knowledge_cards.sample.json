@@ -1,0 +1,503 @@
+{
+  "schema_version": "autoform.process_knowledge_cards_fixture.r15.v1",
+  "object_type": "ProcessKnowledgeCardFixture",
+  "phase": "R15",
+  "created_at": "2026-06-03T04:00:00+00:00",
+  "cards": [
+    {
+      "schema_version": "autoform.process_knowledge_card.r15.v1",
+      "object_type": "ProcessKnowledgeCard",
+      "phase": "R15",
+      "card_id": "pkc_r15_material_dc04_pending_001",
+      "card_type": "MaterialCard",
+      "title": "Candidate DC04 material card from R14 small sample",
+      "source_id": "source_enterprise_internal_dataset_pending",
+      "evidence_refs": [
+        {
+          "evidence_id": "record_r14_sample_material_001",
+          "source_id": "source_enterprise_internal_dataset_pending",
+          "source_hash": "d9ef6dbbe85f221488897c4ddc02333d2b5e63d9a8b820d2e9d9253beb48737e",
+          "artifact_uri": "enterprise_data/r14_small_batch_samples.jsonl",
+          "evidence_type": "cleaned_record"
+        }
+      ],
+      "version": "pending",
+      "owner": "human_reviewer",
+      "review_status": "candidate",
+      "license_status": "pending_internal_permission",
+      "allowed_usage": "candidate_knowledge_card_only",
+      "created_at": "2026-06-03T04:00:00+00:00",
+      "valid_from": "2026-06-03",
+      "valid_until": "2026-12-31",
+      "applicability": {
+        "applicable_materials": [
+          "DC04"
+        ],
+        "part_features": [
+          "generic_sheet_metal_draw_part_pending_geometry"
+        ],
+        "process_actions": [
+          "material_identification"
+        ],
+        "applicable_lines": [
+          "pending_line_review"
+        ],
+        "conflict_status": "none"
+      },
+      "limitation": "No data ingestion until owner permission source hash and confidentiality are confirmed",
+      "key_parameter_windows": [
+        {
+          "parameter": "blank_thickness",
+          "unit": "mm",
+          "lower": 1.0,
+          "upper": 1.0,
+          "basis_evidence_refs": [
+            "record_r14_sample_material_001"
+          ],
+          "review_status": "candidate"
+        }
+      ],
+      "quality_risks": [
+        {
+          "risk_type": "formability_curve_missing",
+          "severity": "needs_review",
+          "basis_evidence_refs": [
+            "record_r14_sample_material_001"
+          ]
+        }
+      ],
+      "human_confirmation": {
+        "required": true,
+        "status": "pending",
+        "owner": "human_reviewer"
+      },
+      "payload": {
+        "material_grade": "DC04",
+        "blank_thickness_mm": 1.0,
+        "material_curve": {
+          "status": "pending_owner_review",
+          "curve_ref": "pending_internal_material_curve"
+        }
+      }
+    },
+    {
+      "schema_version": "autoform.process_knowledge_card.r15.v1",
+      "object_type": "ProcessKnowledgeCard",
+      "phase": "R15",
+      "card_id": "pkc_r15_operation_route_d20_pending_001",
+      "card_type": "OperationRoute",
+      "title": "Candidate D-20 operation route from R14 small sample",
+      "source_id": "source_enterprise_internal_dataset_pending",
+      "evidence_refs": [
+        {
+          "evidence_id": "record_r14_sample_process_001",
+          "source_id": "source_enterprise_internal_dataset_pending",
+          "source_hash": "4b99e9162c9569b0fe9c37daf79a95b00e0f24ae1efcb59b024f085900c843e8",
+          "artifact_uri": "enterprise_data/r14_small_batch_samples.jsonl",
+          "evidence_type": "cleaned_record"
+        }
+      ],
+      "version": "pending",
+      "owner": "human_reviewer",
+      "review_status": "candidate",
+      "license_status": "pending_internal_permission",
+      "allowed_usage": "candidate_knowledge_card_only",
+      "created_at": "2026-06-03T04:00:00+00:00",
+      "valid_from": "2026-06-03",
+      "valid_until": "2026-12-31",
+      "applicability": {
+        "applicable_materials": [
+          "DC04"
+        ],
+        "part_features": [
+          "generic_sheet_metal_draw_part_pending_geometry"
+        ],
+        "process_actions": [
+          "D-20"
+        ],
+        "applicable_lines": [
+          "pending_line_review"
+        ],
+        "conflict_status": "none"
+      },
+      "limitation": "No data ingestion until owner permission source hash and confidentiality are confirmed",
+      "key_parameter_windows": [
+        {
+          "parameter": "operation_count",
+          "unit": "count",
+          "lower": 1,
+          "upper": 1,
+          "basis_evidence_refs": [
+            "record_r14_sample_process_001"
+          ],
+          "review_status": "candidate"
+        }
+      ],
+      "quality_risks": [
+        {
+          "risk_type": "route_not_simulated",
+          "severity": "needs_review",
+          "basis_evidence_refs": [
+            "record_r14_sample_process_001"
+          ]
+        }
+      ],
+      "human_confirmation": {
+        "required": true,
+        "status": "pending",
+        "owner": "human_reviewer"
+      },
+      "payload": {
+        "operations": [
+          {
+            "operation_id": "op_01",
+            "operation_type": "D-20",
+            "status": "candidate"
+          }
+        ],
+        "parameter_window_ref": "pending_review"
+      }
+    },
+    {
+      "schema_version": "autoform.process_knowledge_card.r15.v1",
+      "object_type": "ProcessKnowledgeCard",
+      "phase": "R15",
+      "card_id": "pkc_r15_parameter_blank_thickness_pending_001",
+      "card_type": "ParameterWindow",
+      "title": "Candidate blank thickness parameter window from R14 small sample",
+      "source_id": "source_enterprise_internal_dataset_pending",
+      "evidence_refs": [
+        {
+          "evidence_id": "record_r14_sample_material_001",
+          "source_id": "source_enterprise_internal_dataset_pending",
+          "source_hash": "d9ef6dbbe85f221488897c4ddc02333d2b5e63d9a8b820d2e9d9253beb48737e",
+          "artifact_uri": "enterprise_data/r14_small_batch_samples.jsonl",
+          "evidence_type": "cleaned_record"
+        },
+        {
+          "evidence_id": "record_r14_sample_process_001",
+          "source_id": "source_enterprise_internal_dataset_pending",
+          "source_hash": "4b99e9162c9569b0fe9c37daf79a95b00e0f24ae1efcb59b024f085900c843e8",
+          "artifact_uri": "enterprise_data/r14_small_batch_samples.jsonl",
+          "evidence_type": "cleaned_record"
+        }
+      ],
+      "version": "pending",
+      "owner": "human_reviewer",
+      "review_status": "candidate",
+      "license_status": "pending_internal_permission",
+      "allowed_usage": "candidate_knowledge_card_only",
+      "created_at": "2026-06-03T04:00:00+00:00",
+      "valid_from": "2026-06-03",
+      "valid_until": "2026-12-31",
+      "applicability": {
+        "applicable_materials": [
+          "DC04"
+        ],
+        "part_features": [
+          "generic_sheet_metal_draw_part_pending_geometry"
+        ],
+        "process_actions": [
+          "D-20"
+        ],
+        "applicable_lines": [
+          "pending_line_review"
+        ],
+        "conflict_status": "none"
+      },
+      "limitation": "No data ingestion until owner permission source hash and confidentiality are confirmed",
+      "key_parameter_windows": [
+        {
+          "parameter": "blank_thickness",
+          "unit": "mm",
+          "lower": 1.0,
+          "upper": 1.0,
+          "basis_evidence_refs": [
+            "record_r14_sample_material_001",
+            "record_r14_sample_process_001"
+          ],
+          "review_status": "candidate"
+        }
+      ],
+      "quality_risks": [
+        {
+          "risk_type": "parameter_window_requires_owner_review",
+          "severity": "needs_review",
+          "basis_evidence_refs": [
+            "record_r14_sample_material_001",
+            "record_r14_sample_process_001"
+          ]
+        }
+      ],
+      "human_confirmation": {
+        "required": true,
+        "status": "pending",
+        "owner": "human_reviewer"
+      },
+      "payload": {
+        "parameter_windows": [
+          {
+            "parameter": "blank_thickness",
+            "unit": "mm",
+            "lower": 1.0,
+            "upper": 1.0,
+            "basis_evidence_refs": [
+              "record_r14_sample_material_001",
+              "record_r14_sample_process_001"
+            ],
+            "review_status": "candidate"
+          }
+        ]
+      }
+    },
+    {
+      "schema_version": "autoform.process_knowledge_card.r15.v1",
+      "object_type": "ProcessKnowledgeCard",
+      "phase": "R15",
+      "card_id": "pkc_r15_process_case_dc04_d20_pending_001",
+      "card_type": "ProcessCase",
+      "title": "Candidate DC04 D-20 process case from R14 small sample",
+      "source_id": "source_enterprise_internal_dataset_pending",
+      "evidence_refs": [
+        {
+          "evidence_id": "record_r14_sample_material_001",
+          "source_id": "source_enterprise_internal_dataset_pending",
+          "source_hash": "d9ef6dbbe85f221488897c4ddc02333d2b5e63d9a8b820d2e9d9253beb48737e",
+          "artifact_uri": "enterprise_data/r14_small_batch_samples.jsonl",
+          "evidence_type": "cleaned_record"
+        },
+        {
+          "evidence_id": "record_r14_sample_process_001",
+          "source_id": "source_enterprise_internal_dataset_pending",
+          "source_hash": "4b99e9162c9569b0fe9c37daf79a95b00e0f24ae1efcb59b024f085900c843e8",
+          "artifact_uri": "enterprise_data/r14_small_batch_samples.jsonl",
+          "evidence_type": "cleaned_record"
+        }
+      ],
+      "version": "pending",
+      "owner": "human_reviewer",
+      "review_status": "candidate",
+      "license_status": "pending_internal_permission",
+      "allowed_usage": "candidate_knowledge_card_only",
+      "created_at": "2026-06-03T04:00:00+00:00",
+      "valid_from": "2026-06-03",
+      "valid_until": "2026-12-31",
+      "applicability": {
+        "applicable_materials": [
+          "DC04"
+        ],
+        "part_features": [
+          "generic_sheet_metal_draw_part_pending_geometry"
+        ],
+        "process_actions": [
+          "D-20"
+        ],
+        "applicable_lines": [
+          "pending_line_review"
+        ],
+        "conflict_status": "none"
+      },
+      "limitation": "No data ingestion until owner permission source hash and confidentiality are confirmed",
+      "key_parameter_windows": [
+        {
+          "parameter": "blank_thickness",
+          "unit": "mm",
+          "lower": 1.0,
+          "upper": 1.0,
+          "basis_evidence_refs": [
+            "record_r14_sample_material_001",
+            "record_r14_sample_process_001"
+          ],
+          "review_status": "candidate"
+        }
+      ],
+      "quality_risks": [
+        {
+          "risk_type": "no_simulation_outcome",
+          "severity": "needs_review",
+          "basis_evidence_refs": [
+            "record_r14_sample_material_001",
+            "record_r14_sample_process_001"
+          ]
+        }
+      ],
+      "human_confirmation": {
+        "required": true,
+        "status": "pending",
+        "owner": "human_reviewer"
+      },
+      "payload": {
+        "case_ref": "case_r15_internal_pending_001",
+        "material_grade": "DC04",
+        "operation_sequence": [
+          "D-20"
+        ],
+        "outcome_status": "no_engineering_outcome_recorded"
+      }
+    },
+    {
+      "schema_version": "autoform.process_knowledge_card.r15.v1",
+      "object_type": "ProcessKnowledgeCard",
+      "phase": "R15",
+      "card_id": "pkc_r15_quality_traceability_gate_001",
+      "card_type": "QualityCriteria",
+      "title": "R15 traceability quality gate",
+      "source_id": "source_enterprise_internal_dataset_pending",
+      "evidence_refs": [
+        {
+          "evidence_id": "record_r14_sample_material_001",
+          "source_id": "source_enterprise_internal_dataset_pending",
+          "source_hash": "d9ef6dbbe85f221488897c4ddc02333d2b5e63d9a8b820d2e9d9253beb48737e",
+          "artifact_uri": "enterprise_data/r14_small_batch_samples.jsonl",
+          "evidence_type": "cleaned_record"
+        },
+        {
+          "evidence_id": "record_r14_sample_process_001",
+          "source_id": "source_enterprise_internal_dataset_pending",
+          "source_hash": "4b99e9162c9569b0fe9c37daf79a95b00e0f24ae1efcb59b024f085900c843e8",
+          "artifact_uri": "enterprise_data/r14_small_batch_samples.jsonl",
+          "evidence_type": "cleaned_record"
+        }
+      ],
+      "version": "pending",
+      "owner": "autoform_agent",
+      "review_status": "candidate",
+      "license_status": "pending_internal_permission",
+      "allowed_usage": "candidate_knowledge_card_only",
+      "created_at": "2026-06-03T04:00:00+00:00",
+      "valid_from": "2026-06-03",
+      "valid_until": "2026-12-31",
+      "applicability": {
+        "applicable_materials": [
+          "DC04"
+        ],
+        "part_features": [
+          "all_candidate_process_cards"
+        ],
+        "process_actions": [
+          "r15_card_validation"
+        ],
+        "applicable_lines": [
+          "all_lines_pending_review"
+        ],
+        "conflict_status": "none"
+      },
+      "limitation": "No data ingestion until owner permission source hash and confidentiality are confirmed",
+      "key_parameter_windows": [
+        {
+          "parameter": "minimum_evidence_ref_count",
+          "unit": "count",
+          "lower": 1,
+          "upper": null,
+          "basis_evidence_refs": [
+            "record_r14_sample_material_001",
+            "record_r14_sample_process_001"
+          ],
+          "review_status": "candidate"
+        }
+      ],
+      "quality_risks": [
+        {
+          "risk_type": "untraceable_card_blocked",
+          "severity": "blocked",
+          "basis_evidence_refs": [
+            "record_r14_sample_material_001",
+            "record_r14_sample_process_001"
+          ]
+        }
+      ],
+      "human_confirmation": {
+        "required": true,
+        "status": "pending",
+        "owner": "autoform_agent"
+      },
+      "payload": {
+        "quality_threshold": {
+          "metric": "minimum_evidence_ref_count",
+          "unit": "count",
+          "lower": 1,
+          "basis_evidence_refs": [
+            "record_r14_sample_material_001",
+            "record_r14_sample_process_001"
+          ],
+          "scope": "data_quality_gate"
+        }
+      }
+    },
+    {
+      "schema_version": "autoform.process_knowledge_card.r15.v1",
+      "object_type": "ProcessKnowledgeCard",
+      "phase": "R15",
+      "card_id": "pkc_r15_public_literature_metadata_arxiv_001",
+      "card_type": "ProcessCase",
+      "title": "License-gated public literature metadata case",
+      "source_id": "source_arxiv_api_metadata",
+      "evidence_refs": [
+        {
+          "evidence_id": "record_arxiv_api_sample_001",
+          "source_id": "source_arxiv_api_metadata",
+          "source_hash": "76003cf9778b2be42830d8d6d0e4168ea10c512d31f8442208540003520df6a9",
+          "artifact_uri": "enterprise_data/r14_external_metadata_samples.jsonl",
+          "evidence_type": "cleaned_record"
+        }
+      ],
+      "version": "2026-03-30T18:17:22Z",
+      "owner": "autoform_agent",
+      "review_status": "needs_license_review",
+      "license_status": "missing",
+      "allowed_usage": "catalog_only",
+      "created_at": "2026-06-03T04:00:00+00:00",
+      "valid_from": "2026-06-03",
+      "valid_until": "2026-12-31",
+      "applicability": {
+        "applicable_materials": [
+          "sheet_metal_forming_literature"
+        ],
+        "part_features": [
+          "literature_metadata_only"
+        ],
+        "process_actions": [
+          "ai_assisted_parameter_optimization_metadata"
+        ],
+        "applicable_lines": [
+          "not_applicable_until_license_review"
+        ],
+        "conflict_status": "none"
+      },
+      "limitation": "Public metadata only; license is not confirmed and no engineering parameter is approved.",
+      "key_parameter_windows": [
+        {
+          "parameter": "metadata_record_count",
+          "unit": "count",
+          "lower": 1,
+          "upper": 1,
+          "basis_evidence_refs": [
+            "record_arxiv_api_sample_001"
+          ],
+          "review_status": "candidate"
+        }
+      ],
+      "quality_risks": [
+        {
+          "risk_type": "license_missing_blocks_process_use",
+          "severity": "blocked",
+          "basis_evidence_refs": [
+            "record_arxiv_api_sample_001"
+          ]
+        }
+      ],
+      "human_confirmation": {
+        "required": true,
+        "status": "pending",
+        "owner": "autoform_agent"
+      },
+      "payload": {
+        "case_ref": "http://arxiv.org/abs/2511.22302v2",
+        "title": "When AI Bends Metal: AI-Assisted Optimization of Design Parameters in Sheet Metal Forming",
+        "published": "2025-11-27T10:31:24Z",
+        "updated": "2026-03-30T18:17:22Z",
+        "outcome_status": "metadata_only_no_engineering_outcome"
+      }
+    }
+  ]
+}

@@ -1,8 +1,6 @@
-"""AF_API sample discovery and build-plan helpers.
+"""这个文件整理 AutoForm 官方 AF API 相关的探测、模板和构建计划。它的作用像一张清单，告诉用户本机是否具备编译或查看 AF API 示例的条件。
 
-AutoForm ships C samples for user friction, heat transfer and one-element
-post-processing.  This module reads those samples and builds preview commands;
-it does not compile or load user code by default.
+This file organizes discovery, templates, and build plans for the official AutoForm AF API. It acts like a checklist that explains whether the local machine is ready to inspect or build AF API examples.
 """
 
 from __future__ import annotations

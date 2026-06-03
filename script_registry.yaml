@@ -1,0 +1,15 @@
+- skill_id: skill_readiness_echo
+  risk_level: L0
+  description: Echo task readiness facts without touching AutoForm files or processes.
+  required_params: task_id;evidence_bundle_id
+  validation_rule: required_params_present
+- skill_id: skill_evidence_count
+  risk_level: L1
+  description: Count local evidence references already passed in memory.
+  required_params: evidence_bundle_id
+  validation_rule: evidence_bundle_id_present
+- skill_id: skill_prepare_summary
+  risk_level: L2
+  description: Build a dry-run preparation summary from candidate cards.
+  required_params: task_id
+  validation_rule: dry_run_summary_only

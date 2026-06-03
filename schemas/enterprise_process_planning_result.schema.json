@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autoform.enterprise_process_planning.r17.v1",
+  "title": "EnterpriseProcessPlanningAgentResult",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "object_type",
+    "schema_version",
+    "phase",
+    "task_id",
+    "evidence_bundle",
+    "evidence_assessment",
+    "process_plan_card",
+    "candidate_context_patch",
+    "review_request",
+    "will_submit_solver",
+    "will_control_gui",
+    "created_at"
+  ],
+  "properties": {
+    "object_type": {
+      "const": "EnterpriseProcessPlanningAgentResult"
+    },
+    "schema_version": {
+      "const": "autoform.enterprise_process_planning.r17.v1"
+    },
+    "phase": {
+      "const": "R17"
+    },
+    "task_id": {
+      "type": "string",
+      "pattern": "^task_[a-z0-9_]+$"
+    },
+    "evidence_bundle": {
+      "type": "object"
+    },
+    "evidence_assessment": {
+      "type": "object",
+      "required": [
+        "object_type",
+        "status",
+        "blockers",
+        "checks",
+        "evidence_bundle_id"
+      ],
+      "properties": {
+        "object_type": {
+          "const": "EnterpriseProcessEvidenceAssessment"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "candidate_ready",
+            "needs_review"
+          ]
+        },
+        "blockers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "checks": {
+          "type": "array"
+        },
+        "evidence_bundle_id": {
+          "type": "string"
+        }
+      }
+    },
+    "process_plan_card": {
+      "type": "object",
+      "required": [
+        "object_type",
+        "process_plan_id",
+        "route",
+        "parameter_candidates",
+        "simulation_plan",
+        "review_status",
+        "evidence_refs"
+      ],
+      "properties": {
+        "object_type": {
+          "const": "ProcessPlanCard"
+        },
+        "review_status": {
+          "const": "needs_human_confirmation"
+        }
+      }
+    },
+    "candidate_context_patch": {
+      "type": "object",
+      "required": [
+        "object_type",
+        "patch_id",
+        "task_id",
+        "proposer_agent",
+        "target_path",
+        "candidate_value",
+        "evidence_refs",
+        "review_status",
+        "rollback_plan"
+      ],
+      "properties": {
+        "object_type": {
+          "const": "ContextPatch"
+        },
+        "proposer_agent": {
+          "const": "process_planning_agent"
+        },
+        "review_status": {
+          "type": "string",
+          "enum": [
+            "needs_human_confirmation",
+            "needs_evidence"
+          ]
+        }
+      }
+    },
+    "review_request": {
+      "type": "object"
+    },
+    "will_submit_solver": {
+      "const": false
+    },
+    "will_control_gui": {
+      "const": false
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

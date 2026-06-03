@@ -1,0 +1,43 @@
+{
+  "case_id": "e2e_prepare_case_p0",
+  "source_plan_doc": "VC开发文档/Auto_Autoform思路整理/AutoForm多Agent系统整体任务规划矛盾检查与Vibecoding开发计划.docx",
+  "fixture": "fixtures/run_events_demo.jsonl",
+  "goal": "Replay one low-risk simulation-preparation flow from user input to StageSummary without real AutoForm solving.",
+  "expected_event_order": [
+    "user_input_received",
+    "task_card_created",
+    "route_decision",
+    "agent_node_started",
+    "agent_edge_transfer",
+    "evidence_bundle_packed",
+    "context_patch_proposed",
+    "patch_reviewed",
+    "command_line",
+    "token_usage_snapshot",
+    "stage_summary"
+  ],
+  "expected_agents": [
+    "user",
+    "ui_workbench",
+    "center_agent",
+    "demand_triage_agent",
+    "geometry_data_agent",
+    "rag_evidence_agent",
+    "validator",
+    "script_agent"
+  ],
+  "required_objects": [
+    "TaskCard",
+    "EvidenceBundle",
+    "ContextPatch",
+    "TokenUsageSnapshot",
+    "StageSummary"
+  ],
+  "prohibited_actions": [
+    "real_autoform_solver_submission",
+    "plain_api_key_persistence",
+    "direct_formal_material_write",
+    "direct_formal_process_write",
+    "l3_l4_script_execution"
+  ]
+}

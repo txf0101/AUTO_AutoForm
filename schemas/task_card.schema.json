@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autoform-agent.schemas.task_card.v1",
+  "title": "TaskCard",
+  "type": "object",
+  "required": [
+    "task_id",
+    "run_id",
+    "user_intent",
+    "task_type",
+    "phase",
+    "priority",
+    "risk_level",
+    "status",
+    "requested_outputs",
+    "source_refs",
+    "created_at"
+  ],
+  "properties": {
+    "object_type": {
+      "const": "TaskCard"
+    },
+    "task_id": {
+      "type": "string",
+      "pattern": "^task_[a-z0-9_]+$"
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^run_[a-z0-9_]+$"
+    },
+    "user_intent": {
+      "type": "string"
+    },
+    "task_type": {
+      "type": "string",
+      "enum": [
+        "simulation_preparation",
+        "material_check",
+        "geometry_check",
+        "process_planning",
+        "script_dry_run"
+      ]
+    },
+    "phase": {
+      "type": "string",
+      "enum": [
+        "P0",
+        "P1",
+        "P2",
+        "P3"
+      ]
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "P0",
+        "P1",
+        "P2",
+        "P3"
+      ]
+    },
+    "risk_level": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "candidate",
+        "blocked",
+        "closed"
+      ]
+    },
+    "requested_outputs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "source_refs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": true
+}

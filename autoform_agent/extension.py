@@ -1,10 +1,6 @@
-"""Evidence-based AutoForm extension boundary checks.
+"""这个文件记录 AutoForm 扩展边界。它说明当前项目可以做什么、暂时不碰哪些内部扩展点，从而避免把未验证能力误当成交付能力。
 
-The public 1.0 surface needs a clear answer about internal automation.  This
-module records what the local installation exposes today: executables,
-QuickLink scripts, help topics and template markers.  The result is a grounded
-boundary document that can be shown to users before promising GUI-internal
-automation features.
+This file records the AutoForm extension boundary. It explains what the project can do now and which internal extension points remain untouched, so unverified abilities are not presented as delivered features.
 """
 
 from __future__ import annotations

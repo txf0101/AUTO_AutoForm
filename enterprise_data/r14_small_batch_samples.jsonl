@@ -1,0 +1,2 @@
+{"record_id":"record_r14_sample_material_001","source_id":"source_enterprise_internal_dataset_pending","domain":"material_properties","payload":{"material_grade":"DC04","thickness_value":1.0,"thickness_unit":"mm","owner":"human_reviewer","version":"pending"}}
+{"record_id":"record_r14_sample_process_001","source_id":"source_enterprise_internal_dataset_pending","domain":"process_route","payload":{"operation_sequence":["D-20"],"parameter_window_ref":"pending_review","owner":"human_reviewer","version":"pending"}}

@@ -1,12 +1,9 @@
 [project]
 name = "autoform-agent"
 version = "1.0.0"
-description = "Local AutoForm control helpers with an OpenAI Agents SDK runtime and MCP workflows."
+description = "Local AutoForm control helpers with a direct DeepSeek API runtime and MCP workflows."
 requires-python = ">=3.10"
-dependencies = [
-  "openai>=2.0,<3.0",
-  "openai-agents>=0.6.0",
-]
+dependencies = []
 
 [project.optional-dependencies]
 mcp = ["mcp>=1.0.0"]

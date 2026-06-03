@@ -1,9 +1,6 @@
-"""Local job lifecycle registry for AutoForm command executions.
+"""这个文件管理本地作业生命周期。提交、查看、等待、取消、日志预览和归档计划都会写入同一套作业记录，便于 CLI、MCP 和前端复用。
 
-This module provides the missing P0 lifecycle boundary: submit, status, cancel,
-wait, logs and archive.  The registry is deliberately file-based so CLI, MCP and
-future UI calls can inspect the same job records without keeping one Python
-process alive.
+This file manages the local job lifecycle. Submit, status, wait, cancel, log preview, and archive plans all write to the same job records so CLI, MCP, and the frontend can reuse them.
 """
 
 from __future__ import annotations

@@ -1,0 +1,169 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autoform.enterprise_process_executor.r20.v1",
+  "title": "EnterpriseProcessExecutorRun",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "object_type",
+    "schema_version",
+    "phase",
+    "run_id",
+    "task_id",
+    "query",
+    "status",
+    "state",
+    "center_plan",
+    "evidence_bundle",
+    "planning_result",
+    "patch_review",
+    "events",
+    "audit_events",
+    "source_refs",
+    "evidence_refs",
+    "will_submit_solver",
+    "will_control_gui",
+    "execution_boundary"
+  ],
+  "properties": {
+    "object_type": {
+      "const": "EnterpriseProcessExecutorRun"
+    },
+    "schema_version": {
+      "const": "autoform.enterprise_process_executor.r20.v1"
+    },
+    "phase": {
+      "const": "R20"
+    },
+    "status": {
+      "enum": [
+        "completed",
+        "blocked",
+        "waiting_for_human"
+      ]
+    },
+    "state": {
+      "type": "object",
+      "required": [
+        "object_type",
+        "run_id",
+        "task_id",
+        "state",
+        "blocked_by",
+        "waiting_for"
+      ],
+      "properties": {
+        "object_type": {
+          "const": "EnterpriseProcessExecutorState"
+        },
+        "state": {
+          "enum": [
+            "completed",
+            "blocked",
+            "waiting_for_human"
+          ]
+        },
+        "blocked_by": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "waiting_for": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "events": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "event_id",
+          "run_id",
+          "type",
+          "source_agent",
+          "target_agent",
+          "payload",
+          "timestamp"
+        ]
+      }
+    },
+    "audit_events": {
+      "type": "array",
+      "minItems": 1
+    },
+    "source_refs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "evidence_refs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "controlled_execution_plan": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "runtime_run": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "result_evidence_package": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "report_draft": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "will_submit_solver": {
+      "const": false
+    },
+    "will_control_gui": {
+      "const": false
+    },
+    "execution_boundary": {
+      "type": "object",
+      "required": [
+        "phase",
+        "execution_approved",
+        "will_submit_solver",
+        "will_control_gui",
+        "gateway"
+      ],
+      "properties": {
+        "phase": {
+          "const": "R20"
+        },
+        "execution_approved": {
+          "type": "boolean"
+        },
+        "will_submit_solver": {
+          "const": false
+        },
+        "will_control_gui": {
+          "const": false
+        }
+      }
+    }
+  }
+}

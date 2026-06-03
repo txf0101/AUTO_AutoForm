@@ -1,0 +1,194 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autoform-agent.schemas.enterprise_data_contract.v1",
+  "title": "EnterpriseDataContract",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "object_type",
+    "phase",
+    "contract_id",
+    "governance",
+    "data_domains",
+    "source_policy",
+    "created_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "autoform.enterprise_data_contract.r13.v1"
+    },
+    "object_type": {
+      "const": "EnterpriseDataContract"
+    },
+    "phase": {
+      "const": "R13"
+    },
+    "contract_id": {
+      "type": "string",
+      "pattern": "^enterprise_contract_[a-z0-9_]+$"
+    },
+    "governance": {
+      "type": "object",
+      "required": [
+        "owner",
+        "review_status",
+        "confidentiality_default",
+        "allowed_current_actions",
+        "blocked_current_actions"
+      ],
+      "properties": {
+        "owner": {
+          "type": "string"
+        },
+        "review_status": {
+          "enum": [
+            "candidate",
+            "reviewed"
+          ]
+        },
+        "confidentiality_default": {
+          "type": "string"
+        },
+        "allowed_current_actions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "blocked_current_actions": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "bulk_crawl",
+              "bulk_download",
+              "auto_ingest"
+            ]
+          }
+        }
+      }
+    },
+    "data_domains": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "domain_id",
+          "title",
+          "allowed_usage",
+          "fields"
+        ],
+        "properties": {
+          "domain_id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "allowed_usage": {
+            "enum": [
+              "catalog_only",
+              "candidate_generation",
+              "evidence_bundle_input"
+            ]
+          },
+          "fields": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": [
+                "field_id",
+                "type",
+                "unit_policy",
+                "source_required",
+                "owner_required",
+                "version_required",
+                "confidentiality",
+                "allowed_usage",
+                "review_status"
+              ],
+              "properties": {
+                "field_id": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                },
+                "type": {
+                  "enum": [
+                    "string",
+                    "number",
+                    "integer",
+                    "boolean",
+                    "array",
+                    "object"
+                  ]
+                },
+                "unit_policy": {
+                  "type": "string"
+                },
+                "source_required": {
+                  "const": true
+                },
+                "owner_required": {
+                  "const": true
+                },
+                "version_required": {
+                  "const": true
+                },
+                "confidentiality": {
+                  "type": "string"
+                },
+                "allowed_usage": {
+                  "enum": [
+                    "catalog_only",
+                    "candidate_generation",
+                    "evidence_bundle_input"
+                  ]
+                },
+                "review_status": {
+                  "enum": [
+                    "candidate",
+                    "reviewed"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "source_policy": {
+      "type": "object",
+      "required": [
+        "source_required",
+        "version_required",
+        "owner_required",
+        "permission_required",
+        "hash_required"
+      ],
+      "properties": {
+        "source_required": {
+          "const": true
+        },
+        "version_required": {
+          "const": true
+        },
+        "owner_required": {
+          "const": true
+        },
+        "permission_required": {
+          "const": true
+        },
+        "hash_required": {
+          "const": true
+        }
+      }
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": true
+}

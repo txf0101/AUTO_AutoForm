@@ -1,0 +1,166 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autoform.agent_system.runtime.r18.v1",
+  "title": "RealtimeExecutorRun",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "object_type",
+    "schema_version",
+    "phase",
+    "run_id",
+    "task_id",
+    "request",
+    "status",
+    "state",
+    "center_plan",
+    "patch_reviews",
+    "node_states",
+    "events",
+    "will_submit_solver",
+    "will_control_gui",
+    "execution_boundary"
+  ],
+  "properties": {
+    "object_type": {
+      "const": "RealtimeExecutorRun"
+    },
+    "schema_version": {
+      "const": "autoform.agent_system.runtime.r18.v1"
+    },
+    "phase": {
+      "const": "R18"
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "task_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "enum": [
+        "planned",
+        "running",
+        "waiting_for_human",
+        "blocked",
+        "completed",
+        "paused"
+      ]
+    },
+    "state": {
+      "type": "object",
+      "required": [
+        "object_type",
+        "state",
+        "completed_node_ids",
+        "blocked_by",
+        "waiting_for"
+      ],
+      "properties": {
+        "object_type": {
+          "const": "RealtimeExecutorState"
+        },
+        "state": {
+          "enum": [
+            "planned",
+            "running",
+            "waiting_for_human",
+            "blocked",
+            "completed",
+            "paused"
+          ]
+        },
+        "completed_node_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "blocked_by": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "waiting_for": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "patch_reviews": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "node_states": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "object_type",
+          "node_id",
+          "role_id",
+          "state"
+        ],
+        "properties": {
+          "object_type": {
+            "const": "AgentNodeState"
+          },
+          "state": {
+            "enum": [
+              "planned",
+              "running",
+              "waiting_for_human",
+              "blocked",
+              "completed",
+              "paused"
+            ]
+          }
+        }
+      }
+    },
+    "events": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "event_id",
+          "run_id",
+          "type",
+          "source_agent",
+          "target_agent",
+          "payload",
+          "timestamp"
+        ]
+      }
+    },
+    "resume_token": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "will_submit_solver": {
+      "const": false
+    },
+    "will_control_gui": {
+      "const": false
+    },
+    "execution_boundary": {
+      "type": "object",
+      "required": [
+        "phase",
+        "gateway",
+        "will_submit_solver",
+        "will_control_gui"
+      ]
+    }
+  }
+}

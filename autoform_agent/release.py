@@ -1,8 +1,6 @@
-"""Release readiness and install package planning helpers.
+"""这个文件检查交付资料是否齐全。它读取 README、安装说明、环境文件、发布清单和新手文档等证据，给出发布就绪判断。
 
-The public 1.0 gap report calls out installation, uninstall, dependency and
-release documentation as P0.  These helpers make that checklist executable so a
-future release can be checked by CLI, MCP or tests before files are published.
+This file checks whether delivery materials are complete. It reads evidence such as README, installation notes, environment files, release checklists, and beginner documentation to judge release readiness.
 """
 
 from __future__ import annotations
@@ -30,6 +28,7 @@ REQUIRED_RELEASE_FILES = [
     "codex_mcp_config.autoform-agent.toml",
     "docs/beginner_onboarding_zh.md",
     "docs/api_runtime_call_chain.md",
+    "docs/multi_agent_architecture.md",
 ]
 
 PACKAGE_INCLUDE_DIRS = ["autoform_agent", "docs", "frontend", "tests", "tools"]

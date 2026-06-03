@@ -1,0 +1,117 @@
+DemandTriageCard:
+  required: task_id;triage_id;user_intent;task_type;risk_level;missing_info_checklist;route_next_agents;source_refs
+  stage: R6
+MissingInfoChecklist:
+  required: checklist_id;items;status
+  stage: R6
+PartCard:
+  required: part_id;task_id;blank_thickness_mm;material_grade_hint;geometry_ref;status
+  stage: R6
+DataChecklist:
+  required: checklist_id;items;status
+  stage: R6
+CandidateValue:
+  required: candidate_id;field;value;confidence;evidence_refs;review_status
+  stage: R6
+EvidenceBundle:
+  required: evidence_bundle_id;query;source_refs;summary;applicability;limitation;confidence;review_status
+  stage: R7
+MaterialCard:
+  required: material_id;task_id;grade;source_level;confirmation_status;evidence_bundle_id
+  stage: R8
+MaterialGapList:
+  required: gap_list_id;items;status
+  stage: R8
+MaterialPatch:
+  required: patch_id;context_patch;conflict_table
+  stage: R8
+ReviewRequest:
+  required: request_id;owner;reason;required_decision
+  stage: R8
+ProcessPlanCard:
+  required: process_plan_id;task_id;part_id;material_id;route;parameter_candidates;simulation_plan;status
+  stage: R9
+OperationRoute:
+  required: route_id;operations;review_status
+  stage: R9
+ParameterCandidate:
+  required: parameter_id;name;value;window;evidence_refs;review_status
+  stage: R9
+SimulationPlan:
+  required: simulation_plan_id;mode;will_submit_solver;required_approvals
+  stage: R9
+SkillCard:
+  required: skill_id;risk_level;description;validation_rule
+  stage: R10
+ScriptRunRecord:
+  required: script_run_id;skill_card;caller_agent;params_hash;status;console_lines;validation_report
+  stage: R10
+FailureSummary:
+  required: reason;next_action
+  stage: R10
+StageSummary:
+  required: stage_id;task_id;status;summary;blocked_by;next_actions
+  stage: R11
+ProcessKnowledgeCard:
+  required: card_id;card_type;source_id;evidence_refs;version;applicability;limitation;review_status;owner
+  stage: R15
+ParameterWindow:
+  required: parameter;unit;lower;upper;basis_evidence_refs;review_status
+  stage: R15
+ProcessCase:
+  required: case_ref;source_id;evidence_refs;applicability;outcome_status;review_status
+  stage: R15
+QualityCriteria:
+  required: metric;unit;lower;upper;basis_evidence_refs;review_status
+  stage: R15
+ProcessRagEvidenceBundle:
+  required: evidence_bundle_id;query;filters;source_refs;evidence_refs;card_refs;retrieval_run;confidence;review_status;human_review_status;conflict_status
+  stage: R16
+ProcessRagRetrievalRun:
+  required: retrieval_run_id;index_version;candidate_card_count;matched_card_count;formal_index_allowed_count;filters_applied;ranking_explanation;excluded_cards;blocked_actions
+  stage: R16
+EnterpriseProcessPlanningAgentResult:
+  required: task_id;evidence_bundle;evidence_assessment;process_plan_card;candidate_context_patch;review_request;will_submit_solver;will_control_gui
+  stage: R17
+EnterpriseProcessEvidenceAssessment:
+  required: status;blockers;checks;evidence_bundle_id
+  stage: R17
+EnterpriseProcessPlanHumanDecision:
+  required: decision_id;task_id;reviewer;decision;allowed_to_merge;rollback_plan;process_plan_id
+  stage: R17
+RealtimeExecutorRun:
+  required: run_id;task_id;request;status;state;center_plan;node_states;events;execution_boundary
+  stage: R18
+RealtimeExecutorState:
+  required: run_id;task_id;state;completed_node_ids;blocked_by;waiting_for
+  stage: R18
+RealtimeExecutorResumeToken:
+  required: run_id;task_id;center_plan;completed_node_ids;event_count;status
+  stage: R18
+AgentNodeState:
+  required: node_id;role_id;task_id;state;depends_on
+  stage: R18
+RealtimeMultiAgentExecutorRun:
+  required: run_id;task_id;request;status;state;center_plan;node_states;events;tool_intents_by_node;tool_results;execution_boundary
+  stage: R19
+AgentToolIntent:
+  required: tool;arguments;reason
+  stage: R19
+AgentToolExecutionRecord:
+  required: node_id;role_id;task_id;tool;status;approval_required;intent;gateway_result;result_summary
+  stage: R19
+EnterpriseProcessExecutorRun:
+  required: run_id;task_id;query;status;state;evidence_bundle;planning_result;events;audit_events;source_refs;evidence_refs;execution_boundary
+  stage: R20
+EnterpriseProcessExecutorState:
+  required: run_id;task_id;state;blocked_by;waiting_for
+  stage: R20
+ControlledAutoFormExecutionPlan:
+  required: execution_plan_id;task_id;process_plan_id;status;planned_autoform_project;required_approvals;will_submit_solver;will_control_gui
+  stage: R20
+EnterpriseResultEvidencePackage:
+  required: evidence_package_id;task_id;status;source_refs;evidence_refs;tool_records;runtime_status;formal_engineering_conclusion_allowed
+  stage: R20
+EnterpriseProcessReportDraft:
+  required: report_id;task_id;status;process_plan_id;result_evidence_package_id;source_refs;evidence_refs;formal_conclusion_allowed
+  stage: R20

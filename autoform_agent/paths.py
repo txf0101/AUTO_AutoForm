@@ -1,10 +1,6 @@
-"""AutoForm installation discovery and canonical path calculation.
+"""这个文件发现本机 AutoForm 安装、版本、程序目录、脚本目录和示例工程目录。其他模块依赖它确认路径依据。
 
-This module is the portability boundary for the whole project.  Other modules
-should ask this module for AutoForm locations instead of hard-coding
-`Program Files`, `ProgramData`, or version-specific directories.  Keeping this
-logic centralized makes future multi-version and non-standard installation
-support easier to maintain.
+This file discovers local AutoForm installations, versions, program folders, script folders, and example-project folders. Other modules rely on it for path evidence.
 """
 
 from __future__ import annotations

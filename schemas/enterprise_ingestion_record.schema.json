@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autoform-agent.schemas.enterprise_ingestion_record.v1",
+  "title": "EnterpriseIngestionRecord",
+  "type": "object",
+  "required": [
+    "record_id",
+    "source_id",
+    "domain",
+    "payload"
+  ],
+  "properties": {
+    "record_id": {
+      "type": "string",
+      "pattern": "^record_[a-z0-9_]+$"
+    },
+    "source_id": {
+      "type": "string",
+      "pattern": "^source_[a-z0-9_]+$"
+    },
+    "domain": {
+      "type": "string"
+    },
+    "payload": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": true
+}

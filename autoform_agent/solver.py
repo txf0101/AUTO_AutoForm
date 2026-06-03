@@ -1,8 +1,6 @@
-"""Solver-family command planning, bounded execution and log parsing.
+"""这个文件规划和执行 AutoForm 求解器相关动作。它把求解命令、模式、日志和返回码整理成可追溯结果。
 
-Solver tools can consume licenses and modify `.afd` jobs.  Public functions
-therefore separate planning from execution, record evidence strings, and return
-structured summaries that are easier to debug than raw stdout alone.
+This file plans and executes AutoForm solver-related actions. It turns solver commands, modes, logs, and return codes into traceable results.
 """
 
 from __future__ import annotations

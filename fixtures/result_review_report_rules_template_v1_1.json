@@ -1,0 +1,155 @@
+{
+  "object_type": "ResultReviewReportRules",
+  "schema_version": "1.1",
+  "status": "requires_user_thresholds",
+  "project_scope": {
+    "project_family": null,
+    "material": null,
+    "thickness_mm": null,
+    "operation_scope": "D operations and final state"
+  },
+  "unit_system": {
+    "length": "mm",
+    "force": "kN",
+    "percentage": "%"
+  },
+  "rules": [
+    {
+      "key": "minimum_thickness",
+      "label": "Minimum thickness",
+      "metric": "minimum_sheet_thickness",
+      "unit": "mm",
+      "threshold": {
+        "mode": "minimum",
+        "pass": null,
+        "warning": null,
+        "fail": null
+      },
+      "evidence": [
+        "thickness result screenshot",
+        "operation or final-state label",
+        "window metadata"
+      ],
+      "annotation": "Mark minimum thickness location and value when available."
+    },
+    {
+      "key": "thinning_ratio",
+      "label": "Thinning ratio",
+      "metric": "maximum_thinning_ratio",
+      "unit": "%",
+      "threshold": {
+        "mode": "maximum",
+        "pass": null,
+        "warning": null,
+        "fail": null
+      },
+      "evidence": [
+        "thinning result screenshot",
+        "operation or final-state label",
+        "window metadata"
+      ],
+      "annotation": "Mark high-thinning zones and record whether values exceed project limits."
+    },
+    {
+      "key": "fld_risk",
+      "label": "FLD risk",
+      "metric": "forming_limit_status",
+      "unit": null,
+      "threshold": {
+        "mode": "category",
+        "pass": null,
+        "warning": null,
+        "fail": null
+      },
+      "evidence": [
+        "formability or split result screenshot",
+        "visible legend or status label",
+        "window metadata"
+      ],
+      "annotation": "Mark split, necking, or critical FLD regions when visible."
+    },
+    {
+      "key": "springback_deviation",
+      "label": "Springback deviation",
+      "metric": "maximum_shape_deviation",
+      "unit": "mm",
+      "threshold": {
+        "mode": "maximum",
+        "pass": null,
+        "warning": null,
+        "fail": null
+      },
+      "evidence": [
+        "springback result screenshot",
+        "reference or compensation state",
+        "window metadata"
+      ],
+      "annotation": "Record positive and negative deviation zones separately when available."
+    },
+    {
+      "key": "maximum_force",
+      "label": "Maximum force",
+      "metric": "maximum_process_force",
+      "unit": "kN",
+      "threshold": {
+        "mode": "maximum",
+        "pass": null,
+        "warning": null,
+        "fail": null
+      },
+      "evidence": [
+        "process force result or curve screenshot",
+        "operation label",
+        "window metadata"
+      ],
+      "annotation": "Record peak force and corresponding operation or increment when available."
+    },
+    {
+      "key": "material_flow_abnormality",
+      "label": "Material flow abnormality",
+      "metric": "draw_in_or_material_flow_status",
+      "unit": null,
+      "threshold": {
+        "mode": "category",
+        "pass": null,
+        "warning": null,
+        "fail": null
+      },
+      "evidence": [
+        "draw-in or material-flow screenshot",
+        "comparison side or baseline label",
+        "window metadata"
+      ],
+      "annotation": "Mark asymmetric draw-in, abnormal flow, or visible skid-line risk."
+    }
+  ],
+  "annotation_rules": {
+    "screenshot_caption_fields": [
+      "project_path",
+      "operation_or_frame",
+      "result_variable",
+      "view",
+      "timestamp",
+      "window_title",
+      "threshold_rule_key"
+    ],
+    "severity_labels": [
+      "pass",
+      "warning",
+      "fail",
+      "unknown"
+    ],
+    "unknown_value_policy": "If a numeric or category value is not visible in available evidence, report unknown and keep the rule out of pass/fail scoring."
+  },
+  "required_user_inputs": [
+    "project_family",
+    "material and nominal thickness if thresholds depend on material",
+    "minimum thickness pass, warning and fail limits",
+    "maximum thinning pass, warning and fail limits",
+    "FLD category mapping for pass, warning and fail",
+    "springback deviation pass, warning and fail limits",
+    "maximum force pass, warning and fail limits",
+    "material flow or draw-in abnormality category mapping",
+    "one accepted historical report if wording or annotation style must match an existing standard"
+  ]
+}

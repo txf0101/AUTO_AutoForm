@@ -1,4 +1,10 @@
-﻿param(
+﻿<#
+这个 PowerShell 脚本是 Windows 用户启动 AutoForm Agent 的菜单入口。它帮助检查环境、启动后端和打开本地页面；修改时要保留清晰提示和失败信息。
+
+This PowerShell script is the Windows menu entry point for starting AutoForm Agent. It helps check the environment, start the backend, and open the local page; keep prompts and failure messages clear when editing it.
+#>
+
+param(
     # Help 只打印说明并退出，便于快速检查脚本是否可以被 PowerShell 正常解析。
     [switch]$Help,
 
@@ -16,7 +22,7 @@
 # 关键分工：
 # - 浏览器前端通过 `autoform_agent.http_bridge` 访问本地 HTTP 服务。HTTP
 #   bridge 会把 prompt 转交给 `autoform_agent.agent_runtime`，由 Python 后端
-#   负责 OpenAI-compatible API、OpenAI Agents SDK 调用和 AutoForm 工具选择。
+#   负责 DeepSeek 直接 API 调用和 AutoForm 工具选择。
 #
 # 进程隔离原则：
 # - 本脚本只负责启动服务和打开页面。
@@ -36,7 +42,7 @@ $WorkspaceRoot = $PSScriptRoot
 $HostAddress = "127.0.0.1"
 $BridgePort = 4317
 $FrontendPort = 8765
-$FrontendUrl = "http://$HostAddress`:$FrontendPort/index.html?bridge=http"
+$FrontendUrl = "http://$HostAddress`:$FrontendPort/frontend/index.html?bridge=http"
 
 # 日志按启动时间分目录存放，避免覆盖正在运行服务仍在写入的旧日志。
 $RunStamp = Get-Date -Format "yyyyMMdd_HHmmss"
@@ -64,7 +70,6 @@ function Show-Help {
     Write-Host ""
     Write-Host "说明：前端 HTTP bridge 会调用 Python 后端 Agent API runtime。"
 }
-
 function Initialize-LauncherFolders {
     <#
       创建日志目录和 PID 目录。
@@ -79,8 +84,8 @@ function Get-PythonExecutable {
     <#
       查找项目可用的 Python。
       首选用户级 afagent Conda 环境，因为 environment.yml、README 和测试命令都
-      以该环境为准，并且 OpenAI Agents SDK 依赖也安装在这里。若该环境不存在，
-      再退回当前 PowerShell 环境中的 python，便于其他机器迁移时继续工作。
+      以该环境为准。若该环境不存在，再退回当前 PowerShell 环境中的 python，
+      便于其他机器迁移时继续工作。
     #>
     if (Test-Path $PreferredAfagentPython) {
         return $PreferredAfagentPython
@@ -191,16 +196,15 @@ function Start-DetachedPythonProcess {
 function Test-AgentRuntimeEntrypoint {
     <#
       检查后端 Agent runtime 是否可以被当前 Python 导入，并打印配置状态。
-      这里不强制要求 OPENAI_API_KEY，因为离线开发和自动化测试仍应能看到本地
-      降级响应。真实 Agents SDK 调用需要安装 openai-agents，并通过 .env 或页面
-      临时请求提供 API key。
+      这里不强制要求 API key，因为离线开发和自动化测试仍应能看到本地
+      降级响应。真实 DeepSeek API 调用通过环境变量或页面临时请求提供 key。
     #>
     $python = Get-PythonExecutable
     $checkCode = @"
 from autoform_agent.agent_runtime import load_agent_runtime_config
 config = load_agent_runtime_config()
 print('autoform_agent.agent_runtime import ok')
-print(f'agent_runtime_sdk_available={config.sdk_available}')
+print('agent_runtime_direct_api_available=True')
 print(f'agent_runtime_api_key_configured={config.api_key_configured}')
 print(f'agent_runtime_provider={config.provider}')
 print(f'agent_runtime_model={config.model}')
@@ -255,7 +259,7 @@ function Start-FrontendServer {
 
     Start-DetachedPythonProcess `
         -Name "frontend" `
-        -Arguments @("-m", "http.server", [string]$FrontendPort, "--bind", $HostAddress, "--directory", $frontendDirectory) `
+        -Arguments @("-m", "http.server", [string]$FrontendPort, "--bind", $HostAddress, "--directory", $WorkspaceRoot) `
         -PidFileName "frontend.pid"
 
     Wait-LocalPortListening -Port $FrontendPort -ServiceName "可视化前端"

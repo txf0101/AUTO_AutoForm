@@ -1,3 +1,8 @@
+"""这个测试文件检查配置读取和默认值。读测试时可以把每个断言看成一条项目承诺：输入什么、应该返回什么、哪些危险动作默认不能发生。
+
+This test file checks configuration reading and defaults. Read each assertion as one project promise: what input is accepted, what output must come back, and which risky actions must stay disabled by default.
+"""
+
 from pathlib import Path
 
 from autoform_agent.config import get_logging_config, get_queue_config, get_remote_hosts

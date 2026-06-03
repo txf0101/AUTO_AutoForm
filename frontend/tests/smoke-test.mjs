@@ -1,3 +1,9 @@
+/*
+这个脚本用 Node.js 检查前端静态页面的基本结构。它像一次快速开门检查，确认关键文件和页面元素还在。
+
+This script uses Node.js to check the basic structure of the static frontend page. It is a quick door-open check that confirms key files and page elements still exist.
+*/
+
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
@@ -10,31 +16,63 @@ const requiredHtmlMarkers = [
   "data-app-shell",
   "data-prompt-form",
   "data-status-summary",
+  "data-step-replay",
+  "data-run-replay",
+  "data-agent-graph",
+  "data-edge-list",
   "data-terminal-output",
   "data-api-input",
   "data-api-response",
   "data-provider-select",
   "data-provider-api-key",
+  "data-test-connection",
   "data-api-mode",
+  "data-api-runtime",
+  "data-api-direct-called",
+  "data-api-key-fingerprint",
+  "data-usage-total",
 ];
 
 const requiredJsMarkers = [
   "class AgentRuntimeBridge",
-  "async sendPrompt(prompt)",
+  "async sendPrompt(prompt, options = {})",
+  "loadFixtureFromInput",
+  "parseJsonl",
+  "stepReplay",
+  "runReplayToEnd",
+  "applyRunEvent",
+  "context_view_built",
+  "tool_requested",
+  "tool_completed",
+  "tool_blocked",
+  "approval_required",
+  "edge_transfer",
+  "toolLabel",
   "buildRuntimeConfigForRequest",
   "applyRuntimeReply",
   "redactPayloadForDisplay",
+  "renderGraph",
   "renderTerminal",
+  "previousBottomGap",
+  "shouldFollowTail",
   "renderApiPanel",
+  "renderUsage",
   "bindEvents",
 ];
 
 const requiredCssMarkers = [
-  ".console-panel",
+  ".workbench-panel",
   ".status-summary",
+  ".agent-graph",
   ".terminal-output",
+  ".agent-node.is-planned",
+  ".agent-node.is-blocked",
+  ".agent-node.is-waiting_for_human",
+  "overscroll-behavior: contain",
+  "scrollbar-gutter: stable",
   ".api-config-grid",
   ".api-grid",
+  ".usage-grid",
   "@media (max-width: 980px)",
 ];
 

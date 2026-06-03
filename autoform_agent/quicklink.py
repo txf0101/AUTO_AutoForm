@@ -1,9 +1,6 @@
-"""QuickLink bridge installation, archive indexing and XML summarization.
+"""这个文件解析 QuickLink 导出资料并把零散段落整理成结构化数据。它让材料、工艺和评价信息可以被 CLI、MCP 和测试统一读取。
 
-QuickLink is the most structured evidence source currently available for
-AutoForm project data.  Public functions in this module accept a file, archive,
-manifest or export directory and return stable dictionaries that are suitable
-for tests, CLI output and MCP responses.
+This file parses QuickLink exports and turns scattered sections into structured data. It lets material, process, and evaluation information be read consistently by CLI, MCP, and tests.
 """
 
 from __future__ import annotations

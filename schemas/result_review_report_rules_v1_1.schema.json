@@ -1,0 +1,188 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autoform-agent.schemas.result_review_report_rules.v1_1",
+  "title": "ResultReviewReportRulesV1_1",
+  "type": "object",
+  "required": [
+    "object_type",
+    "schema_version",
+    "status",
+    "project_scope",
+    "unit_system",
+    "rules",
+    "annotation_rules",
+    "required_user_inputs"
+  ],
+  "properties": {
+    "object_type": {
+      "const": "ResultReviewReportRules"
+    },
+    "schema_version": {
+      "const": "1.1"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "template",
+        "requires_user_thresholds",
+        "ready_for_draft_report"
+      ]
+    },
+    "project_scope": {
+      "type": "object",
+      "required": [
+        "project_family",
+        "material",
+        "thickness_mm",
+        "operation_scope"
+      ],
+      "properties": {
+        "project_family": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "material": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "thickness_mm": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "operation_scope": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": true
+    },
+    "unit_system": {
+      "type": "object",
+      "required": [
+        "length",
+        "force",
+        "percentage"
+      ],
+      "properties": {
+        "length": {
+          "type": "string"
+        },
+        "force": {
+          "type": "string"
+        },
+        "percentage": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "rules": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "metric",
+          "unit",
+          "threshold",
+          "evidence",
+          "annotation"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "metric": {
+            "type": "string"
+          },
+          "unit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "threshold": {
+            "type": "object",
+            "required": [
+              "mode",
+              "pass",
+              "warning",
+              "fail"
+            ],
+            "properties": {
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "minimum",
+                  "maximum",
+                  "range",
+                  "category"
+                ]
+              },
+              "pass": {},
+              "warning": {},
+              "fail": {}
+            },
+            "additionalProperties": true
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "annotation": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "annotation_rules": {
+      "type": "object",
+      "required": [
+        "screenshot_caption_fields",
+        "severity_labels",
+        "unknown_value_policy"
+      ],
+      "properties": {
+        "screenshot_caption_fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "severity_labels": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "unknown_value_policy": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "required_user_inputs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": true
+}

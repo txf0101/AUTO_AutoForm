@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autoform.agent_system.runtime.r19.v1",
+  "title": "RealtimeMultiAgentExecutorRun",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "object_type",
+    "schema_version",
+    "phase",
+    "run_id",
+    "task_id",
+    "request",
+    "status",
+    "state",
+    "center_plan",
+    "node_states",
+    "events",
+    "tool_intents_by_node",
+    "tool_results",
+    "will_submit_solver",
+    "will_control_gui",
+    "execution_boundary"
+  ],
+  "properties": {
+    "object_type": {
+      "const": "RealtimeExecutorRun"
+    },
+    "schema_version": {
+      "const": "autoform.agent_system.runtime.r19.v1"
+    },
+    "phase": {
+      "const": "R19"
+    },
+    "status": {
+      "enum": [
+        "planned",
+        "running",
+        "waiting_for_human",
+        "blocked",
+        "completed",
+        "paused"
+      ]
+    },
+    "state": {
+      "type": "object",
+      "required": [
+        "object_type",
+        "state",
+        "completed_node_ids",
+        "blocked_by",
+        "waiting_for"
+      ]
+    },
+    "events": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "event_id",
+          "run_id",
+          "type",
+          "source_agent",
+          "target_agent",
+          "payload",
+          "timestamp"
+        ]
+      }
+    },
+    "tool_intents_by_node": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "tool",
+            "arguments"
+          ]
+        }
+      }
+    },
+    "tool_results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "object_type",
+          "node_id",
+          "role_id",
+          "tool",
+          "status",
+          "approval_required",
+          "intent",
+          "gateway_result",
+          "result_summary"
+        ],
+        "properties": {
+          "object_type": {
+            "const": "AgentToolExecutionRecord"
+          },
+          "status": {
+            "type": "string"
+          },
+          "approval_required": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "will_submit_solver": {
+      "const": false
+    },
+    "will_control_gui": {
+      "const": false
+    }
+  }
+}

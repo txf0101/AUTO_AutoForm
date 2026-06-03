@@ -1,9 +1,6 @@
-"""Safety, rollback and public-release checks for AutoForm Agent.
+"""这个文件处理安全扫描、脱敏和公开发布边界。它的重点是发现明文密钥、敏感路径或不该公开的内容。
 
-This module keeps high-risk operational checks in one place.  It does not
-replace human review before publishing a repository or writing into AutoForm
-ProgramData, but it gives CLI, MCP and release tooling the same structured
-facts to inspect.
+This file handles safety scanning, redaction, and public-release boundaries. Its main job is to find raw secrets, sensitive paths, or content that should not be published.
 """
 
 from __future__ import annotations
@@ -15,7 +12,7 @@ import re
 
 
 SECRET_PATTERNS = {
-    "openai_key": re.compile(r"sk-[A-Za-z0-9_-]{20,}"),
+    "provider_api_key": re.compile(r"sk-[A-Za-z0-9_-]{20,}"),
     "github_token": re.compile(r"gh[pousr]_[A-Za-z0-9_]{20,}"),
     "generic_assignment": re.compile(r"(?i)(api[_-]?key|token|secret)\s*=\s*['\"]?([A-Za-z0-9_./:+-]{16,})"),
 }

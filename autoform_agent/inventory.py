@@ -1,8 +1,6 @@
-"""Read-only inventory helpers for AutoForm installations and project files.
+"""这个文件负责清点 AutoForm 安装目录、示例工程、帮助主题和 `.afd` 文件可读片段。它为后续运行、诊断和报告提供基础目录证据。
 
-Inventory functions gather facts from files already present on disk.  They are
-safe to expose through MCP because they do not launch AutoForm or write into
-ProgramData.
+This file inventories AutoForm installation folders, example projects, help topics, and readable fragments from `.afd` files. It provides basic path evidence for later runs, diagnostics, and reports.
 """
 
 from __future__ import annotations

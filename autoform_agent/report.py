@@ -1,8 +1,6 @@
-"""Report, Office template and GUI report-event evidence readers.
+"""这个文件整理报告生成或交付前的计划。它帮助用户知道哪些结果文件、截图、日志和说明可以放进报告包。
 
-Report generation is still evidence-driven in this project.  The helpers here
-identify installed report binaries, templates and log markers so later work can
-turn confirmed behavior into safe execution tools.
+This file prepares plans for report generation or delivery. It helps users see which result files, screenshots, logs, and notes can be included in a report package.
 """
 
 from __future__ import annotations

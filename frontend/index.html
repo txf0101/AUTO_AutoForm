@@ -1,21 +1,30 @@
 <!doctype html>
+<!--
+这个页面是 AutoForm Agent 的本地浏览器入口。它只负责摆放界面骨架，真实逻辑在 app.js，视觉样式在 styles.css。
+
+This page is the local browser entry point for AutoForm Agent. It only lays out the interface skeleton; the behavior lives in app.js and the visual styling lives in styles.css.
+-->
 <html lang="zh-CN">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>AutoForm Agent Console</title>
-    <link rel="stylesheet" href="./styles.css" />
+    <title>AutoForm P0 Workbench</title>
+    <link rel="stylesheet" href="./styles.css?v=20260602-r6-r11-replay" />
   </head>
   <body>
-    <!--
-      页面仍然只保留四个工作区：用户输入、状态总结、终端式输出、API 输入和使用情况。
-      供应商、Base URL、模型和 API key 属于第四区的 API 配置，不重新引入复杂导航或工具面板。
-    -->
-    <main class="console-shell" data-app-shell>
-      <section class="console-panel input-panel" aria-label="用户输入">
+    <main class="workbench-shell" data-app-shell>
+      <header class="workbench-header">
+        <div>
+          <h1>AutoForm P0 Workbench</h1>
+          <p data-run-caption>R3 static replay surface</p>
+        </div>
+        <div class="header-status" data-replay-status>fixture idle</div>
+      </header>
+
+      <section class="workbench-panel input-panel" aria-label="用户输入和回放控制">
         <div class="panel-heading">
           <span>1</span>
-          <h1>用户输入</h1>
+          <h2>用户输入</h2>
         </div>
 
         <form class="prompt-form" data-prompt-form>
@@ -23,23 +32,62 @@
           <textarea
             id="prompt-input"
             data-prompt-input
-            rows="8"
-            placeholder="例如：读取当前 AutoForm 安装和队列状态，并规划 kinematic check。"
+            rows="7"
+            placeholder="准备一个低风险 AutoForm 仿真前检查流程。"
           ></textarea>
 
-          <div class="input-row">
-            <label for="bridge-endpoint">Runtime API</label>
-            <input id="bridge-endpoint" data-bridge-endpoint value="http://127.0.0.1:4317/api/agent" />
+          <div class="api-config-grid input-api-config">
+            <div class="api-field">
+              <label for="provider-select">Provider</label>
+              <select id="provider-select" data-provider-select>
+                <option value="deepseek">DeepSeek</option>
+                <option value="custom">Chat completions compatible</option>
+              </select>
+            </div>
+            <div class="api-field">
+              <label for="provider-model">Model</label>
+              <input id="provider-model" data-provider-model value="deepseek-v4-flash" />
+            </div>
+            <div class="api-field span-two">
+              <label for="provider-base-url">Base URL</label>
+              <input id="provider-base-url" data-provider-base-url value="https://api.deepseek.com" />
+            </div>
+            <div class="api-field">
+              <label for="api-mode">API Mode</label>
+              <select id="api-mode" data-api-mode>
+                <option value="auto">auto</option>
+                <option value="chat_completions" selected>chat_completions</option>
+              </select>
+            </div>
+            <div class="api-field">
+              <label for="provider-api-key">API Key</label>
+              <input
+                id="provider-api-key"
+                data-provider-api-key
+                type="password"
+                autocomplete="off"
+                spellcheck="false"
+                placeholder="留空则使用本机 DeepSeek_V4_API"
+              />
+            </div>
+            <div class="button-row span-two">
+              <button type="button" data-apply-provider-preset>使用预设</button>
+              <button type="button" data-test-connection>测试连接</button>
+              <button type="button" data-clear-api-key>清空 key</button>
+            </div>
           </div>
 
-          <div class="input-actions">
+          <div class="button-row">
             <button type="button" data-insert-example>示例</button>
+            <button type="button" data-step-replay disabled>单步</button>
+            <button type="button" data-run-replay disabled>跑完</button>
+            <button type="button" data-reset-replay disabled>重置</button>
             <button type="submit" data-send-button>发送</button>
           </div>
         </form>
       </section>
 
-      <section class="console-panel summary-panel" aria-label="状态总结">
+      <section class="workbench-panel summary-panel" aria-label="状态总结">
         <div class="panel-heading">
           <span>2</span>
           <h2>状态总结</h2>
@@ -47,98 +95,63 @@
 
         <dl class="status-summary" data-status-summary>
           <div>
-            <dt>连接</dt>
-            <dd data-summary-connection>待发送</dd>
+            <dt>Run</dt>
+            <dd data-summary-run>未加载</dd>
           </div>
           <div>
-            <dt>供应商</dt>
-            <dd data-summary-provider>DeepSeek</dd>
+            <dt>Task</dt>
+            <dd data-summary-task>未创建</dd>
           </div>
           <div>
-            <dt>模型</dt>
-            <dd data-summary-model>deepseek-v4-flash</dd>
+            <dt>阶段</dt>
+            <dd data-summary-stage>P0</dd>
           </div>
           <div>
-            <dt>API 模式</dt>
-            <dd data-summary-api-mode>chat_completions</dd>
+            <dt>路由</dt>
+            <dd data-summary-route>待定</dd>
           </div>
           <div>
-            <dt>工具</dt>
-            <dd data-summary-tools>待读取</dd>
+            <dt>证据</dt>
+            <dd data-summary-evidence>0</dd>
           </div>
           <div>
-            <dt>队列</dt>
-            <dd data-summary-queue>待检查</dd>
-          </div>
-          <div>
-            <dt>SDK</dt>
-            <dd data-summary-sdk>待检查</dd>
+            <dt>补丁</dt>
+            <dd data-summary-patch>0</dd>
           </div>
           <div>
             <dt>Key</dt>
             <dd data-summary-key>未输入</dd>
           </div>
+          <div>
+            <dt>Token</dt>
+            <dd data-summary-token>0</dd>
+          </div>
         </dl>
       </section>
 
-      <section class="console-panel terminal-panel" aria-label="状态报告和输出">
+      <section class="workbench-panel graph-panel" aria-label="Agent 图谱">
         <div class="panel-heading">
           <span>3</span>
-          <h2>状态报告和输出</h2>
+          <h2>Agent 图谱</h2>
         </div>
-        <pre class="terminal-output" data-terminal-output aria-live="polite">AutoForm Agent Console ready.
-Runtime endpoint: http://127.0.0.1:4317/api/agent
-Provider preset: DeepSeek, chat_completions
-Waiting for prompt...</pre>
+        <div class="agent-graph" data-agent-graph></div>
+        <div class="edge-list" data-edge-list></div>
       </section>
 
-      <section class="console-panel api-panel" aria-label="API 输入以及 API 使用情况">
+      <section class="workbench-panel terminal-panel" aria-label="命令输出">
         <div class="panel-heading">
           <span>4</span>
-          <h2>API 输入以及 API 使用情况</h2>
+          <h2>命令输出</h2>
         </div>
+        <pre class="terminal-output" data-terminal-output aria-live="polite">AutoForm P0 Workbench ready.
+Replay fixture: built-in demo
+Local bridge: http://127.0.0.1:4317/api/agent</pre>
+      </section>
 
-        <div class="api-config-grid">
-          <div class="api-field">
-            <label for="provider-select">Provider</label>
-            <select id="provider-select" data-provider-select>
-              <option value="deepseek">DeepSeek</option>
-              <option value="openai">OpenAI</option>
-              <option value="custom">OpenAI-compatible</option>
-            </select>
-          </div>
-          <div class="api-field">
-            <label for="provider-model">Model</label>
-            <input id="provider-model" data-provider-model value="deepseek-v4-flash" />
-          </div>
-          <div class="api-field span-two">
-            <label for="provider-base-url">Base URL</label>
-            <input id="provider-base-url" data-provider-base-url value="https://api.deepseek.com" />
-          </div>
-          <div class="api-field">
-            <label for="api-mode">Agents SDK API</label>
-            <select id="api-mode" data-api-mode>
-              <option value="auto">auto</option>
-              <option value="chat_completions" selected>chat_completions</option>
-              <option value="responses">responses</option>
-            </select>
-          </div>
-          <div class="api-field">
-            <label for="provider-api-key">API Key</label>
-            <input
-              id="provider-api-key"
-              data-provider-api-key
-              type="password"
-              autocomplete="off"
-              spellcheck="false"
-              placeholder="粘贴 IT 提供的 key"
-            />
-          </div>
-          <div class="api-actions span-two">
-            <button type="button" data-apply-provider-preset>使用预设</button>
-            <button type="button" data-clear-api-key>清空 key</button>
-            <span data-api-key-note>key 只随本次请求发送，不写入仓库。</span>
-          </div>
+      <section class="workbench-panel api-panel" aria-label="凭据边界">
+        <div class="panel-heading">
+          <span>5</span>
+          <h2>凭据边界</h2>
         </div>
 
         <div class="api-grid">
@@ -147,20 +160,24 @@ Waiting for prompt...</pre>
             <code data-api-endpoint>http://127.0.0.1:4317/api/agent</code>
           </div>
           <div>
-            <label>SDK</label>
-            <code data-api-sdk>待检查</code>
-          </div>
-          <div>
-            <label>API Key</label>
-            <code data-api-key>未输入</code>
-          </div>
-          <div>
             <label>Key Source</label>
             <code data-api-key-source>none</code>
           </div>
           <div>
-            <label>SDK Call</label>
-            <code data-api-openai-called>false</code>
+            <label>Key Fingerprint</label>
+            <code data-api-key-fingerprint>none</code>
+          </div>
+          <div>
+            <label>API Runtime</label>
+            <code data-api-runtime>待检查</code>
+          </div>
+          <div>
+            <label>API Call</label>
+            <code data-api-direct-called>false</code>
+          </div>
+          <div>
+            <label>API Key</label>
+            <code data-api-key>未输入</code>
           </div>
           <div>
             <label>Base URL</label>
@@ -172,7 +189,31 @@ Waiting for prompt...</pre>
           <label>Request payload</label>
           <pre data-api-input>{}</pre>
         </div>
+      </section>
 
+      <section class="workbench-panel usage-panel" aria-label="Token 用量">
+        <div class="panel-heading">
+          <span>6</span>
+          <h2>Token 用量</h2>
+        </div>
+        <div class="usage-grid" data-usage-grid>
+          <div>
+            <label>Input</label>
+            <strong data-usage-input>0</strong>
+          </div>
+          <div>
+            <label>Output</label>
+            <strong data-usage-output>0</strong>
+          </div>
+          <div>
+            <label>Cached</label>
+            <strong data-usage-cached>0</strong>
+          </div>
+          <div>
+            <label>Total</label>
+            <strong data-usage-total>0</strong>
+          </div>
+        </div>
         <div class="api-block">
           <label>Runtime response</label>
           <pre data-api-response>{}</pre>
@@ -180,6 +221,6 @@ Waiting for prompt...</pre>
       </section>
     </main>
 
-    <script type="module" src="./app.js"></script>
+    <script type="module" src="./app.js?v=20260602-auto-fixture-replay"></script>
   </body>
 </html>

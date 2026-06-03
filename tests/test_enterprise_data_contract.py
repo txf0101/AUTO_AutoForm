@@ -41,11 +41,16 @@ def test_r13_schema_files_and_physical_artifacts_exist() -> None:
         ROOT / "enterprise_data" / "r14_cleaning_reports" / "r21_crossref_metadata_small_batch_cleaning_report.json",
         ROOT / "enterprise_data" / "r21_process_knowledge_cards.candidate.json",
         ROOT / "enterprise_data" / "r21_process_rag_evidence_bundle.sample.json",
+        ROOT / "enterprise_data" / "r21_public_process_chain_metadata_samples.jsonl",
+        ROOT / "enterprise_data" / "r14_cleaning_reports" / "r21_nist_pdr_public_process_chain_cleaning_report.json",
+        ROOT / "enterprise_data" / "r21_public_process_chain_cards.candidate.json",
+        ROOT / "enterprise_data" / "r21_public_process_chain_evidence_bundle.sample.json",
         ROOT / "enterprise_data" / "raw_data" / "README.md",
         ROOT / "enterprise_data" / "raw_data" / ".gitignore",
         ROOT / "enterprise_data" / "raw_data" / "source_manifest.template.csv",
         ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_arxiv_api_metadata_sample_manifest.csv",
         ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_r21_crossref_metadata_sample_manifest.csv",
+        ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_r21_nist_pdr_public_process_chain_manifest.csv",
         ROOT / "enterprise_data" / "raw_data" / "manifests" / ".gitkeep",
         ROOT / "enterprise_data" / "raw_data" / "manual_samples" / ".gitkeep",
         ROOT / "enterprise_data" / "raw_data" / "quarantine" / ".gitkeep",
@@ -237,6 +242,58 @@ def test_r21_candidate_cards_and_evidence_bundle_do_not_enter_formal_index() -> 
     assert bundle["collection_phase"] == "R21"
     assert bundle["conflict_status"] == "blocked_evidence_present"
     assert bundle["human_review_status"] == "required"
+    assert bundle["retrieval_run"]["formal_index_allowed_count"] == 0
+    assert bundle["retrieval_run"]["blocked_actions"] == [
+        "write_formal_engineering_state",
+        "submit_solver",
+        "control_gui",
+    ]
+
+
+def test_r21_nist_pdr_public_process_chain_sample_is_manifested_and_gated() -> None:
+    manifest_path = ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_r21_nist_pdr_public_process_chain_manifest.csv"
+    sample_path = ROOT / "enterprise_data" / "r21_public_process_chain_metadata_samples.jsonl"
+    report_path = ROOT / "enterprise_data" / "r14_cleaning_reports" / "r21_nist_pdr_public_process_chain_cleaning_report.json"
+
+    with manifest_path.open("r", encoding="utf-8-sig", newline="") as handle:
+        manifest_rows = list(csv.DictReader(handle))
+    samples = load_jsonl_records(sample_path)
+    report = _read_json(report_path)
+
+    assert len(manifest_rows) == 1
+    assert len(samples) == 3
+    manifest = manifest_rows[0]
+    assert manifest["source_id"] == "source_nist_public_data_repository"
+    assert manifest["collection_status"] == "sampled_once_metadata_only"
+    assert manifest["prohibited_actions"] == "bulk_crawl;bulk_download;auto_ingest"
+    assert manifest["checksum"] == samples[0]["normalized_payload"]["raw_response_sha256"]
+    assert "data files" in manifest["limitation"]
+
+    assert report["phase"] == "R21"
+    assert report["status"] == "pass"
+    assert report["clean_record_count"] == 3
+    assert any(attempt["source_id"] == "source_zenodo_records_metadata" and attempt["status"] == "blocked_not_sampled" for attempt in report["collection_attempts"])
+    for record in samples:
+        payload = record["normalized_payload"]
+        assert payload["access_level"] == "public"
+        assert payload["license_url"] == "https://www.nist.gov/open/license"
+        assert payload["landing_page"].startswith("https://www.nist.gov/")
+        assert record["source_hash"]
+
+
+def test_r21_nist_pdr_candidate_cards_and_bundle_remain_manual_review_only() -> None:
+    cards_fixture = _read_json(ROOT / "enterprise_data" / "r21_public_process_chain_cards.candidate.json")
+    bundle = _read_json(ROOT / "enterprise_data" / "r21_public_process_chain_evidence_bundle.sample.json")
+
+    assert len(cards_fixture["cards"]) == 3
+    for card in cards_fixture["cards"]:
+        assert card["source_id"] == "source_nist_public_data_repository"
+        assert card["review_status"] == "needs_license_review"
+        assert card["allowed_usage"] == "catalog_only"
+        assert card["payload"]["formal_index_allowed"] is False
+
+    assert bundle["collection_phase"] == "R21"
+    assert bundle["conflict_status"] == "blocked_evidence_present"
     assert bundle["retrieval_run"]["formal_index_allowed_count"] == 0
     assert bundle["retrieval_run"]["blocked_actions"] == [
         "write_formal_engineering_state",

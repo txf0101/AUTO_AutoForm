@@ -1,0 +1,223 @@
+{
+  "batch_limit": 20,
+  "batch_size": 3,
+  "clean_record_count": 3,
+  "cleaning_result": {
+    "batch_limit": 20,
+    "batch_size": 3,
+    "cleaned_records": [
+      {
+        "cleaning_status": "clean",
+        "domain": "public_process_chain_metadata",
+        "errors": [],
+        "normalized_payload": {
+          "access_level": "public",
+          "api_url": "https://data.nist.gov/rmm/records?searchphrase=manufacturing&limit=3",
+          "ark_id": "ark:/88434/mds10mxq68",
+          "authors": [],
+          "contact_name": "Boonserm Kulvatunyou",
+          "description": "The Smart Manufacturing Systems Readiness Level (SMSRL) focuses on evaluating the readiness (also can be viewed as maturity) for a factory to undergo improvements, particularly related to the data intensive smart manufacturing technology deployment in a factory. The SMSRL uses the Factory Design and Improvement (FDI) activity model as a guide for indicating actions and things that should be in place for performing a successful smart factory transformation at the operational level. In the SMSRL, activities employed from the FDI are subdivided into their applicability at the various control levels of ISA-88: Enterprise, Site, Area, Process Cell, Unit, Equipment Module, and Control Module. Each activity is measured under multiple dimensions such as Activity Management, Designated Personnel, Software System, Output Data Format, KPIs and KPI relationship, all of which are grouped into 4 measurement categories (C1: Organizational Maturity, C2: IT Applications Maturity, C3: Performance Management Maturity and C4: Information Connectivity Maturity). Each of the measurement categories has its own calculation method to quantify the maturity level; and it is used for deriving customized facto",
+          "doi": "10.18434/M32067",
+          "issued": "2020-04-16",
+          "keywords": [
+            "factory design",
+            "manufacturing operation",
+            "improvement",
+            "smart manufacturing",
+            "maturity assessment",
+            "readiness assessment"
+          ],
+          "landing_page": "https://www.nist.gov/services-resources/software/smart-manufacturing-systems-readiness-level-smsrl-tool",
+          "license_review_status": "needs_item_scope_review",
+          "license_url": "https://www.nist.gov/open/license",
+          "modified": "2018-11-30 00:00:00",
+          "publisher": "National Institute of Standards and Technology",
+          "query": "manufacturing",
+          "raw_response_relpath": "enterprise_data/raw_data/manual_samples/r21_controlled_expansion_20260603/nist_pdr_manufacturing_limit3_20260603.json",
+          "raw_response_sha256": "ef693f05ab0199418b61d15d61fd48625af654a78bca46dbb0d1032a800b0dfa",
+          "record_id": "884B718C01370FAAE05324570681F31F2067",
+          "reference_count": 8,
+          "retrieved_at": "2026-06-03T08:03:16.652078+00:00",
+          "review_status": "candidate",
+          "themes": [
+            "Manufacturing:Factory operations planning and control",
+            "Manufacturing:Interoperability in manufacturing",
+            "Manufacturing:Manufacturing systems design and analysis"
+          ],
+          "title": "Smart Manufacturing Systems Readiness Level (SMSRL) Tool",
+          "topic": [],
+          "version": "1.0.0"
+        },
+        "object_type": "EnterpriseCleanedRecord",
+        "record_id": "record_r21_nist_pdr_metadata_001_10_18434_m32067",
+        "review_status": "candidate",
+        "source_hash": "e0d1861deb4426b66b7738c257ae4db4a4c73d12777e9205f06d98e84336c68b",
+        "source_id": "source_nist_public_data_repository"
+      },
+      {
+        "cleaning_status": "clean",
+        "domain": "public_process_chain_metadata",
+        "errors": [],
+        "normalized_payload": {
+          "access_level": "public",
+          "api_url": "https://data.nist.gov/rmm/records?searchphrase=manufacturing&limit=3",
+          "ark_id": "ark:/88434/mds2-3703",
+          "authors": [
+            "Ananya Nandy",
+            "Maya Reslan",
+            "Noah Last",
+            "Nehika Mathur",
+            "Buddhika Hapuwatte",
+            "KC Morris",
+            "Vincenzo Ferrero",
+            "Ashley Hartwell"
+          ],
+          "contact_name": "Ananya Nandy",
+          "description": "Reference functional model for the activities and processes involved in production (e.g., designing, manufacturing, and recovering products/materials) in a circular economy. The model includes inputs and outputs of each activity, as well as factors that constrain and enable the activities (controls and mechanisms), using the IDEF0 methodology. It provides a baseline scenario that is relevant for stakeholders across  product development and supply chain, including business strategists, material suppliers, designers, manufacturers, consumers, and recovers/recyclers. The model is available as downloadable files and hosted on a website to view and explore directly.",
+          "doi": "10.18434/mds2-3703",
+          "issued": null,
+          "keywords": [
+            "circular economy",
+            "design",
+            "manufacturing",
+            "production",
+            "end-of-life treatment",
+            "functional model",
+            "system model"
+          ],
+          "landing_page": "https://www.nist.gov/services-resources/software/reference-functional-model-production-circular-economy",
+          "license_review_status": "needs_item_scope_review",
+          "license_url": "https://www.nist.gov/open/license",
+          "modified": "2025-02-03",
+          "publisher": "National Institute of Standards and Technology",
+          "query": "manufacturing",
+          "raw_response_relpath": "enterprise_data/raw_data/manual_samples/r21_controlled_expansion_20260603/nist_pdr_manufacturing_limit3_20260603.json",
+          "raw_response_sha256": "ef693f05ab0199418b61d15d61fd48625af654a78bca46dbb0d1032a800b0dfa",
+          "record_id": "ark:/88434/mds2-3703",
+          "reference_count": 4,
+          "retrieved_at": "2026-06-03T08:03:16.652078+00:00",
+          "review_status": "candidate",
+          "themes": [
+            "Manufacturing: Manufacturing systems design and analysis",
+            "Manufacturing: Systems integration",
+            "Manufacturing: Systems engineering",
+            "Manufacturing: Sustainable manufacturing"
+          ],
+          "title": "Reference functional model for production in a circular economy ",
+          "topic": [
+            {
+              "@type": "Concept",
+              "scheme": "https://data.nist.gov/od/dm/nist-themes/v1.1",
+              "tag": "Manufacturing: Manufacturing systems design and analysis"
+            },
+            {
+              "@type": "Concept",
+              "scheme": "https://data.nist.gov/od/dm/nist-themes/v1.1",
+              "tag": "Manufacturing: Systems integration"
+            },
+            {
+              "@type": "Concept",
+              "scheme": "https://data.nist.gov/od/dm/nist-themes/v1.1",
+              "tag": "Manufacturing: Systems engineering"
+            },
+            {
+              "@type": "Concept",
+              "scheme": "https://data.nist.gov/od/dm/nist-themes/v1.1",
+              "tag": "Manufacturing: Sustainable manufacturing"
+            }
+          ],
+          "version": "1.0.0"
+        },
+        "object_type": "EnterpriseCleanedRecord",
+        "record_id": "record_r21_nist_pdr_metadata_002_10_18434_mds2_3703",
+        "review_status": "candidate",
+        "source_hash": "c600d151fe0fdaa45edae69d06b9fed968403bbcf539847f0214b408e0a61f83",
+        "source_id": "source_nist_public_data_repository"
+      },
+      {
+        "cleaning_status": "clean",
+        "domain": "public_process_chain_metadata",
+        "errors": [],
+        "normalized_payload": {
+          "access_level": "public",
+          "api_url": "https://data.nist.gov/rmm/records?searchphrase=manufacturing&limit=3",
+          "ark_id": "ark:/88434/mds102cftx",
+          "authors": [],
+          "contact_name": "Boonserm Kulvatunyou",
+          "description": "MESA MOM/CMM (Manufacturing Operations Management / Capability Maturity Model) Assessment Tool is a questionnaire-based tool designed to help evaluate maturity and readiness of manufacturing enterprises from the factory operation management perspective. Based on level 3 of ISA-95: Part 1 MOM processes, MOM/CMM defines evaluation criteria for four operational areas namely, productions operations management, quality operations management, inventory operations management and maintenance operations management. Each operational area consists of a set of activities including detailed scheduling, dispatching, execution management, resource management, definition management, data collection and tracking and performance analysis. With the tool, users can assess their maturity level (0 to 5) of each activity independently, i.e., they can pick and choose activities and operational areas they would like to assess in any order. Note: The tool only works with Windows-based Microsoft Excel.",
+          "doi": "10.18434/M32068",
+          "issued": "2020-04-16",
+          "keywords": [
+            "manufacturing operation management",
+            "MESA",
+            "ISA-95",
+            "IEC 62264",
+            "maturity model",
+            "assessment"
+          ],
+          "landing_page": "https://www.nist.gov/services-resources/software/mesa-manufacturing-operation-management-maturity-assessment-tool",
+          "license_review_status": "needs_item_scope_review",
+          "license_url": "https://www.nist.gov/open/license",
+          "modified": "2018-11-30 00:00:00",
+          "publisher": "National Institute of Standards and Technology",
+          "query": "manufacturing",
+          "raw_response_relpath": "enterprise_data/raw_data/manual_samples/r21_controlled_expansion_20260603/nist_pdr_manufacturing_limit3_20260603.json",
+          "raw_response_sha256": "ef693f05ab0199418b61d15d61fd48625af654a78bca46dbb0d1032a800b0dfa",
+          "record_id": "884C42D607634FA1E053245706811BE62068",
+          "reference_count": 8,
+          "retrieved_at": "2026-06-03T08:03:16.652078+00:00",
+          "review_status": "candidate",
+          "themes": [
+            "Manufacturing:Factory operations planning and control",
+            "Manufacturing:Interoperability in manufacturing",
+            "Manufacturing:Manufacturing systems design and analysis"
+          ],
+          "title": "MESA Manufacturing Operation Management Maturity Assessment Tool",
+          "topic": [],
+          "version": "1.0.0"
+        },
+        "object_type": "EnterpriseCleanedRecord",
+        "record_id": "record_r21_nist_pdr_metadata_003_10_18434_m32068",
+        "review_status": "candidate",
+        "source_hash": "3e4fd9362606406deccdb961002dfaacdaf0d39fdbc888161f15cd09ef019f51",
+        "source_id": "source_nist_public_data_repository"
+      }
+    ],
+    "created_at": "2026-06-03T08:06:54.930497+00:00",
+    "object_type": "EnterpriseSmallBatchCleaningResult",
+    "schema_version": "autoform.enterprise_small_batch_cleaning.r14.v1",
+    "status": "pass"
+  },
+  "collection_attempts": [
+    {
+      "raw_response_sha256": "ef693f05ab0199418b61d15d61fd48625af654a78bca46dbb0d1032a800b0dfa",
+      "record_count": 3,
+      "retrieved_at": "2026-06-03T08:03:16.652078+00:00",
+      "source_id": "source_nist_public_data_repository",
+      "status": "sampled_once_metadata_only"
+    },
+    {
+      "checked_at": "2026-06-03T16:04:20+08:00",
+      "reason": "robots and Zenodo API returned 403 in this environment",
+      "source_id": "source_zenodo_records_metadata",
+      "status": "blocked_not_sampled"
+    }
+  ],
+  "created_at": "2026-06-03T08:06:54.930497+00:00",
+  "manifest_refs": [
+    "enterprise_data/raw_data/manifests/2026-06-03_r21_nist_pdr_public_process_chain_manifest.csv"
+  ],
+  "next_phase_gate": "R21 NIST PDR records remain public process-chain metadata only; no data files, formal index, solver, GUI control, or engineering state write is allowed before item scope and owner review.",
+  "object_type": "EnterpriseSmallBatchCleaningReport",
+  "phase": "R21",
+  "quarantined_record_count": 0,
+  "report_id": "report_r21_nist_pdr_public_process_chain_cleaning",
+  "schema_version": "autoform.enterprise_small_batch_cleaning_report.r14.v1",
+  "source_ids": [
+    "source_nist_public_data_repository"
+  ],
+  "source_review_refs": [
+    "enterprise_data/source_review_registry.csv"
+  ],
+  "status": "pass"
+}

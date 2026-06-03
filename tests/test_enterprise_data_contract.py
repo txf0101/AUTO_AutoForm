@@ -55,6 +55,10 @@ def test_r13_schema_files_and_physical_artifacts_exist() -> None:
         ROOT / "enterprise_data" / "r14_cleaning_reports" / "r21_nist_pdr_factory_operations_cleaning_report.json",
         ROOT / "enterprise_data" / "r21_nist_pdr_factory_operations_cards.candidate.json",
         ROOT / "enterprise_data" / "r21_nist_pdr_factory_operations_evidence_bundle.sample.json",
+        ROOT / "enterprise_data" / "r21_autoform_public_site_metadata_samples.jsonl",
+        ROOT / "enterprise_data" / "r14_cleaning_reports" / "r21_autoform_public_site_metadata_cleaning_report.json",
+        ROOT / "enterprise_data" / "r21_autoform_public_site_cards.candidate.json",
+        ROOT / "enterprise_data" / "r21_autoform_public_site_evidence_bundle.sample.json",
         ROOT / "enterprise_data" / "raw_data" / "README.md",
         ROOT / "enterprise_data" / "raw_data" / ".gitignore",
         ROOT / "enterprise_data" / "raw_data" / "source_manifest.template.csv",
@@ -63,6 +67,7 @@ def test_r13_schema_files_and_physical_artifacts_exist() -> None:
         ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_r21_nist_pdr_public_process_chain_manifest.csv",
         ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_r21_nist_mdr_materials_oai_manifest.csv",
         ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_r21_nist_pdr_factory_operations_manifest.csv",
+        ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_r21_autoform_public_site_metadata_manifest.csv",
         ROOT / "enterprise_data" / "raw_data" / "manifests" / ".gitkeep",
         ROOT / "enterprise_data" / "raw_data" / "manual_samples" / ".gitkeep",
         ROOT / "enterprise_data" / "raw_data" / "quarantine" / ".gitkeep",
@@ -438,6 +443,71 @@ def test_r21_nist_pdr_factory_operations_cards_and_bundle_remain_manual_review_o
     assert bundle["collection_phase"] == "R21"
     assert bundle["conflict_status"] == "blocked_evidence_present"
     assert bundle["human_review_status"] == "required"
+    assert bundle["retrieval_run"]["formal_index_allowed_count"] == 0
+    assert bundle["retrieval_run"]["blocked_actions"] == [
+        "write_formal_engineering_state",
+        "submit_solver",
+        "control_gui",
+    ]
+
+
+def test_r21_autoform_public_site_metadata_sample_is_manifested_and_gated() -> None:
+    manifest_path = ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_r21_autoform_public_site_metadata_manifest.csv"
+    sample_path = ROOT / "enterprise_data" / "r21_autoform_public_site_metadata_samples.jsonl"
+    report_path = ROOT / "enterprise_data" / "r14_cleaning_reports" / "r21_autoform_public_site_metadata_cleaning_report.json"
+
+    with manifest_path.open("r", encoding="utf-8-sig", newline="") as handle:
+        manifest_rows = list(csv.DictReader(handle))
+    samples = load_jsonl_records(sample_path)
+    report = _read_json(report_path)
+
+    assert len(manifest_rows) == 3
+    assert len(samples) == 3
+    checksum_by_file = {row["local_file_relpath"]: row["checksum"] for row in manifest_rows}
+    for row in manifest_rows:
+        assert row["source_id"] == "source_autoform_public_site_metadata"
+        assert row["collection_status"] == "sampled_once_metadata_only"
+        assert row["prohibited_actions"] == "bulk_crawl;bulk_download;auto_ingest"
+        assert row["path_or_url"].startswith("https://www.autoform.com/en/")
+        assert row["local_file_relpath"].startswith("enterprise_data/raw_data/manual_samples/")
+        assert "HTML body" in row["limitation"]
+
+    assert report["phase"] == "R21"
+    assert report["status"] == "pass"
+    assert report["clean_record_count"] == 3
+    assert any(attempt["status"] == "full_html_not_retained" for attempt in report["collection_attempts"])
+    for record in samples:
+        payload = record["normalized_payload"]
+        assert record["source_id"] == "source_autoform_public_site_metadata"
+        assert payload["license_review_status"] == "copyright_public_metadata_only_needs_review"
+        assert payload["metadata_retention_scope"] == "page_title_canonical_selected_meta_tags_only"
+        assert payload["raw_response_sha256"] == checksum_by_file[payload["raw_response_relpath"]]
+        assert payload["response_body_sha256_not_retained"]
+        assert payload["canonical_url"].startswith("https://www.autoform.com/en/")
+        assert "html" not in json.dumps(payload, ensure_ascii=False).lower()
+        assert record["source_hash"]
+
+
+def test_r21_autoform_public_site_cards_and_bundle_remain_manual_review_only() -> None:
+    cards_fixture = _read_json(ROOT / "enterprise_data" / "r21_autoform_public_site_cards.candidate.json")
+    bundle = _read_json(ROOT / "enterprise_data" / "r21_autoform_public_site_evidence_bundle.sample.json")
+    sources = load_source_whitelist(ROOT / "enterprise_data" / "source_whitelist.csv")
+
+    assert len(cards_fixture["cards"]) == 3
+    for card in cards_fixture["cards"]:
+        validation = validate_process_knowledge_card(card, sources=sources, today=date(2026, 6, 3))
+
+        assert validation["status"] == "pass"
+        assert card["source_id"] == "source_autoform_public_site_metadata"
+        assert card["review_status"] == "needs_license_review"
+        assert card["allowed_usage"] == "catalog_only"
+        assert card["payload"]["formal_index_allowed"] is False
+        assert card["human_confirmation"]["status"] == "pending"
+
+    assert bundle["collection_phase"] == "R21"
+    assert bundle["conflict_status"] == "blocked_evidence_present"
+    assert bundle["human_review_status"] == "required"
+    assert bundle["source_refs"][0]["license_status"] == "official_site_copyright_public_metadata_only"
     assert bundle["retrieval_run"]["formal_index_allowed_count"] == 0
     assert bundle["retrieval_run"]["blocked_actions"] == [
         "write_formal_engineering_state",

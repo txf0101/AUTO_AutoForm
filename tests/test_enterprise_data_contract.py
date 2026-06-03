@@ -166,10 +166,14 @@ def test_r13_external_source_review_registry_keeps_crawl_gate_closed() -> None:
         "source_autoform_public_site_metadata",
     } <= reviewed_ids
     for row in rows:
-        assert row["robots_url"].startswith("https://")
-        assert row["terms_url"].startswith("https://")
+        if row["source_id"] == "source_enterprise_partner_submission_pending":
+            assert row["robots_url"] == "not_applicable_partner_manual_submission"
+            assert row["terms_url"] == "enterprise_partner_data_agreement_pending"
+        else:
+            assert row["robots_url"].startswith("https://")
+            assert row["terms_url"].startswith("https://")
         assert row["recommended_r13_action"] == "metadata_catalog_only"
-        assert "R14" in row["recommended_r14_gate"]
+        assert "R14" in row["recommended_r14_gate"] or "R22" in row["recommended_r14_gate"]
         assert row["decision"] == "candidate"
         assert row["cache_policy"]
 

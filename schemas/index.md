@@ -39,6 +39,7 @@
 | `realtime_executor_run.schema.json` | `RealtimeExecutorRun` | R18 实时执行器骨架结果，包含运行状态、节点状态、补丁审查、事件流、恢复令牌和执行边界 |
 | `realtime_multi_agent_executor_run.schema.json` | `RealtimeMultiAgentExecutorRun` | R19 可用实时多 Agent 执行器结果，包含工具意图、网关执行记录、审批状态、错误边界和前端可回放事件 |
 | `enterprise_process_executor_run.schema.json` | `EnterpriseProcessExecutorRun` | R20 企业工艺数据接入后的完整执行器结果，串联企业证据、候选工艺规划、人工确认、R19 运行、结果证据和报告草案 |
+| `enterprise_partner_submission.schema.json` | `EnterprisePartnerSubmissionEnvelope` | R22 合作企业手工提交元数据信封，要求责任人、保密等级、协议状态、缓存范围、撤回机制和批量动作阻断 |
 
 ## 兼容规则
 

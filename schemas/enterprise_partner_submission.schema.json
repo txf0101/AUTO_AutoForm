@@ -1,0 +1,250 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autoform-agent.schemas.enterprise_partner_submission.r22.v1",
+  "title": "EnterprisePartnerSubmissionEnvelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "object_type",
+    "phase",
+    "submission_id",
+    "source_id",
+    "submitted_at",
+    "submission_channel",
+    "partner_org_ref",
+    "data_owner",
+    "confidentiality",
+    "agreement",
+    "retention",
+    "records",
+    "blocked_actions"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "autoform.enterprise_partner_submission.r22.v1"
+    },
+    "object_type": {
+      "const": "EnterprisePartnerSubmissionEnvelope"
+    },
+    "phase": {
+      "const": "R22"
+    },
+    "submission_id": {
+      "type": "string",
+      "pattern": "^partner_submission_[a-z0-9_]+$"
+    },
+    "source_id": {
+      "const": "source_enterprise_partner_submission_pending"
+    },
+    "submitted_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "submission_channel": {
+      "enum": [
+        "manual_partner_metadata_envelope"
+      ]
+    },
+    "partner_org_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "data_owner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "owner_ref",
+        "owner_status",
+        "engineering_responsible"
+      ],
+      "properties": {
+        "owner_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner_status": {
+          "enum": [
+            "pending_partner_data_owner",
+            "confirmed",
+            "rejected"
+          ]
+        },
+        "engineering_responsible": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "confidentiality": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "level",
+        "no_confidential_body_retained"
+      ],
+      "properties": {
+        "level": {
+          "enum": [
+            "public_metadata",
+            "partner_confidential_pending_classification",
+            "restricted"
+          ]
+        },
+        "no_confidential_body_retained": {
+          "const": true
+        }
+      }
+    },
+    "agreement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "license_scope",
+        "allowed_usage",
+        "formal_index_allowed"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "pending_partner_data_agreement",
+            "reviewed",
+            "rejected"
+          ]
+        },
+        "license_scope": {
+          "type": "string",
+          "minLength": 1
+        },
+        "allowed_usage": {
+          "enum": [
+            "metadata_gate_only",
+            "candidate_knowledge_card_only",
+            "formal_retrieval_after_review"
+          ]
+        },
+        "formal_index_allowed": {
+          "const": false
+        }
+      }
+    },
+    "retention": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "raw_content_retained",
+        "metadata_records_limit",
+        "cache_policy",
+        "withdrawal_supported"
+      ],
+      "properties": {
+        "raw_content_retained": {
+          "const": false
+        },
+        "metadata_records_limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "cache_policy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "withdrawal_supported": {
+          "const": true
+        }
+      }
+    },
+    "records": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "record_id",
+          "domain",
+          "title",
+          "submission_type",
+          "content_scope",
+          "source_document_ref",
+          "contains_confidential_body",
+          "owner_status",
+          "review_status",
+          "formal_index_allowed"
+        ],
+        "properties": {
+          "record_id": {
+            "type": "string",
+            "pattern": "^record_r22_partner_[a-z0-9_]+$"
+          },
+          "domain": {
+            "type": "string",
+            "minLength": 1
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "submission_type": {
+            "type": "string",
+            "minLength": 1
+          },
+          "content_scope": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_document_ref": {
+            "type": "string",
+            "minLength": 1
+          },
+          "contains_confidential_body": {
+            "const": false
+          },
+          "owner_status": {
+            "enum": [
+              "pending_partner_data_owner",
+              "confirmed",
+              "rejected"
+            ]
+          },
+          "review_status": {
+            "enum": [
+              "candidate",
+              "needs_license_review",
+              "blocked"
+            ]
+          },
+          "formal_index_allowed": {
+            "const": false
+          }
+        }
+      }
+    },
+    "blocked_actions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "allOf": [
+        {
+          "contains": {
+            "const": "bulk_crawl"
+          }
+        },
+        {
+          "contains": {
+            "const": "bulk_download"
+          }
+        },
+        {
+          "contains": {
+            "const": "auto_ingest"
+          }
+        }
+      ]
+    }
+  }
+}

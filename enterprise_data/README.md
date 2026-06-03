@@ -15,6 +15,7 @@
 | `r15_process_knowledge_cards.sample.json` | R15 结构化工艺知识卡样例，把 R14 清洗记录转换为 `MaterialCard`、`OperationRoute`、`ParameterWindow`、`ProcessCase` 和 `QualityCriteria` 候选卡。 |
 | `r16_process_rag_eval_queries.jsonl` | R16 工艺 RAG 检索评测集，覆盖命中、权限过滤、无结果、许可证门禁和过期版本。 |
 | `r16_process_rag_evidence_bundle.sample.json` | R16 工艺 RAG 证据包样例，记录过滤条件、排序解释、命中卡片、排除原因和正式索引门禁。 |
+| `r24_process_rag_candidate_index.sample.json` | R24 工艺 RAG 候选索引快照，描述结构化过滤、关键词词项、向量索引计划和证据图回链。 |
 | `r17_enterprise_process_plan_candidate.sample.json` | R17 企业证据驱动的工艺规划候选样例，记录候选 `ProcessPlanCard`、候选 `ContextPatch`、人工确认请求和回滚边界。 |
 | `r20_enterprise_process_executor_run.sample.json` | R20 完整执行器样例，串联企业证据、候选工艺规划、人工确认、R19 运行、结果证据包和报告草案。 |
 | `raw_data/` | 原始数据暂存目录，只保留目录规则、清单模板、人工样本区和隔离区，不提交真实原始资料。 |
@@ -31,6 +32,7 @@
 - 对小批量样本生成 `r14_cleaning_reports/` 下的清洗报告。
 - 从已清洗小样本生成 R15 候选知识卡，并保留来源、版本、适用范围、限制、人工确认和正式索引门禁。
 - 使用 R16 检索器从候选知识卡生成 EvidenceBundle，并保留过滤、排序、权限、版本、冲突和人工复核字段。
+- 使用 R24 候选索引快照描述结构化过滤、关键词词项、向量索引计划和证据图回链。
 - 使用 R17 工艺规划生成器从 R16 EvidenceBundle 生成候选工艺规划、候选补丁和人工确认请求。
 - 使用 R20 完整执行器从企业证据、候选补丁、人工确认和 R19 事件生成结果证据包与候选报告草案。
 
@@ -42,6 +44,7 @@
 - 把未确认数据直接交给工艺规划 Agent。
 - 把 `review_status` 未通过复核或许可证缺失的知识卡放入正式检索索引。
 - 让 R16 EvidenceBundle 直接改写正式工程字段、启动求解器或控制 GUI。
+- 让 R24 候选索引快照写入正式检索索引、计算未审批向量或绕过许可证门禁。
 - 让 R17 候选工艺规划在中心 Agent 审查和人工确认前进入真实求解、GUI 控制或正式报告结论。
 - 让 R20 报告草案在缺少真实结果证据和工程师复核时发布工程合格或不合格结论。
 

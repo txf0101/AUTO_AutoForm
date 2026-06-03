@@ -58,3 +58,16 @@ bundle = retrieve_process_evidence_bundle(
 R16 只生成证据包和候选输入。`retrieval_run.blocked_actions` 固定列出 `write_formal_engineering_state`、`submit_solver` 和 `control_gui`，后续 R17 必须把 R16 输出作为候选证据读取，再通过 ContextPatch、中心 Agent 审查和人工确认进入下一步。
 
 当前 R15 卡片的 `formal_index_allowed` 均为 `false`，所以 R16 样例的 `formal_index_allowed_count` 为 0。后续只有在企业负责人、许可证、版本、适用范围和质量阈值补齐后，相关卡片才可以进入正式检索索引。
+
+## R24 候选索引快照
+
+R24 新增 `autoform_agent.process_rag_index` 和 `enterprise_data/r24_process_rag_candidate_index.sample.json`，用于把 R15/R21/R22/R23 候选卡整理成候选索引快照。快照包含四层：
+
+| 层 | 状态 | 用途 |
+| --- | --- | --- |
+| `structured_filters` | 候选字段快照 | 支持来源、权限、审核状态、许可证、卡片类型、材料、零件特征、工艺动作、产线、风险和有效期过滤。 |
+| `keyword_terms` | 已生成本地词项 | 支持可解释关键词检索和排序理由。 |
+| `vector_embedding_plan` | `not_built` | 只保留 embedding 模型、向量库和 `text_hash` 计划，不计算向量。 |
+| `evidence_graph` | 引用边快照 | 保留 card 到 source、card 到 evidence、card 到 case_ref 的回链。 |
+
+R24 快照仍保持 `index_status=candidate_only`、`formal_index_allowed_count=0`、`formal_index_write_allowed=false`，并阻断 `bulk_crawl`、`bulk_download`、`auto_ingest`、`write_formal_engineering_state`、`submit_solver` 和 `control_gui`。

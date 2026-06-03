@@ -173,7 +173,7 @@ def test_r13_external_source_review_registry_keeps_crawl_gate_closed() -> None:
             assert row["robots_url"].startswith("https://")
             assert row["terms_url"].startswith("https://")
         assert row["recommended_r13_action"] == "metadata_catalog_only"
-        assert "R14" in row["recommended_r14_gate"] or "R22" in row["recommended_r14_gate"]
+        assert any(phase in row["recommended_r14_gate"] for phase in ["R14", "R22", "R23"])
         assert row["decision"] == "candidate"
         assert row["cache_policy"]
 

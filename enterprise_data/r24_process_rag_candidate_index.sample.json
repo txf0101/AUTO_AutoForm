@@ -3590,29 +3590,29 @@
         "submit_solver",
         "control_gui"
       ],
-      "card_id": "pkc_r21_nist_pdr_process_chain_case_001",
+      "card_id": "pkc_r21_nist_pdr_logistics_chain_case_001",
       "card_type": "ProcessCase",
       "embedding_plan": {
         "embedding_model": "pending_approved_embedding_model",
         "status": "not_built",
-        "text_hash": "347c1dba682efd3969793af658c96123775968c80776646a9ed7453e95845645",
+        "text_hash": "7750b5afef9a17f04d68ab3a95e48d032d6e73b49697c444ee661a03ffe4053d",
         "vector_namespace": "candidate_process_cards_r24"
       },
-      "entry_id": "idx_pkc_r21_nist_pdr_process_chain_case_001",
+      "entry_id": "idx_pkc_r21_nist_pdr_logistics_chain_case_001",
       "evidence_graph_refs": [
         {
           "edge_type": "card_to_source",
-          "from": "pkc_r21_nist_pdr_process_chain_case_001",
+          "from": "pkc_r21_nist_pdr_logistics_chain_case_001",
           "to": "source_nist_public_data_repository"
         },
         {
           "edge_type": "card_to_evidence",
-          "from": "pkc_r21_nist_pdr_process_chain_case_001",
+          "from": "pkc_r21_nist_pdr_logistics_chain_case_001",
           "to": "record_r21_nist_pdr_process_chain_001_10_18434_m32183"
         },
         {
           "edge_type": "card_to_payload_case_ref",
-          "from": "pkc_r21_nist_pdr_process_chain_case_001",
+          "from": "pkc_r21_nist_pdr_logistics_chain_case_001",
           "to": "10.18434/M32183"
         }
       ],
@@ -3689,7 +3689,7 @@
         "pass",
         "pdfs",
         "pdr",
-        "pkc_r21_nist_pdr_process_chain_case_001",
+        "pkc_r21_nist_pdr_logistics_chain_case_001",
         "planning",
         "process",
         "process_action",
@@ -3751,7 +3751,7 @@
       },
       "object_type": "ProcessRagIndexEntry",
       "review_status": "needs_license_review",
-      "searchable_text": "pkc_r21_nist_pdr_process_chain_case_001 ProcessCase R21 candidate NIST PDR process chain case 1: Sample Purchasing / Supply Chain Data NIST PDR metadata only; downloadable data files, engineering applicability and responsible owner are not confirmed. {\"applicable_lines\": [\"not_applicable_until_scope_and_owner_review\"], \"applicable_materials\": [\"manufacturing_systems_metadata\"], \"conflict_status\": \"none\", \"part_features\": [\"supply_chain_metadata_only\"], \"process_actions\": [\"supply_chain_metadata_review\"]} {\"case_ref\": \"10.18434/M32183\", \"formal_index_allowed\": false, \"landing_page\": \"https://data.nist.gov/od/id/mds2-2183\", \"license_url\": \"https://www.nist.gov/open/license\", \"outcome_status\": \"metadata_only_no_engineering_outcome\", \"process_action\": \"supply_chain_metadata_review\", \"query\": \"manufacturing process chain\", \"themes\": [\"Manufacturing: Supply chain\", \"Information Technology: Cybersecurity\"], \"title\": \"Sample Purchasing / Supply Chain Data\", \"validation_status\": \"pass\"} [{\"basis_evidence_refs\": [\"record_r21_nist_pdr_process_chain_001_10_18434_m32183\"], \"risk_type\": \"item_scope_and_owner_missing_blocks_process_use\", \"severity\": \"blocked\"}] NIST Public Data Repository metadata Public manufacturing system process planning quality inspection and additive manufacturing metadata candidates; R23 selected records=10 Metadata only; data files landing pages PDFs source files formal index writes and engineering execution are not allowed before item scope and owner review",
+      "searchable_text": "pkc_r21_nist_pdr_logistics_chain_case_001 ProcessCase R21 candidate NIST PDR process chain case 1: Sample Purchasing / Supply Chain Data NIST PDR metadata only; downloadable data files, engineering applicability and responsible owner are not confirmed. {\"applicable_lines\": [\"not_applicable_until_scope_and_owner_review\"], \"applicable_materials\": [\"manufacturing_systems_metadata\"], \"conflict_status\": \"none\", \"part_features\": [\"supply_chain_metadata_only\"], \"process_actions\": [\"supply_chain_metadata_review\"]} {\"case_ref\": \"10.18434/M32183\", \"formal_index_allowed\": false, \"landing_page\": \"https://data.nist.gov/od/id/mds2-2183\", \"license_url\": \"https://www.nist.gov/open/license\", \"outcome_status\": \"metadata_only_no_engineering_outcome\", \"process_action\": \"supply_chain_metadata_review\", \"query\": \"manufacturing process chain\", \"themes\": [\"Manufacturing: Supply chain\", \"Information Technology: Cybersecurity\"], \"title\": \"Sample Purchasing / Supply Chain Data\", \"validation_status\": \"pass\"} [{\"basis_evidence_refs\": [\"record_r21_nist_pdr_process_chain_001_10_18434_m32183\"], \"risk_type\": \"item_scope_and_owner_missing_blocks_process_use\", \"severity\": \"blocked\"}] NIST Public Data Repository metadata Public manufacturing system process planning quality inspection and additive manufacturing metadata candidates; R23 selected records=10 Metadata only; data files landing pages PDFs source files formal index writes and engineering execution are not allowed before item scope and owner review",
       "source_id": "source_nist_public_data_repository",
       "source_permission_level": "P1",
       "source_review_status": "candidate",
@@ -3767,29 +3767,29 @@
         "submit_solver",
         "control_gui"
       ],
-      "card_id": "pkc_r21_nist_pdr_process_chain_case_002",
+      "card_id": "pkc_r21_nist_pdr_logistics_chain_case_002",
       "card_type": "ProcessCase",
       "embedding_plan": {
         "embedding_model": "pending_approved_embedding_model",
         "status": "not_built",
-        "text_hash": "eb3938a0d4f6b45af8d918a3dd0a6c55071ccc41dcd115f6f24fb815d4e0bd7d",
+        "text_hash": "16488882186ed9e04e1a5558abb3e03b362756051fd050018cffe28ee6136f1a",
         "vector_namespace": "candidate_process_cards_r24"
       },
-      "entry_id": "idx_pkc_r21_nist_pdr_process_chain_case_002",
+      "entry_id": "idx_pkc_r21_nist_pdr_logistics_chain_case_002",
       "evidence_graph_refs": [
         {
           "edge_type": "card_to_source",
-          "from": "pkc_r21_nist_pdr_process_chain_case_002",
+          "from": "pkc_r21_nist_pdr_logistics_chain_case_002",
           "to": "source_nist_public_data_repository"
         },
         {
           "edge_type": "card_to_evidence",
-          "from": "pkc_r21_nist_pdr_process_chain_case_002",
+          "from": "pkc_r21_nist_pdr_logistics_chain_case_002",
           "to": "record_r21_nist_pdr_process_chain_002_10_18434_m32203"
         },
         {
           "edge_type": "card_to_payload_case_ref",
-          "from": "pkc_r21_nist_pdr_process_chain_case_002",
+          "from": "pkc_r21_nist_pdr_logistics_chain_case_002",
           "to": "10.18434/M32203"
         }
       ],
@@ -3879,7 +3879,7 @@
         "pass",
         "pdfs",
         "pdr",
-        "pkc_r21_nist_pdr_process_chain_case_002",
+        "pkc_r21_nist_pdr_logistics_chain_case_002",
         "planning",
         "process",
         "process_action",
@@ -3939,7 +3939,7 @@
       },
       "object_type": "ProcessRagIndexEntry",
       "review_status": "needs_license_review",
-      "searchable_text": "pkc_r21_nist_pdr_process_chain_case_002 ProcessCase R21 candidate NIST PDR process chain case 2: SysML Model Libraries Supporting Discrete Event Logistics Systems (DELS) Models NIST PDR metadata only; downloadable data files, engineering applicability and responsible owner are not confirmed. {\"applicable_lines\": [\"not_applicable_until_scope_and_owner_review\"], \"applicable_materials\": [\"manufacturing_systems_metadata\"], \"conflict_status\": \"none\", \"part_features\": [\"discrete_event_logistics_sysml_metadata_only\"], \"process_actions\": [\"discrete_event_logistics_sysml_metadata_review\"]} {\"case_ref\": \"10.18434/M32203\", \"formal_index_allowed\": false, \"landing_page\": \"https://data.nist.gov/od/id/mds2-2203\", \"license_url\": \"https://www.nist.gov/open/license\", \"outcome_status\": \"metadata_only_no_engineering_outcome\", \"process_action\": \"discrete_event_logistics_sysml_metadata_review\", \"query\": \"manufacturing process chain\", \"themes\": [\"Manufacturing: Factory operations planning and control\", \"Manufacturing: Manufacturing systems design and analysis\", \"Manufacturing: Supply chain\", \"Manufacturing: Systems engineering\", \"Manufacturing: Systems integration\"], \"title\": \"SysML Model Libraries Supporting Discrete Event Logistics Systems (DELS) Models\", \"validation_status\": \"pass\"} [{\"basis_evidence_refs\": [\"record_r21_nist_pdr_process_chain_002_10_18434_m32203\"], \"risk_type\": \"item_scope_and_owner_missing_blocks_process_use\", \"severity\": \"blocked\"}] NIST Public Data Repository metadata Public manufacturing system process planning quality inspection and additive manufacturing metadata candidates; R23 selected records=10 Metadata only; data files landing pages PDFs source files formal index writes and engineering execution are not allowed before item scope and owner review",
+      "searchable_text": "pkc_r21_nist_pdr_logistics_chain_case_002 ProcessCase R21 candidate NIST PDR process chain case 2: SysML Model Libraries Supporting Discrete Event Logistics Systems (DELS) Models NIST PDR metadata only; downloadable data files, engineering applicability and responsible owner are not confirmed. {\"applicable_lines\": [\"not_applicable_until_scope_and_owner_review\"], \"applicable_materials\": [\"manufacturing_systems_metadata\"], \"conflict_status\": \"none\", \"part_features\": [\"discrete_event_logistics_sysml_metadata_only\"], \"process_actions\": [\"discrete_event_logistics_sysml_metadata_review\"]} {\"case_ref\": \"10.18434/M32203\", \"formal_index_allowed\": false, \"landing_page\": \"https://data.nist.gov/od/id/mds2-2203\", \"license_url\": \"https://www.nist.gov/open/license\", \"outcome_status\": \"metadata_only_no_engineering_outcome\", \"process_action\": \"discrete_event_logistics_sysml_metadata_review\", \"query\": \"manufacturing process chain\", \"themes\": [\"Manufacturing: Factory operations planning and control\", \"Manufacturing: Manufacturing systems design and analysis\", \"Manufacturing: Supply chain\", \"Manufacturing: Systems engineering\", \"Manufacturing: Systems integration\"], \"title\": \"SysML Model Libraries Supporting Discrete Event Logistics Systems (DELS) Models\", \"validation_status\": \"pass\"} [{\"basis_evidence_refs\": [\"record_r21_nist_pdr_process_chain_002_10_18434_m32203\"], \"risk_type\": \"item_scope_and_owner_missing_blocks_process_use\", \"severity\": \"blocked\"}] NIST Public Data Repository metadata Public manufacturing system process planning quality inspection and additive manufacturing metadata candidates; R23 selected records=10 Metadata only; data files landing pages PDFs source files formal index writes and engineering execution are not allowed before item scope and owner review",
       "source_id": "source_nist_public_data_repository",
       "source_permission_level": "P1",
       "source_review_status": "candidate",
@@ -3955,29 +3955,29 @@
         "submit_solver",
         "control_gui"
       ],
-      "card_id": "pkc_r21_nist_pdr_process_chain_case_003",
+      "card_id": "pkc_r21_nist_pdr_logistics_chain_case_003",
       "card_type": "ProcessCase",
       "embedding_plan": {
         "embedding_model": "pending_approved_embedding_model",
         "status": "not_built",
-        "text_hash": "0cd337f17cd7f30575e31bf4bbf7d920c3a635b5cc21d68f092cffd6c0679dfc",
+        "text_hash": "264c8dbc2c4cd7039662ce12740b63cdddb173ff19c1c76f3cdb5e45290156c7",
         "vector_namespace": "candidate_process_cards_r24"
       },
-      "entry_id": "idx_pkc_r21_nist_pdr_process_chain_case_003",
+      "entry_id": "idx_pkc_r21_nist_pdr_logistics_chain_case_003",
       "evidence_graph_refs": [
         {
           "edge_type": "card_to_source",
-          "from": "pkc_r21_nist_pdr_process_chain_case_003",
+          "from": "pkc_r21_nist_pdr_logistics_chain_case_003",
           "to": "source_nist_public_data_repository"
         },
         {
           "edge_type": "card_to_evidence",
-          "from": "pkc_r21_nist_pdr_process_chain_case_003",
+          "from": "pkc_r21_nist_pdr_logistics_chain_case_003",
           "to": "record_r21_nist_pdr_process_chain_003_10_18434_mds2_3786"
         },
         {
           "edge_type": "card_to_payload_case_ref",
-          "from": "pkc_r21_nist_pdr_process_chain_case_003",
+          "from": "pkc_r21_nist_pdr_logistics_chain_case_003",
           "to": "10.18434/mds2-3786"
         }
       ],
@@ -4066,7 +4066,7 @@
         "pass",
         "pdfs",
         "pdr",
-        "pkc_r21_nist_pdr_process_chain_case_003",
+        "pkc_r21_nist_pdr_logistics_chain_case_003",
         "planning",
         "process",
         "process_action",
@@ -4136,7 +4136,7 @@
       },
       "object_type": "ProcessRagIndexEntry",
       "review_status": "needs_license_review",
-      "searchable_text": "pkc_r21_nist_pdr_process_chain_case_003 ProcessCase R21 candidate NIST PDR process chain case 3: Translator for the SysML Extension for Logistics Modeling and Analysis (SysLMA) NIST PDR metadata only; downloadable data files, engineering applicability and responsible owner are not confirmed. {\"applicable_lines\": [\"not_applicable_until_scope_and_owner_review\"], \"applicable_materials\": [\"manufacturing_systems_metadata\"], \"conflict_status\": \"none\", \"part_features\": [\"syslma_logistics_translator_metadata_only\"], \"process_actions\": [\"syslma_logistics_translator_metadata_review\"]} {\"case_ref\": \"10.18434/mds2-3786\", \"formal_index_allowed\": false, \"landing_page\": \"https://data.nist.gov/od/id/mds2-3786\", \"license_url\": \"https://www.nist.gov/open/license\", \"outcome_status\": \"metadata_only_no_engineering_outcome\", \"process_action\": \"syslma_logistics_translator_metadata_review\", \"query\": \"production logistics systems\", \"themes\": [\"Manufacturing: Interoperability in manufacturing\", \"Mathematics and Statistics: Modeling and simulation research\", \"Manufacturing: Systems engineering\", \"Manufacturing: Supply chain\", \"Manufacturing: Manufacturing systems design and analysis\", \"Manufacturing: Factory operations planning and control\", \"Information Technology: Interoperability testing\", \"Advanced Communications\"], \"title\": \"Translator for the SysML Extension for Logistics Modeling and Analysis (SysLMA)\", \"validation_status\": \"pass\"} [{\"basis_evidence_refs\": [\"record_r21_nist_pdr_process_chain_003_10_18434_mds2_3786\"], \"risk_type\": \"item_scope_and_owner_missing_blocks_process_use\", \"severity\": \"blocked\"}] NIST Public Data Repository metadata Public manufacturing system process planning quality inspection and additive manufacturing metadata candidates; R23 selected records=10 Metadata only; data files landing pages PDFs source files formal index writes and engineering execution are not allowed before item scope and owner review",
+      "searchable_text": "pkc_r21_nist_pdr_logistics_chain_case_003 ProcessCase R21 candidate NIST PDR process chain case 3: Translator for the SysML Extension for Logistics Modeling and Analysis (SysLMA) NIST PDR metadata only; downloadable data files, engineering applicability and responsible owner are not confirmed. {\"applicable_lines\": [\"not_applicable_until_scope_and_owner_review\"], \"applicable_materials\": [\"manufacturing_systems_metadata\"], \"conflict_status\": \"none\", \"part_features\": [\"syslma_logistics_translator_metadata_only\"], \"process_actions\": [\"syslma_logistics_translator_metadata_review\"]} {\"case_ref\": \"10.18434/mds2-3786\", \"formal_index_allowed\": false, \"landing_page\": \"https://data.nist.gov/od/id/mds2-3786\", \"license_url\": \"https://www.nist.gov/open/license\", \"outcome_status\": \"metadata_only_no_engineering_outcome\", \"process_action\": \"syslma_logistics_translator_metadata_review\", \"query\": \"production logistics systems\", \"themes\": [\"Manufacturing: Interoperability in manufacturing\", \"Mathematics and Statistics: Modeling and simulation research\", \"Manufacturing: Systems engineering\", \"Manufacturing: Supply chain\", \"Manufacturing: Manufacturing systems design and analysis\", \"Manufacturing: Factory operations planning and control\", \"Information Technology: Interoperability testing\", \"Advanced Communications\"], \"title\": \"Translator for the SysML Extension for Logistics Modeling and Analysis (SysLMA)\", \"validation_status\": \"pass\"} [{\"basis_evidence_refs\": [\"record_r21_nist_pdr_process_chain_003_10_18434_mds2_3786\"], \"risk_type\": \"item_scope_and_owner_missing_blocks_process_use\", \"severity\": \"blocked\"}] NIST Public Data Repository metadata Public manufacturing system process planning quality inspection and additive manufacturing metadata candidates; R23 selected records=10 Metadata only; data files landing pages PDFs source files formal index writes and engineering execution are not allowed before item scope and owner review",
       "source_id": "source_nist_public_data_repository",
       "source_permission_level": "P1",
       "source_review_status": "candidate",
@@ -6591,7 +6591,7 @@
       "ai",
       "ai_assisted_parameter_optimization_metadata"
     ],
-    "token_count": 726
+    "token_count": 729
   },
   "object_type": "ProcessRagCandidateIndexSnapshot",
   "phase": "R24",
@@ -6617,7 +6617,7 @@
     {
       "layer": "keyword_terms",
       "status": "built_snapshot_terms",
-      "token_count": 726,
+      "token_count": 729,
       "tokenizer": "TOKEN_PATTERN in autoform_agent.process_rag_index"
     },
     {

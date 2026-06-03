@@ -36,6 +36,7 @@
 | `process_knowledge_card.schema.json` | `ProcessKnowledgeCard` | R15 结构化工艺知识卡，覆盖 `MaterialCard`、`OperationRoute`、`ParameterWindow`、`ProcessCase` 和 `QualityCriteria` |
 | `process_rag_evidence_bundle.schema.json` | `EvidenceBundle` | R16 工艺 RAG 证据包，保留过滤条件、排序解释、卡片引用、权限、版本、冲突状态和人工复核状态 |
 | `process_rag_candidate_index.schema.json` | `ProcessRagCandidateIndexSnapshot` | R24 候选索引快照，描述结构化过滤、关键词词项、向量索引计划和证据图回链，保持正式索引写入关闭 |
+| `process_rag_index_eval_report.schema.json` | `ProcessRagCandidateIndexEvaluationReport` | R25 候选索引检索评测报告，记录唯一键门禁、查询召回、排序解释、证据回链和正式索引阻断 |
 | `enterprise_process_planning_result.schema.json` | `EnterpriseProcessPlanningAgentResult` | R17 企业证据驱动的工艺规划候选结果，包含 `ProcessPlanCard`、候选 `ContextPatch`、人工确认请求和回滚边界 |
 | `realtime_executor_run.schema.json` | `RealtimeExecutorRun` | R18 实时执行器骨架结果，包含运行状态、节点状态、补丁审查、事件流、恢复令牌和执行边界 |
 | `realtime_multi_agent_executor_run.schema.json` | `RealtimeMultiAgentExecutorRun` | R19 可用实时多 Agent 执行器结果，包含工具意图、网关执行记录、审批状态、错误边界和前端可回放事件 |

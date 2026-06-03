@@ -17,7 +17,7 @@
           "supply_chain_metadata_review"
         ]
       },
-      "card_id": "pkc_r21_nist_pdr_process_chain_case_001",
+      "card_id": "pkc_r21_nist_pdr_logistics_chain_case_001",
       "card_type": "ProcessCase",
       "created_at": "2026-06-03T09:26:29.127019+00:00",
       "evidence_refs": [
@@ -100,7 +100,7 @@
           "discrete_event_logistics_sysml_metadata_review"
         ]
       },
-      "card_id": "pkc_r21_nist_pdr_process_chain_case_002",
+      "card_id": "pkc_r21_nist_pdr_logistics_chain_case_002",
       "card_type": "ProcessCase",
       "created_at": "2026-06-03T09:26:29.127019+00:00",
       "evidence_refs": [
@@ -186,7 +186,7 @@
           "syslma_logistics_translator_metadata_review"
         ]
       },
-      "card_id": "pkc_r21_nist_pdr_process_chain_case_003",
+      "card_id": "pkc_r21_nist_pdr_logistics_chain_case_003",
       "card_type": "ProcessCase",
       "created_at": "2026-06-03T09:26:29.127019+00:00",
       "evidence_refs": [

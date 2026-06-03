@@ -67,9 +67,14 @@ def test_r24_candidate_index_snapshot_is_reproducible_and_candidate_only() -> No
 def test_r24_candidate_index_validation_blocks_formal_index_and_vector_build() -> None:
     stored = _read_json(SNAPSHOT_PATH)
     validation = validate_process_rag_candidate_index(stored)
+    card_ids = [entry["card_id"] for entry in stored["entries"]]
+    entry_ids = [entry["entry_id"] for entry in stored["entries"]]
 
     assert validation["status"] == "pass"
     assert validation["entry_count"] == stored["entry_count"]
+    assert len(card_ids) == len(set(card_ids))
+    assert len(entry_ids) == len(set(entry_ids))
+    assert "pkc_r21_nist_pdr_logistics_chain_case_002" in card_ids
     assert set(BLOCKED_ACTIONS) <= set(stored["blocked_actions"])
     assert stored["vector_index_plan"]["embedding_status"] == "not_built"
     assert stored["vector_index_plan"]["training_status"] == "not_started"

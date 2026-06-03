@@ -169,6 +169,12 @@ def validate_process_rag_candidate_index(snapshot: dict[str, Any]) -> dict[str, 
     elif snapshot.get("entry_count") != len(entries):
         errors.append(_error("snapshot", "entry_count", "must match entries length"))
     if isinstance(entries, list):
+        duplicate_card_ids = _duplicate_values(entry.get("card_id") for entry in entries)
+        duplicate_entry_ids = _duplicate_values(entry.get("entry_id") for entry in entries)
+        for card_id in duplicate_card_ids:
+            errors.append(_error("snapshot", "entries[].card_id", f"duplicate card_id {card_id}"))
+        for entry_id in duplicate_entry_ids:
+            errors.append(_error("snapshot", "entries[].entry_id", f"duplicate entry_id {entry_id}"))
         for entry in entries:
             scope = str(entry.get("entry_id") or "entry")
             for field in [
@@ -304,6 +310,19 @@ def _tokens(text: str) -> set[str]:
 
 def _sha256_text(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _duplicate_values(values: Any) -> list[str]:
+    seen: set[str] = set()
+    duplicates: set[str] = set()
+    for value in values:
+        if value is None:
+            continue
+        text = str(value)
+        if text in seen:
+            duplicates.add(text)
+        seen.add(text)
+    return sorted(duplicates)
 
 
 def _relpath(path: str | Path) -> str:

@@ -64,6 +64,9 @@ def test_r13_schema_files_and_physical_artifacts_exist() -> None:
         ROOT / "enterprise_data" / "r14_cleaning_reports" / "r21_nist_pdr_process_chain_cleaning_report.json",
         ROOT / "enterprise_data" / "r21_nist_pdr_process_chain_cards.candidate.json",
         ROOT / "enterprise_data" / "r21_nist_pdr_process_chain_evidence_bundle.sample.json",
+        ROOT / "enterprise_data" / "r24_process_rag_candidate_index.sample.json",
+        ROOT / "enterprise_data" / "r25_process_rag_index_eval_queries.jsonl",
+        ROOT / "enterprise_data" / "r25_process_rag_index_eval_report.sample.json",
         ROOT / "enterprise_data" / "raw_data" / "README.md",
         ROOT / "enterprise_data" / "raw_data" / ".gitignore",
         ROOT / "enterprise_data" / "raw_data" / "source_manifest.template.csv",
@@ -79,6 +82,9 @@ def test_r13_schema_files_and_physical_artifacts_exist() -> None:
         ROOT / "enterprise_data" / "raw_data" / "manual_samples" / ".gitkeep",
         ROOT / "enterprise_data" / "raw_data" / "quarantine" / ".gitkeep",
         ROOT / "docs" / "enterprise_data_contract.md",
+        ROOT / "docs" / "enterprise_rag_index.md",
+        ROOT / "schemas" / "process_rag_candidate_index.schema.json",
+        ROOT / "schemas" / "process_rag_index_eval_report.schema.json",
     ]:
         assert path.exists(), path
 

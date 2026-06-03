@@ -1,0 +1,268 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autoform.process_rag_index_eval.r25.v1",
+  "title": "ProcessRagCandidateIndexEvaluationReport",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "object_type",
+    "phase",
+    "report_id",
+    "index_id",
+    "index_schema_version",
+    "status",
+    "query_count",
+    "pass_count",
+    "average_recall_at_k",
+    "index_gate",
+    "results",
+    "blocked_actions",
+    "created_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "autoform.process_rag_index_eval.r25.v1"
+    },
+    "object_type": {
+      "const": "ProcessRagCandidateIndexEvaluationReport"
+    },
+    "phase": {
+      "const": "R25"
+    },
+    "report_id": {
+      "type": "string",
+      "pattern": "^report_[a-z0-9_]+$"
+    },
+    "index_id": {
+      "type": "string"
+    },
+    "index_schema_version": {
+      "const": "autoform.process_rag_candidate_index.r24.v1"
+    },
+    "status": {
+      "enum": [
+        "pass",
+        "failed"
+      ]
+    },
+    "query_count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "pass_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "average_recall_at_k": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "index_gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "index_validation_status",
+        "index_validation_error_count",
+        "duplicate_card_id_count",
+        "duplicate_card_ids",
+        "duplicate_entry_id_count",
+        "duplicate_entry_ids",
+        "candidate_entry_count",
+        "formal_index_allowed_count",
+        "embedding_status",
+        "training_status"
+      ],
+      "properties": {
+        "index_validation_status": {
+          "const": "pass"
+        },
+        "index_validation_error_count": {
+          "const": 0
+        },
+        "duplicate_card_id_count": {
+          "const": 0
+        },
+        "duplicate_card_ids": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "duplicate_entry_id_count": {
+          "const": 0
+        },
+        "duplicate_entry_ids": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "candidate_entry_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "formal_index_allowed_count": {
+          "const": 0
+        },
+        "embedding_status": {
+          "const": "not_built"
+        },
+        "training_status": {
+          "const": "not_started"
+        }
+      }
+    },
+    "results": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "query_id",
+          "status",
+          "query",
+          "matched_card_ids",
+          "expected_card_ids",
+          "recall_at_k",
+          "top_score",
+          "matched_entry_count",
+          "formal_index_allowed_count",
+          "failures",
+          "retrieval_trace"
+        ],
+        "properties": {
+          "query_id": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pass",
+              "failed"
+            ]
+          },
+          "query": {
+            "type": "string"
+          },
+          "matched_card_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "expected_card_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "recall_at_k": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "top_score": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "matched_entry_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "formal_index_allowed_count": {
+            "const": 0
+          },
+          "failures": {
+            "type": "array"
+          },
+          "retrieval_trace": {
+            "type": "object",
+            "required": [
+              "object_type",
+              "phase",
+              "matches",
+              "review_status",
+              "human_review_status",
+              "blocked_actions"
+            ],
+            "properties": {
+              "object_type": {
+                "const": "ProcessRagCandidateIndexRetrievalTrace"
+              },
+              "phase": {
+                "const": "R25"
+              },
+              "matches": {
+                "type": "array"
+              },
+              "review_status": {
+                "const": "candidate"
+              },
+              "human_review_status": {
+                "const": "required"
+              },
+              "blocked_actions": {
+                "type": "array"
+              }
+            }
+          }
+        }
+      }
+    },
+    "blocked_actions": {
+      "type": "array",
+      "allOf": [
+        {
+          "contains": {
+            "const": "bulk_crawl"
+          }
+        },
+        {
+          "contains": {
+            "const": "bulk_download"
+          }
+        },
+        {
+          "contains": {
+            "const": "auto_ingest"
+          }
+        },
+        {
+          "contains": {
+            "const": "compute_embedding"
+          }
+        },
+        {
+          "contains": {
+            "const": "train_neural_index"
+          }
+        },
+        {
+          "contains": {
+            "const": "write_formal_index"
+          }
+        },
+        {
+          "contains": {
+            "const": "write_formal_engineering_state"
+          }
+        },
+        {
+          "contains": {
+            "const": "submit_solver"
+          }
+        },
+        {
+          "contains": {
+            "const": "control_gui"
+          }
+        }
+      ],
+      "items": {
+        "type": "string"
+      }
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

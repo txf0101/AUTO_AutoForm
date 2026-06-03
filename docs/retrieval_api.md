@@ -71,3 +71,19 @@ R24 新增 `autoform_agent.process_rag_index` 和 `enterprise_data/r24_process_r
 | `evidence_graph` | 引用边快照 | 保留 card 到 source、card 到 evidence、card 到 case_ref 的回链。 |
 
 R24 快照仍保持 `index_status=candidate_only`、`formal_index_allowed_count=0`、`formal_index_write_allowed=false`，并阻断 `bulk_crawl`、`bulk_download`、`auto_ingest`、`write_formal_engineering_state`、`submit_solver` 和 `control_gui`。
+
+## R25 候选索引检索评测
+
+R25 新增 `autoform_agent.process_rag_index_eval`，对 R24 候选索引快照做小样本检索评测。入口函数包括：
+
+```python
+from autoform_agent.process_rag_index_eval import (
+    evaluate_process_rag_candidate_index,
+    load_process_rag_index_eval_queries,
+    retrieve_candidate_index_entries,
+)
+```
+
+评测查询位于 `enterprise_data/r25_process_rag_index_eval_queries.jsonl`，报告样例位于 `enterprise_data/r25_process_rag_index_eval_report.sample.json`。报告对象为 `ProcessRagCandidateIndexEvaluationReport`，schema 为 `schemas/process_rag_index_eval_report.schema.json`。
+
+R25 报告要求候选索引没有重复 `card_id` 或 `entry_id`，并继续保持 `formal_index_allowed_count=0`、`embedding_status=not_built`、`training_status=not_started`。命中项保留排序理由、`evidence_refs`、`source_hash`、`text_hash` 和人工复核状态，用于后续 EvidenceBundle 评测和审批前复核。

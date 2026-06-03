@@ -43,3 +43,11 @@ R24 快照把索引拆成四层。
 3. 向量索引建议先使用通用 embedding 和 pgvector 或同等 ANN 索引，保留 `text_hash`、模型版本和索引版本。
 4. 只有在评测集显示召回不足、误召回模式稳定且训练数据许可明确时，再考虑领域 embedding 微调或 reranker。
 5. 所有正式索引命中仍需输出 R16 EvidenceBundle，继续保留来源、证据、过滤条件、排序理由、限制和人工复核状态。
+
+## R25 候选检索评测
+
+R25 在 R24 候选索引快照上增加检索评测门禁。当前评测集位于 `enterprise_data/r25_process_rag_index_eval_queries.jsonl`，评测报告位于 `enterprise_data/r25_process_rag_index_eval_report.sample.json`，schema 位于 `schemas/process_rag_index_eval_report.schema.json`。
+
+评测范围为 6 条查询，覆盖企业内部 R15 小样本、合作企业输入信封、AutoForm 官网公开页候选元数据、NIST PDR 制造元数据、NIST PDR 物流链元数据和权限过滤失败场景。报告要求 `duplicate_card_id_count=0`、`duplicate_entry_id_count=0`、`formal_index_allowed_count=0`、`embedding_status=not_built`、`training_status=not_started`。
+
+R25 只验证候选索引能否按结构化过滤和关键词评分返回可解释命中。命中项保留 `source_id`、`evidence_refs`、`source_hash`、`text_hash`、排序理由和人工复核状态。`bulk_crawl`、`bulk_download`、`auto_ingest`、`compute_embedding`、`train_neural_index`、`write_formal_index`、`submit_solver`、`control_gui` 和正式工程状态写入仍保持阻断。

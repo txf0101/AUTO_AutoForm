@@ -1,6 +1,6 @@
 # AutoForm_MCP 新手上手指南
 
-本文档只说明独立 `AutoForm_MCP` 项目。它的核心用途是启动一个本地 stdio MCP server，让 Codex、Claude Code、OpenCalw 或其他 MCP host 调用 AutoForm 辅助工具。
+本文档只说明独立 `AutoForm_MCP` 项目。它的核心用途是启动一个本地 stdio MCP server，让 Codex、Claude Code、OpenClaw 或其他 MCP host 调用 AutoForm 辅助工具。
 
 ## 先认识几个名字
 

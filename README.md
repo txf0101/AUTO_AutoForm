@@ -2,11 +2,25 @@
 
 Version: `MCP_V1.1`
 
+## Fastest Install Prompt
+
+Project address: https://github.com/txf0101/AutoForm_MCP
+
+Copy this sentence into Codex, Claude Code, OpenClaw, or another MCP-capable coding agent:
+
+> Install and connect the AutoForm_MCP stdio MCP server from https://github.com/txf0101/AutoForm_MCP; create the `afagent` conda environment from `environment.yml`, then register `autoform-mcp` with `conda run -n afagent python -m autoform_agent.mcp_server` and set `PYTHONPATH` to the cloned repository folder.
+
+项目地址：https://github.com/txf0101/AutoForm_MCP
+
+把下面这句话发给 Codex、Claude Code、OpenClaw 或其他支持 MCP 的代码 Agent：
+
+> 请从 https://github.com/txf0101/AutoForm_MCP 安装并连接 AutoForm_MCP stdio MCP server；用 `environment.yml` 创建 `afagent` conda 环境，然后把 `autoform-mcp` 注册为 stdio MCP，命令为 `conda run -n afagent python -m autoform_agent.mcp_server`，`PYTHONPATH` 设为克隆后的仓库目录。
+
 ## Install And Connect First
 
 AutoForm_MCP is an independent stdio MCP server project for local AutoForm helper workflows. Clone this repository, or enter the `AutoForm_MCP` folder if you received it inside the larger `AUTO_AutoForm` workspace.
 
-AutoForm_MCP 是一个可以独立运行的本地 stdio MCP server 项目，用来让 Codex、Claude Code、OpenCalw 或其他 MCP host 调用 AutoForm 辅助工具。如果你拿到的是独立仓库，就克隆它；如果你拿到的是完整 `AUTO_AutoForm` 工作区，就先进入其中的 `AutoForm_MCP` 文件夹。
+AutoForm_MCP 是一个可以独立运行的本地 stdio MCP server 项目，用来让 Codex、Claude Code、OpenClaw 或其他 MCP host 调用 AutoForm 辅助工具。如果你拿到的是独立仓库，就克隆它；如果你拿到的是完整 `AUTO_AutoForm` 工作区，就先进入其中的 `AutoForm_MCP` 文件夹。
 
 PowerShell:
 
@@ -107,7 +121,7 @@ If quoting is awkward, use JSON:
 claude mcp add-json autoform-mcp '{"type":"stdio","command":"conda","args":["run","-n","afagent","python","-m","autoform_agent.mcp_server"],"env":{"PYTHONPATH":"<repo-root>"}}'
 ```
 
-## OpenCalw Or Any Stdio MCP Host
+## OpenClaw Or Any Stdio MCP Host
 
 Use the same command, args, and environment fields in any stdio-compatible MCP client:
 

@@ -34,9 +34,9 @@ cd AutoForm_MCP
 
 ## Connect MCP Host
 
-Use `README.md` first. It contains Codex, Claude Code, OpenCalw, and generic stdio MCP configuration examples.
+Use `README.md` first. It contains Codex, Claude Code, OpenClaw, and generic stdio MCP configuration examples.
 
-优先阅读 `README.md`。里面已经把 Codex、Claude Code、OpenCalw 和通用 stdio MCP 配置写在最前面。
+优先阅读 `README.md`。里面已经把 Codex、Claude Code、OpenClaw 和通用 stdio MCP 配置写在最前面。
 
 The portable Codex/TOML template is:
 

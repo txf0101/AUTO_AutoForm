@@ -15,7 +15,7 @@ python -m autoform_agent.mcp_server
 外部调用顺序可以理解为：
 
 ```text
-Codex / Claude Code / OpenCalw / other MCP host
+Codex / Claude Code / OpenClaw / other MCP host
   -> stdio JSON-RPC
   -> python -m autoform_agent.mcp_server
   -> autoform_agent.mcp_tools.register_all_tools()

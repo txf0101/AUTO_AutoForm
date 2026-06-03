@@ -1,0 +1,52 @@
+{
+  "batch_limit": 20,
+  "batch_size": 0,
+  "clean_record_count": 0,
+  "cleaning_result": {
+    "batch_limit": 20,
+    "batch_size": 0,
+    "cleaned_records": [],
+    "created_at": "2026-06-03T09:26:29.127019+00:00",
+    "object_type": "EnterpriseSmallBatchCleaningResult",
+    "schema_version": "autoform.enterprise_small_batch_cleaning.r14.v1",
+    "status": "blocked"
+  },
+  "collection_attempts": [
+    {
+      "api_url": "https://export.arxiv.org/api/query?search_query=all%3A%22sheet+metal+forming%22+OR+all%3A%22stamping%22+OR+all%3A%22forming+simulation%22&start=0&max_results=3&sortBy=submittedDate&sortOrder=descending",
+      "raw_response_sha256": "aee9234f97a574f6d75d33f31ee4d077f6d903333db4aade29aa7026061e21fe",
+      "reason": "arXiv API returned HTTP 429 after a single metadata request following the wait interval.",
+      "retrieved_at": "2026-06-03T09:17:12.999643Z",
+      "source_id": "source_arxiv_api_metadata",
+      "status": "rate_limited_not_sampled"
+    },
+    {
+      "checked_at": "2026-06-03T09:23:05.440148Z",
+      "evidence_urls": [
+        "https://arxiv.org/robots.txt",
+        "https://export.arxiv.org/robots.txt",
+        "https://info.arxiv.org/help/api/tou.html",
+        "https://info.arxiv.org/help/license/index.html"
+      ],
+      "source_id": "source_arxiv_api_metadata",
+      "status": "gate_checked_current"
+    }
+  ],
+  "created_at": "2026-06-03T09:26:29.127019+00:00",
+  "manifest_refs": [
+    "enterprise_data/raw_data/manifests/2026-06-03_r21_arxiv_api_metadata_expansion_blocked_manifest.csv"
+  ],
+  "next_phase_gate": "Keep arXiv as candidate until a later cool-down succeeds with metadata-only API access; no PDF, source file, full text, bulk crawl or auto ingest is allowed.",
+  "object_type": "EnterpriseSmallBatchCleaningReport",
+  "phase": "R21",
+  "quarantined_record_count": 0,
+  "report_id": "report_r21_arxiv_api_metadata_expansion_blocked",
+  "schema_version": "autoform.enterprise_small_batch_cleaning_report.r14.v1",
+  "source_ids": [
+    "source_arxiv_api_metadata"
+  ],
+  "source_review_refs": [
+    "enterprise_data/source_review_registry.csv"
+  ],
+  "status": "blocked"
+}

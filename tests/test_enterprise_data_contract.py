@@ -59,6 +59,11 @@ def test_r13_schema_files_and_physical_artifacts_exist() -> None:
         ROOT / "enterprise_data" / "r14_cleaning_reports" / "r21_autoform_public_site_metadata_cleaning_report.json",
         ROOT / "enterprise_data" / "r21_autoform_public_site_cards.candidate.json",
         ROOT / "enterprise_data" / "r21_autoform_public_site_evidence_bundle.sample.json",
+        ROOT / "enterprise_data" / "r14_cleaning_reports" / "r21_arxiv_api_metadata_expansion_blocked_report.json",
+        ROOT / "enterprise_data" / "r21_nist_pdr_process_chain_metadata_samples.jsonl",
+        ROOT / "enterprise_data" / "r14_cleaning_reports" / "r21_nist_pdr_process_chain_cleaning_report.json",
+        ROOT / "enterprise_data" / "r21_nist_pdr_process_chain_cards.candidate.json",
+        ROOT / "enterprise_data" / "r21_nist_pdr_process_chain_evidence_bundle.sample.json",
         ROOT / "enterprise_data" / "raw_data" / "README.md",
         ROOT / "enterprise_data" / "raw_data" / ".gitignore",
         ROOT / "enterprise_data" / "raw_data" / "source_manifest.template.csv",
@@ -68,6 +73,8 @@ def test_r13_schema_files_and_physical_artifacts_exist() -> None:
         ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_r21_nist_mdr_materials_oai_manifest.csv",
         ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_r21_nist_pdr_factory_operations_manifest.csv",
         ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_r21_autoform_public_site_metadata_manifest.csv",
+        ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_r21_arxiv_api_metadata_expansion_blocked_manifest.csv",
+        ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_r21_nist_pdr_process_chain_manifest.csv",
         ROOT / "enterprise_data" / "raw_data" / "manifests" / ".gitkeep",
         ROOT / "enterprise_data" / "raw_data" / "manual_samples" / ".gitkeep",
         ROOT / "enterprise_data" / "raw_data" / "quarantine" / ".gitkeep",
@@ -508,6 +515,91 @@ def test_r21_autoform_public_site_cards_and_bundle_remain_manual_review_only() -
     assert bundle["conflict_status"] == "blocked_evidence_present"
     assert bundle["human_review_status"] == "required"
     assert bundle["source_refs"][0]["license_status"] == "official_site_copyright_public_metadata_only"
+    assert bundle["retrieval_run"]["formal_index_allowed_count"] == 0
+    assert bundle["retrieval_run"]["blocked_actions"] == [
+        "write_formal_engineering_state",
+        "submit_solver",
+        "control_gui",
+    ]
+
+
+def test_r21_arxiv_expansion_blocked_attempt_is_manifested_without_samples() -> None:
+    manifest_path = ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_r21_arxiv_api_metadata_expansion_blocked_manifest.csv"
+    report_path = ROOT / "enterprise_data" / "r14_cleaning_reports" / "r21_arxiv_api_metadata_expansion_blocked_report.json"
+
+    with manifest_path.open("r", encoding="utf-8-sig", newline="") as handle:
+        manifest_rows = list(csv.DictReader(handle))
+    report = _read_json(report_path)
+
+    assert len(manifest_rows) == 1
+    manifest = manifest_rows[0]
+    assert manifest["source_id"] == "source_arxiv_api_metadata"
+    assert manifest["collection_status"] == "blocked_rate_limited_not_sampled"
+    assert manifest["prohibited_actions"] == "bulk_crawl;bulk_download;auto_ingest"
+    assert manifest["local_file_relpath"].startswith("enterprise_data/raw_data/manual_samples/")
+    assert manifest["checksum"] == report["collection_attempts"][0]["raw_response_sha256"]
+
+    assert report["phase"] == "R21"
+    assert report["status"] == "blocked"
+    assert report["clean_record_count"] == 0
+    assert report["cleaning_result"]["cleaned_records"] == []
+    assert any(attempt["status"] == "rate_limited_not_sampled" for attempt in report["collection_attempts"])
+
+
+def test_r21_nist_pdr_process_chain_sample_is_manifested_and_gated() -> None:
+    manifest_path = ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_r21_nist_pdr_process_chain_manifest.csv"
+    sample_path = ROOT / "enterprise_data" / "r21_nist_pdr_process_chain_metadata_samples.jsonl"
+    report_path = ROOT / "enterprise_data" / "r14_cleaning_reports" / "r21_nist_pdr_process_chain_cleaning_report.json"
+
+    with manifest_path.open("r", encoding="utf-8-sig", newline="") as handle:
+        manifest_rows = list(csv.DictReader(handle))
+    samples = load_jsonl_records(sample_path)
+    report = _read_json(report_path)
+
+    assert len(manifest_rows) == 4
+    assert len(samples) == 3
+    checksum_by_file = {row["local_file_relpath"]: row["checksum"] for row in manifest_rows}
+    for row in manifest_rows:
+        assert row["source_id"] == "source_nist_public_data_repository"
+        assert row["prohibited_actions"] == "bulk_crawl;bulk_download;auto_ingest"
+        assert row["path_or_url"].startswith("https://data.nist.gov/rmm/records?")
+        assert row["local_file_relpath"].startswith("enterprise_data/raw_data/manual_samples/")
+        assert "data files" in row["limitation"]
+
+    assert report["phase"] == "R21"
+    assert report["status"] == "pass"
+    assert report["clean_record_count"] == 3
+    assert any(attempt["status"] == "gate_checked_current_and_sampled_metadata_only" for attempt in report["collection_attempts"])
+    for record in samples:
+        payload = record["normalized_payload"]
+        assert record["source_id"] == "source_nist_public_data_repository"
+        assert record["review_status"] == "candidate"
+        assert payload["license_review_status"] == "needs_item_scope_review"
+        assert payload["raw_response_sha256"] == checksum_by_file[payload["raw_response_relpath"]]
+        assert "@" not in json.dumps(payload, ensure_ascii=False)
+        assert payload["process_action"].endswith("_metadata_review")
+        assert record["source_hash"]
+
+
+def test_r21_nist_pdr_process_chain_cards_and_bundle_remain_manual_review_only() -> None:
+    cards_fixture = _read_json(ROOT / "enterprise_data" / "r21_nist_pdr_process_chain_cards.candidate.json")
+    bundle = _read_json(ROOT / "enterprise_data" / "r21_nist_pdr_process_chain_evidence_bundle.sample.json")
+    sources = load_source_whitelist(ROOT / "enterprise_data" / "source_whitelist.csv")
+
+    assert len(cards_fixture["cards"]) == 3
+    for card in cards_fixture["cards"]:
+        validation = validate_process_knowledge_card(card, sources=sources, today=date(2026, 6, 3))
+
+        assert validation["status"] == "pass"
+        assert card["source_id"] == "source_nist_public_data_repository"
+        assert card["review_status"] == "needs_license_review"
+        assert card["allowed_usage"] == "catalog_only"
+        assert card["payload"]["formal_index_allowed"] is False
+        assert card["human_confirmation"]["status"] == "pending"
+
+    assert bundle["collection_phase"] == "R21"
+    assert bundle["conflict_status"] == "blocked_evidence_present"
+    assert bundle["human_review_status"] == "required"
     assert bundle["retrieval_run"]["formal_index_allowed_count"] == 0
     assert bundle["retrieval_run"]["blocked_actions"] == [
         "write_formal_engineering_state",

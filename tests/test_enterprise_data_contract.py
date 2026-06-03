@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import csv
+from datetime import date
 from pathlib import Path
 
 from autoform_agent.enterprise_data import (
@@ -15,6 +16,7 @@ from autoform_agent.enterprise_data import (
     validate_enterprise_data_contract,
     validate_source_whitelist,
 )
+from autoform_agent.process_knowledge import validate_process_knowledge_card
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -45,12 +47,17 @@ def test_r13_schema_files_and_physical_artifacts_exist() -> None:
         ROOT / "enterprise_data" / "r14_cleaning_reports" / "r21_nist_pdr_public_process_chain_cleaning_report.json",
         ROOT / "enterprise_data" / "r21_public_process_chain_cards.candidate.json",
         ROOT / "enterprise_data" / "r21_public_process_chain_evidence_bundle.sample.json",
+        ROOT / "enterprise_data" / "r21_nist_mdr_materials_metadata_samples.jsonl",
+        ROOT / "enterprise_data" / "r14_cleaning_reports" / "r21_nist_mdr_materials_metadata_cleaning_report.json",
+        ROOT / "enterprise_data" / "r21_nist_mdr_materials_cards.candidate.json",
+        ROOT / "enterprise_data" / "r21_nist_mdr_materials_evidence_bundle.sample.json",
         ROOT / "enterprise_data" / "raw_data" / "README.md",
         ROOT / "enterprise_data" / "raw_data" / ".gitignore",
         ROOT / "enterprise_data" / "raw_data" / "source_manifest.template.csv",
         ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_arxiv_api_metadata_sample_manifest.csv",
         ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_r21_crossref_metadata_sample_manifest.csv",
         ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_r21_nist_pdr_public_process_chain_manifest.csv",
+        ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_r21_nist_mdr_materials_oai_manifest.csv",
         ROOT / "enterprise_data" / "raw_data" / "manifests" / ".gitkeep",
         ROOT / "enterprise_data" / "raw_data" / "manual_samples" / ".gitkeep",
         ROOT / "enterprise_data" / "raw_data" / "quarantine" / ".gitkeep",
@@ -294,6 +301,73 @@ def test_r21_nist_pdr_candidate_cards_and_bundle_remain_manual_review_only() -> 
 
     assert bundle["collection_phase"] == "R21"
     assert bundle["conflict_status"] == "blocked_evidence_present"
+    assert bundle["retrieval_run"]["formal_index_allowed_count"] == 0
+    assert bundle["retrieval_run"]["blocked_actions"] == [
+        "write_formal_engineering_state",
+        "submit_solver",
+        "control_gui",
+    ]
+
+
+def test_r21_nist_mdr_materials_oai_sample_is_manifested_and_gated() -> None:
+    manifest_path = ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_r21_nist_mdr_materials_oai_manifest.csv"
+    sample_path = ROOT / "enterprise_data" / "r21_nist_mdr_materials_metadata_samples.jsonl"
+    report_path = ROOT / "enterprise_data" / "r14_cleaning_reports" / "r21_nist_mdr_materials_metadata_cleaning_report.json"
+
+    with manifest_path.open("r", encoding="utf-8-sig", newline="") as handle:
+        manifest_rows = list(csv.DictReader(handle))
+    samples = load_jsonl_records(sample_path)
+    report = _read_json(report_path)
+
+    assert len(manifest_rows) == 3
+    assert len(samples) == 3
+    checksum_by_file = {row["local_file_relpath"]: row["checksum"] for row in manifest_rows}
+    for row in manifest_rows:
+        assert row["source_id"] == "source_nist_materials_data_repository"
+        assert row["collection_status"] == "sampled_once_metadata_only"
+        assert row["prohibited_actions"] == "bulk_crawl;bulk_download;auto_ingest"
+        assert row["path_or_url"].startswith("https://materialsdata.nist.gov/oai/request?verb=GetRecord")
+        assert row["local_file_relpath"].startswith("enterprise_data/raw_data/manual_samples/")
+        assert row["checksum"]
+
+    assert report["phase"] == "R21"
+    assert report["status"] == "pass"
+    assert report["clean_record_count"] == 3
+    assert any(attempt["status"] == "not_retained_large_oai_page" for attempt in report["collection_attempts"])
+    for record in samples:
+        payload = record["normalized_payload"]
+        assert record["source_id"] == "source_nist_materials_data_repository"
+        assert record["review_status"] == "candidate"
+        assert payload["license_review_status"] == "needs_item_rights_review"
+        assert payload["raw_response_sha256"] == checksum_by_file[payload["raw_response_relpath"]]
+        assert not any("@" in contributor for contributor in payload.get("contributors", []))
+        assert payload["rights"]
+        assert record["source_hash"]
+
+
+def test_r21_nist_mdr_candidate_cards_and_bundle_remain_manual_review_only() -> None:
+    cards_fixture = _read_json(ROOT / "enterprise_data" / "r21_nist_mdr_materials_cards.candidate.json")
+    bundle = _read_json(ROOT / "enterprise_data" / "r21_nist_mdr_materials_evidence_bundle.sample.json")
+    sources = load_source_whitelist(ROOT / "enterprise_data" / "source_whitelist.csv")
+
+    assert len(cards_fixture["cards"]) == 3
+    for card in cards_fixture["cards"]:
+        validation = validate_process_knowledge_card(
+            card,
+            sources=sources,
+            today=date(2026, 6, 3),
+        )
+
+        assert validation["status"] == "pass"
+        assert card["source_id"] == "source_nist_materials_data_repository"
+        assert card["review_status"] == "needs_license_review"
+        assert card["allowed_usage"] == "catalog_only"
+        assert card["payload"]["formal_index_allowed"] is False
+        assert card["human_confirmation"]["status"] == "pending"
+
+    assert bundle["collection_phase"] == "R21"
+    assert bundle["conflict_status"] == "blocked_evidence_present"
+    assert bundle["human_review_status"] == "required"
     assert bundle["retrieval_run"]["formal_index_allowed_count"] == 0
     assert bundle["retrieval_run"]["blocked_actions"] == [
         "write_formal_engineering_state",

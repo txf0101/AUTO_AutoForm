@@ -1,0 +1,225 @@
+{
+  "applicability": "materials=materials_metadata; process_actions=materials_simulation_metadata_review;welding_simulation_metadata_review",
+  "card_refs": [
+    {
+      "allowed_usage": "catalog_only",
+      "applicability": {
+        "applicable_lines": [
+          "not_applicable_until_rights_scope_and_owner_review"
+        ],
+        "applicable_materials": [
+          "materials_metadata"
+        ],
+        "conflict_status": "none",
+        "part_features": [
+          "materials_or_simulation_tool_metadata_only"
+        ],
+        "process_actions": [
+          "welding_simulation_metadata_review"
+        ]
+      },
+      "card_id": "pkc_r21_nist_mdr_materials_metadata_case_001",
+      "card_type": "ProcessCase",
+      "formal_index_allowed": false,
+      "license_status": "record_rights_field_requires_item_review",
+      "limitation": "NIST MDR OAI metadata only; rights, downloadable data files, engineering applicability and responsible owner are not confirmed.",
+      "ranking_reasons": [
+        "text_match:materials",
+        "text_match:metadata",
+        "text_match:review",
+        "text_match:rights",
+        "text_match:simulation"
+      ],
+      "review_status": "needs_license_review",
+      "score": 5,
+      "source_id": "source_nist_materials_data_repository",
+      "source_permission_level": "P1",
+      "version": "2015-10-22T16:45:31Z"
+    },
+    {
+      "allowed_usage": "catalog_only",
+      "applicability": {
+        "applicable_lines": [
+          "not_applicable_until_rights_scope_and_owner_review"
+        ],
+        "applicable_materials": [
+          "materials_metadata"
+        ],
+        "conflict_status": "none",
+        "part_features": [
+          "materials_or_simulation_tool_metadata_only"
+        ],
+        "process_actions": [
+          "materials_simulation_metadata_review"
+        ]
+      },
+      "card_id": "pkc_r21_nist_mdr_materials_metadata_case_002",
+      "card_type": "ProcessCase",
+      "formal_index_allowed": false,
+      "license_status": "record_rights_field_requires_item_review",
+      "limitation": "NIST MDR OAI metadata only; rights, downloadable data files, engineering applicability and responsible owner are not confirmed.",
+      "ranking_reasons": [
+        "text_match:materials",
+        "text_match:metadata",
+        "text_match:review",
+        "text_match:rights",
+        "text_match:simulation"
+      ],
+      "review_status": "needs_license_review",
+      "score": 5,
+      "source_id": "source_nist_materials_data_repository",
+      "source_permission_level": "P1",
+      "version": "2014-08-06T01:56:57Z"
+    },
+    {
+      "allowed_usage": "catalog_only",
+      "applicability": {
+        "applicable_lines": [
+          "not_applicable_until_rights_scope_and_owner_review"
+        ],
+        "applicable_materials": [
+          "materials_metadata"
+        ],
+        "conflict_status": "none",
+        "part_features": [
+          "materials_or_simulation_tool_metadata_only"
+        ],
+        "process_actions": [
+          "materials_simulation_metadata_review"
+        ]
+      },
+      "card_id": "pkc_r21_nist_mdr_materials_metadata_case_003",
+      "card_type": "ProcessCase",
+      "formal_index_allowed": false,
+      "license_status": "record_rights_field_requires_item_review",
+      "limitation": "NIST MDR OAI metadata only; rights, downloadable data files, engineering applicability and responsible owner are not confirmed.",
+      "ranking_reasons": [
+        "text_match:materials",
+        "text_match:metadata",
+        "text_match:review",
+        "text_match:rights",
+        "text_match:simulation"
+      ],
+      "review_status": "needs_license_review",
+      "score": 5,
+      "source_id": "source_nist_materials_data_repository",
+      "source_permission_level": "P1",
+      "version": "2015-10-23T01:04:26Z"
+    }
+  ],
+  "collection_phase": "R21",
+  "confidence": "low",
+  "conflict_status": "blocked_evidence_present",
+  "created_at": "2026-06-03T08:24:48.340594+00:00",
+  "evidence_bundle_id": "evidence_r21_nist_mdr_materials_rights_gate",
+  "evidence_refs": [
+    {
+      "artifact_uri": "enterprise_data/r21_nist_mdr_materials_metadata_samples.jsonl",
+      "evidence_id": "record_r21_nist_mdr_metadata_001_oai_materialsdata_nist_gov_11256_511",
+      "evidence_type": "cleaned_record",
+      "source_hash": "4dfe5701bfd88b9ca79bda8872f615e11a3f7c32d3324e705237e98f1cda96a2",
+      "source_id": "source_nist_materials_data_repository"
+    },
+    {
+      "artifact_uri": "enterprise_data/r21_nist_mdr_materials_metadata_samples.jsonl",
+      "evidence_id": "record_r21_nist_mdr_metadata_002_oai_materialsdata_nist_gov_11115_112",
+      "evidence_type": "cleaned_record",
+      "source_hash": "e0322f4f18c2776e8f64fb08bc5b443d02d0fe5db2c918376bd0733b5ce0b08a",
+      "source_id": "source_nist_materials_data_repository"
+    },
+    {
+      "artifact_uri": "enterprise_data/r21_nist_mdr_materials_metadata_samples.jsonl",
+      "evidence_id": "record_r21_nist_mdr_metadata_003_oai_materialsdata_nist_gov_11256_446",
+      "evidence_type": "cleaned_record",
+      "source_hash": "15ed18ba3dd5e82fc03766483e01daf75b75f8755aadc5369364b8c50edc2174",
+      "source_id": "source_nist_materials_data_repository"
+    }
+  ],
+  "filters": {
+    "review_statuses": [
+      "needs_license_review"
+    ],
+    "source_ids": [
+      "source_nist_materials_data_repository"
+    ]
+  },
+  "human_review_status": "required",
+  "limitation": "NIST MDR OAI metadata only; rights, downloadable data files, engineering applicability and responsible owner are not confirmed. | Candidate bundle only; it cannot update formal engineering state or submit AutoForm solving. | R21 NIST MDR bundle is for retrieval evaluation only and cannot trigger solver, GUI control, or formal engineering state writes.",
+  "object_type": "EvidenceBundle",
+  "phase": "R16",
+  "query": "materials simulation metadata rights review",
+  "retrieval_run": {
+    "blocked_actions": [
+      "write_formal_engineering_state",
+      "submit_solver",
+      "control_gui"
+    ],
+    "candidate_card_count": 3,
+    "excluded_cards": [],
+    "filters_applied": {
+      "review_statuses": [
+        "needs_license_review"
+      ],
+      "source_ids": [
+        "source_nist_materials_data_repository"
+      ]
+    },
+    "formal_index_allowed_count": 0,
+    "index_version": "autoform.process_rag.r16.v1",
+    "matched_card_count": 3,
+    "ranking_explanation": [
+      {
+        "card_id": "pkc_r21_nist_mdr_materials_metadata_case_001",
+        "reasons": [
+          "text_match:materials",
+          "text_match:metadata",
+          "text_match:review",
+          "text_match:rights",
+          "text_match:simulation"
+        ],
+        "score": 5
+      },
+      {
+        "card_id": "pkc_r21_nist_mdr_materials_metadata_case_002",
+        "reasons": [
+          "text_match:materials",
+          "text_match:metadata",
+          "text_match:review",
+          "text_match:rights",
+          "text_match:simulation"
+        ],
+        "score": 5
+      },
+      {
+        "card_id": "pkc_r21_nist_mdr_materials_metadata_case_003",
+        "reasons": [
+          "text_match:materials",
+          "text_match:metadata",
+          "text_match:review",
+          "text_match:rights",
+          "text_match:simulation"
+        ],
+        "score": 5
+      }
+    ],
+    "retrieval_run_id": "retrieval_evidence_r21_nist_mdr_materials_rights_gate"
+  },
+  "review_status": "candidate",
+  "schema_version": "autoform.process_rag_evidence_bundle.r16.v1",
+  "source_refs": [
+    {
+      "applicability": "Materials and simulation tool metadata discovery for candidate material process and simulation records; R21 OAI GetRecord sample count=3",
+      "captured_at": "2026-06-03T16:24:48+08:00",
+      "license_status": "record_license_varies_terms_reviewed_oai_metadata_sampled",
+      "limitation": "Metadata only; DSpace JSON API returned empty responses and OAI ListRecords response was too large to retain; no data files or landing pages downloaded",
+      "path_or_url": "https://materialsdata.nist.gov",
+      "permission_level": "P1",
+      "review_status": "candidate",
+      "reviewed": false,
+      "source_id": "source_nist_materials_data_repository",
+      "source_type": "public_repository",
+      "title": "NIST Materials Data Repository"
+    }
+  ],
+  "summary": "R16 candidate EvidenceBundle matched 3 process knowledge cards: ProcessCase; conflict_status=blocked_evidence_present."
+}

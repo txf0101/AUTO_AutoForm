@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 import json
 import os
 from pathlib import Path
+import re
 from typing import Any, Callable
 
 from .commands import list_command_specs
@@ -1323,7 +1324,7 @@ def _gateway_tool_response_text(
         elif run.get("tool") == "autoform_start_ui" and run.get("status") == "blocked_requires_approval":
             lines.append(
                 "autoform_start_ui 已进入 MCP 网关，但本轮请求没有携带本机执行批准。"
-                "请在前端勾选“允许本机执行和 AutoForm 控制”后重新发送；"
+                "请在前端勾选“允许本机 MCP 工具控制”后重新发送；"
                 "后端收到 `agentToolExecutionApproved=true` 或 `uiContext.localExecution.approved=true` 后才会启动 AutoForm Forming。"
             )
         elif run.get("error"):
@@ -1728,18 +1729,19 @@ def _payload_requested_roles(payload: dict[str, Any]) -> tuple[str, ...]:
 
 def _payload_agent_tool_requests(payload: dict[str, Any], *, prompt: str = "") -> list[dict[str, Any]]:
     # Explicit `agentToolRequests` are used by tests and future trusted callers.
-    # The normal browser path goes through the two helpers below: first the
-    # checkbox-driven local execution consent, then the safer project-operation
-    # parser that resolves an example before asking the gateway to act.
+    # The normal browser path first handles explicit AutoForm UI creation,
+    # because the front-end may still carry a default example hint such as
+    # Solver_R13.  After that, approved project runs and unresolved project
+    # operations can use the example hint or an explicit `.afd` path.
     raw_requests = payload.get("agentToolRequests")
     if isinstance(raw_requests, list):
         return [request for request in raw_requests if isinstance(request, dict)]
-    local_requests = _frontend_local_execution_tool_requests(payload, prompt=prompt)
-    if local_requests:
-        return local_requests
     ui_requests = _autoform_ui_tool_requests(payload, prompt=prompt)
     if ui_requests:
         return ui_requests
+    local_requests = _frontend_local_execution_tool_requests(payload, prompt=prompt)
+    if local_requests:
+        return local_requests
     mcp_status_requests = _mcp_gateway_status_tool_requests(prompt=prompt)
     if mcp_status_requests:
         return mcp_status_requests
@@ -1822,6 +1824,8 @@ def _project_operation_tool_requests(payload: dict[str, Any], *, prompt: str) ->
     if not arguments:
         return []
     example_name = str(arguments.get("example_name") or "")
+    afd_path = str(arguments.get("afd_path") or "")
+    resolve_arguments = {"afd_path": afd_path} if afd_path else {"example_name": example_name}
     # Two requests are emitted on purpose. The first one is read-only path
     # resolution, so the user can see which project was found. The second one is
     # the controlled action request, and the gateway may block it until explicit
@@ -1830,8 +1834,8 @@ def _project_operation_tool_requests(payload: dict[str, Any], *, prompt: str) ->
         {
             "agent_id": "project_workflow",
             "tool": "autoform_resolve_project",
-            "arguments": {"example_name": example_name},
-            "reason": "Resolve the requested official example before any controlled project action.",
+            "arguments": resolve_arguments,
+            "reason": "Resolve the requested project before any controlled project action.",
         },
         {
             "agent_id": "project_workflow",
@@ -1848,16 +1852,16 @@ def _project_operation_arguments(
     prompt: str,
     default_example: str = "",
 ) -> dict[str, Any] | None:
-    example_name = _project_operation_example_name(local_execution, prompt=prompt, default_example=default_example)
-    if not example_name:
+    afd_path = _afd_path_from_prompt(prompt)
+    example_name = "" if afd_path else _project_operation_example_name(local_execution, prompt=prompt, default_example=default_example)
+    if not afd_path and not example_name:
         return None
     execute_solver = _prompt_requests_solver_execution(prompt)
     open_gui = _prompt_requests_window_open(prompt)
     copy_project = _prompt_requests_project_copy(prompt) or open_gui or execute_solver
     if not (copy_project or open_gui or execute_solver):
         return None
-    return {
-        "example_name": example_name,
+    arguments = {
         "mode": "kinematic",
         "threads": 1,
         "output_root": "output/project_runs",
@@ -1867,6 +1871,11 @@ def _project_operation_arguments(
         "gui_wait_seconds": 5,
         "workspace": ".",
     }
+    if afd_path:
+        arguments["afd_path"] = afd_path
+    else:
+        arguments["example_name"] = example_name
+    return arguments
 
 
 def _project_operation_example_name(
@@ -1878,6 +1887,8 @@ def _project_operation_example_name(
     prompt_example = _known_frontend_demo_example_from_prompt(prompt)
     if prompt_example:
         return prompt_example
+    if _prompt_requests_non_default_project(prompt):
+        return ""
     if local_execution.get("exampleName") not in {None, ""}:
         return _normalize_frontend_demo_example(local_execution.get("exampleName")) or default_example
     return default_example
@@ -1909,9 +1920,34 @@ def _known_frontend_demo_example_from_prompt(prompt: str) -> str:
     return ""
 
 
+def _afd_path_from_prompt(prompt: str) -> str:
+    text = str(prompt or "")
+    if ".afd" not in text.casefold():
+        return ""
+    patterns = (
+        r'"([^"\r\n]+?\.afd)"',
+        r"'([^'\r\n]+?\.afd)'",
+        r"`([^`\r\n]+?\.afd)`",
+        r"“([^”\r\n]+?\.afd)”",
+        r"([A-Za-z]:[^\r\n]*?\.afd)",
+        r"(\\\\[^\r\n]*?\.afd)",
+    )
+    for pattern in patterns:
+        match = re.search(pattern, text, flags=re.IGNORECASE)
+        if not match:
+            continue
+        candidate = next((group for group in match.groups() if group), "")
+        candidate = candidate.strip().strip("，,。；;、）)]}>\u3000 ")
+        if candidate.casefold().endswith(".afd"):
+            return candidate
+    return ""
+
+
 def _prompt_requests_project_operation(prompt: str, *, local_execution: dict[str, Any]) -> bool:
     text = str(prompt or "").casefold()
-    has_project_reference = bool(_known_frontend_demo_example_from_prompt(prompt)) or local_execution.get("exampleName") not in {None, ""}
+    has_project_reference = bool(_afd_path_from_prompt(prompt)) or bool(_known_frontend_demo_example_from_prompt(prompt))
+    if not _prompt_requests_non_default_project(prompt):
+        has_project_reference = has_project_reference or local_execution.get("exampleName") not in {None, ""}
     has_project_reference = has_project_reference or _text_contains_any(
         text,
         ("\u5de5\u7a0b", "\u9879\u76ee", "\u793a\u4f8b", "\u6837\u4f8b", ".afd", "afd", "autoform", "project"),
@@ -1920,6 +1956,28 @@ def _prompt_requests_project_operation(prompt: str, *, local_execution: dict[str
         _prompt_requests_project_copy(prompt)
         or _prompt_requests_window_open(prompt)
         or _prompt_requests_solver_execution(prompt)
+    )
+
+
+def _prompt_requests_non_default_project(prompt: str) -> bool:
+    text = str(prompt or "").casefold()
+    return _text_contains_any(
+        text,
+        (
+            "\u522b\u7684\u9879\u76ee",
+            "\u522b\u7684\u5de5\u7a0b",
+            "\u5176\u4ed6\u9879\u76ee",
+            "\u5176\u4ed6\u5de5\u7a0b",
+            "\u5176\u5b83\u9879\u76ee",
+            "\u5176\u5b83\u5de5\u7a0b",
+            "\u7528\u6237\u5de5\u7a0b",
+            "\u81ea\u5df1\u7684\u5de5\u7a0b",
+            "\u81ea\u5b9a\u4e49\u5de5\u7a0b",
+            "\u975e\u793a\u4f8b",
+            "other project",
+            "custom project",
+            "user project",
+        ),
     )
 
 

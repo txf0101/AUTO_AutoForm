@@ -533,7 +533,7 @@ def test_agent_runtime_new_project_prompt_blocks_start_ui_without_approval(
     assert reply["toolRuns"][0]["status"] == "blocked_requires_approval"
     assert reply["toolRuns"][0]["approvalRequired"] is True
     assert "没有携带本机执行批准" in reply["text"]
-    assert "允许本机执行和 AutoForm 控制" in reply["text"]
+    assert "允许本机 MCP 工具控制" in reply["text"]
 
 
 def test_agent_runtime_new_project_prompt_launches_start_ui_with_approval(
@@ -581,6 +581,110 @@ def test_agent_runtime_new_project_prompt_launches_start_ui_with_approval(
     assert reply["toolRuns"][0]["tool"] == "autoform_start_ui"
     assert reply["toolRuns"][0]["status"] == "completed"
     assert "自动填写新建工程向导仍需要新增专门工具" in reply["text"]
+
+
+def test_agent_runtime_new_project_prompt_ignores_frontend_example_hint(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A default example hint must not hijack an approved "new project" request."""
+
+    class FakeGateway:
+        def list_tools(self, *, agent_id=None, include_guarded=True):
+            return [
+                {"name": "autoform_start_ui", "owner_agent": "project_workflow"},
+                {"name": "autoform_project_run", "owner_agent": "project_workflow"},
+            ]
+
+        def call_tool(self, tool_name, arguments, *, agent_id="manager", execution_approved=False, secret_values=()):
+            assert tool_name == "autoform_start_ui"
+            assert agent_id == "project_workflow"
+            assert execution_approved is True
+            assert arguments == {"graphics": "directx11", "dry_run": False}
+            return {
+                "object_type": "AgentToolGatewayResult",
+                "tool": tool_name,
+                "agent_id": agent_id,
+                "arguments": arguments,
+                "started_at": "2026-06-04T00:00:00+00:00",
+                "finished_at": "2026-06-04T00:00:01+00:00",
+                "status": "completed",
+                "result": ["AFForming.exe", "-afformingui", "-directx11"],
+            }
+
+    monkeypatch.setattr("autoform_agent.agent_system.kernel.build_agent_tool_gateway", lambda project_root=None: FakeGateway())
+
+    reply = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-new-project-approved-with-example-hint",
+            "prompt": "AutoFrom，打开，并且新建一个项目",
+            "uiContext": {
+                "surface": "p0-run-event-workbench",
+                "localExecution": {"enabled": True, "approved": True, "exampleName": "Solver_R13"},
+            },
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    assert reply["runtime"]["directApiCalled"] is False
+    assert reply["runtime"]["localToolCompletedCount"] == 1
+    assert reply["toolRuns"][0]["tool"] == "autoform_start_ui"
+    assert reply["toolRuns"][0]["status"] == "completed"
+
+
+def test_agent_runtime_explicit_afd_path_uses_user_project_not_example_hint(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Approved local MCP control should open an explicit `.afd` path when the prompt contains one."""
+
+    class FakeGateway:
+        def list_tools(self, *, agent_id=None, include_guarded=True):
+            return [{"name": "autoform_project_run", "owner_agent": "project_workflow"}]
+
+        def call_tool(self, tool_name, arguments, *, agent_id="manager", execution_approved=False, secret_values=()):
+            assert tool_name == "autoform_project_run"
+            assert agent_id == "project_workflow"
+            assert execution_approved is True
+            assert arguments["afd_path"] == r"F:\cases\DoorPanel.afd"
+            assert "example_name" not in arguments
+            assert arguments["open_gui"] is True
+            assert arguments["copy_project"] is True
+            return {
+                "object_type": "AgentToolGatewayResult",
+                "tool": tool_name,
+                "agent_id": agent_id,
+                "arguments": arguments,
+                "started_at": "2026-06-04T00:00:00+00:00",
+                "finished_at": "2026-06-04T00:00:01+00:00",
+                "status": "completed",
+                "result": {
+                    "status": "planned",
+                    "working_project": "F:/demo/run/DoorPanel.afd",
+                    "copy_project": True,
+                    "gui_observation": {"launched": True, "pid": 4321},
+                    "solver": {"cases": [{"executed": False}]},
+                },
+            }
+
+    monkeypatch.setattr("autoform_agent.agent_system.kernel.build_agent_tool_gateway", lambda project_root=None: FakeGateway())
+
+    reply = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-explicit-afd-path",
+            "prompt": r"打开别的项目 F:\cases\DoorPanel.afd",
+            "uiContext": {
+                "surface": "p0-run-event-workbench",
+                "localExecution": {"enabled": True, "approved": True, "exampleName": "Solver_R13"},
+            },
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    assert reply["runtime"]["directApiCalled"] is False
+    assert reply["runtime"]["localToolCompletedCount"] == 1
+    assert reply["toolRuns"][0]["tool"] == "autoform_project_run"
+    assert reply["toolRuns"][0]["arguments"]["afd_path"] == r"F:\cases\DoorPanel.afd"
 
 
 def test_agent_runtime_disabled_local_project_request_resolves_then_blocks_controlled_run(

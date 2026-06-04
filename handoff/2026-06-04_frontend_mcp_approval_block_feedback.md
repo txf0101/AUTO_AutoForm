@@ -17,11 +17,11 @@
 
 - `autoform_agent/agent_runtime.py`
   - 对 `autoform_start_ui` 的 `blocked_requires_approval` 增加专门解释，明确说明已经进入 MCP 网关，阻断原因为本轮请求没有携带本机执行批准。
-  - 回复文本给出可操作步骤：勾选“允许本机执行和 AutoForm 控制”后重新发送。
+  - 回复文本给出可操作步骤：勾选本机 MCP 工具控制批准后重新发送。
 - `frontend/index.html`
-  - 将复选框文案从“允许本机执行示例工程”改为“允许本机执行和 AutoForm 控制”，覆盖新建工程和 GUI 启动场景。
+  - 将复选框文案从示例工程执行语义扩展到 AutoForm 控制语义，覆盖新建工程和 GUI 启动场景；后续已进一步统一为本机 MCP 工具控制批准。
 - `frontend/app.js`
-  - 每次发送请求前都输出 `LOCAL execution=... autoform_control=...`，使命令输出能直接显示当前批准状态。
+  - 每次发送请求前都输出本机控制批准状态，使命令输出能直接显示当前批准状态；后续日志字段已统一为 `mcp_control`。
 - `README.md`、`frontend/README.md`、`docs/api_runtime_call_chain.md`、`docs/beginner_onboarding_zh.md`
   - 同步前端开关语义和未批准阻断时的用户操作路径。
 - `tests/test_agent_runtime.py`

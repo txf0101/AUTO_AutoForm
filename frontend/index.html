@@ -9,7 +9,7 @@ This page is the local browser entry point for AutoForm Agent. It only lays out 
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>AutoForm P0 Workbench</title>
-    <link rel="stylesheet" href="./styles.css?v=20260602-r6-r11-replay" />
+    <link rel="stylesheet" href="./styles.css?v=20260604-mcp-control-scope" />
   </head>
   <body>
     <main class="workbench-shell" data-app-shell>
@@ -80,10 +80,10 @@ This page is the local browser entry point for AutoForm Agent. It only lays out 
           <div class="execution-options" data-execution-options>
             <label class="checkbox-field" for="local-execution">
               <input id="local-execution" data-local-execution type="checkbox" />
-              <span>允许本机执行和 AutoForm 控制</span>
+              <span>允许本机 MCP 工具控制</span>
             </label>
             <div class="api-field">
-              <label for="demo-example">展示工程</label>
+              <label for="demo-example">示例工程提示</label>
               <select id="demo-example" data-demo-example>
                 <option value="Solver_R13">Solver_R13</option>
                 <option value="AutoComp_R13">AutoComp_R13</option>
@@ -240,6 +240,6 @@ Local bridge: http://127.0.0.1:4317/api/agent</pre>
       </section>
     </main>
 
-    <script type="module" src="./app.js?v=20260602-auto-fixture-replay"></script>
+    <script type="module" src="./app.js?v=20260604-mcp-control-scope"></script>
   </body>
 </html>

@@ -118,6 +118,7 @@ const appState = {
   },
   localExecution: {
     enabled: false,
+    scope: "mcp_gateway",
     exampleName: "Solver_R13",
   },
   summary: {
@@ -179,7 +180,7 @@ class AgentRuntimeBridge {
       `CONFIG provider=${runtimeConfig.provider} model=${runtimeConfig.model || "(provider default)"} api_mode=${runtimeConfig.apiMode} key=${runtimeConfig.apiKey ? "request" : "env-or-missing"}`,
     );
     appendTerminal(
-      `LOCAL execution=${localExecution.approved ? "approved" : "disabled"} autoform_control=${localExecution.approved ? "approved" : "blocked"} example=${localExecution.exampleName} mode=${localExecution.mode}`,
+      `LOCAL execution=${localExecution.approved ? "approved" : "disabled"} mcp_control=${localExecution.approved ? "approved" : "blocked"} scope=${localExecution.scope} example_hint=${localExecution.exampleName} mode=${localExecution.mode}`,
     );
     appendTerminal(`POST ${this.state.endpoint}`);
 
@@ -675,6 +676,7 @@ function buildLocalExecutionContext() {
   return {
     enabled,
     approved: enabled,
+    scope: "mcp_gateway",
     exampleName: appState.localExecution.exampleName || "Solver_R13",
     mode: "kinematic",
   };
@@ -693,6 +695,7 @@ function syncApiConfigFromDom() {
 function syncLocalExecutionFromDom() {
   appState.localExecution = {
     enabled: Boolean(elements.localExecution?.checked),
+    scope: "mcp_gateway",
     exampleName: elements.demoExample?.value || "Solver_R13",
   };
 }
@@ -872,7 +875,7 @@ function bindEvents() {
     input.addEventListener("change", () => {
       syncLocalExecutionFromDom();
       appendTerminal(
-        `LOCAL execution=${appState.localExecution.enabled ? "enabled" : "disabled"} autoform_control=${appState.localExecution.enabled ? "approved" : "blocked"} example=${appState.localExecution.exampleName}`,
+        `LOCAL execution=${appState.localExecution.enabled ? "enabled" : "disabled"} mcp_control=${appState.localExecution.enabled ? "approved" : "blocked"} scope=${appState.localExecution.scope} example_hint=${appState.localExecution.exampleName}`,
       );
       renderAll();
     });

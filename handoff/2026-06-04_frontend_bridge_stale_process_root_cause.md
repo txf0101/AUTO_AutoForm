@@ -26,7 +26,7 @@
 ## 根因判断
 
 1. 文档设计边界明确：第一阶段网页主链路采用 `frontend -> http_bridge -> agent_runtime -> AgentToolGateway -> autoform_agent.mcp_tools`，MCP server 是外部 MCP host 的可选入口。网页不会直接启动外部 MCP stdio server。
-2. 当前源码已经具备前端授权到 `AgentToolGateway` 的映射。`frontend/app.js` 会在勾选“允许本机执行示例工程”后发送 `uiContext.localExecution` 和 `agentToolExecutionApproved=true`；`agent_runtime.py` 会在 prompt 同时包含示例工程语义和打开、运行、求解等动作语义时生成 `autoform_project_run` 请求。
+2. 当前源码已经具备前端授权到 `AgentToolGateway` 的映射。该轮前端开关仍偏向示例工程执行语义；后续已统一为本机 MCP 工具控制批准。`frontend/app.js` 会发送 `uiContext.localExecution` 和 `agentToolExecutionApproved=true`；`agent_runtime.py` 会在 prompt 同时包含工程语义和打开、运行、求解等动作语义时生成受控工具请求。
 3. 实际运行中的 4317 旧 bridge 进程早于关键源码文件。证据如下：
    - 旧 PID：`39040`，监听 `127.0.0.1:4317`，启动时间约为 `2026-06-04 14:39:01`。
    - 关键源码时间：`agent_runtime.py` 为 `2026-06-04 16:02:21`，`tool_gateway.py` 为 `2026-06-04 15:58:05`，`frontend/app.js` 为 `2026-06-04 16:26:24`。
@@ -89,6 +89,6 @@
 
 ## 剩余风险
 
-- 本轮安全验证没有执行真实 AutoForm 求解；真实求解仍需要用户在页面勾选“允许本机执行示例工程”，并输入包含示例工程和执行动作的 prompt。
+- 本轮安全验证没有执行真实 AutoForm 求解；真实求解仍需要用户在页面勾选本机 MCP 工具控制批准，并输入包含工程目标和执行动作的 prompt。
 - 真实求解依赖本机 AutoForm 安装、许可证、示例工程路径和当前队列状态。后续演示前应先确认 `python -m autoform_agent.cli status` 和官方示例工程可用。
 - 当前网页主链路复用 MCP 同源工具函数；外部 MCP host 的 stdio server 仍通过 `python -m autoform_agent.mcp_server` 独立启动。

@@ -14,6 +14,9 @@ import re
 from .safety import public_release_scan
 
 
+PROJECT_RELEASE_VERSION = "1.4.0"
+PROJECT_RELEASE_DIR_NAME = "autoform-agent-1.4"
+
 REQUIRED_RELEASE_FILES = [
     "README.md",
     "DEVELOPERS.md",
@@ -29,6 +32,7 @@ REQUIRED_RELEASE_FILES = [
     "docs/beginner_onboarding_zh.md",
     "docs/api_runtime_call_chain.md",
     "docs/multi_agent_architecture.md",
+    "docs/v1_4_release_notes.md",
 ]
 
 PACKAGE_INCLUDE_DIRS = ["autoform_agent", "docs", "frontend", "tests", "tools"]
@@ -61,7 +65,7 @@ def release_readiness_check(project_root: str | Path | None = None) -> dict:
     version = _pyproject_version(root / "pyproject.toml")
     license_check = _license_check(root / "LICENSE")
     public_scan = public_release_scan(root)
-    ready = not missing and version == "1.0.0" and license_check["is_mit"] and public_scan["safe_to_publish"]
+    ready = not missing and version == PROJECT_RELEASE_VERSION and license_check["is_mit"] and public_scan["safe_to_publish"]
     return {
         "schema_version": "1.0",
         "checked_at": _utc_now(),
@@ -69,11 +73,12 @@ def release_readiness_check(project_root: str | Path | None = None) -> dict:
         "ready": ready,
         "missing_files": missing,
         "version": version,
-        "version_ready": version == "1.0.0",
+        "version_ready": version == PROJECT_RELEASE_VERSION,
+        "expected_version": PROJECT_RELEASE_VERSION,
         "license": license_check,
         "public_release_scan": public_scan,
         "required_files": files,
-        "package_plan": release_package_plan(root / "output" / "release" / "autoform-agent-1.0", project_root=root, dry_run=True),
+        "package_plan": release_package_plan(root / "output" / "release" / PROJECT_RELEASE_DIR_NAME, project_root=root, dry_run=True),
     }
 
 

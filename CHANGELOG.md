@@ -1,5 +1,15 @@
 # 版本记录
 
+## V1.4 - 2026-06-04
+
+V1.4 发布范围聚焦网页工作台、Python API runtime、R5 中心 Agent 和 MCP 同源工具网关。版本号已设置为 `1.4.0`，发布检查以 `docs/v1_4_release_notes.md`、README、中文新手文档和 API runtime 调用链说明为交付依据。
+
+前端本机批准开关统一为“允许本机 MCP 工具控制”，示例工程下拉改为“示例工程提示”。该开关表达用户允许后端白名单 MCP 工具执行受控动作，不再限定在 `Solver_R13` 或其他官方示例工程范围内。
+
+运行时工具路由调整为先识别新建工程和用户工程目标，再使用示例工程提示。用户说“新建工程”“创建项目”或“打开并新建一个项目”时会优先进入 `autoform_start_ui`；prompt 中包含显式 `.afd` 路径时会优先进入 `autoform_project_run(afd_path=...)`；用户只说“别的项目”但没有提供路径时，不再用默认示例工程替代。
+
+文档同步补充 V1.4 发布说明、前端 MCP 控制边界、审批阻断恢复方式、显式 `.afd` 路径优先级、分支合并状态和真实 HTTP bridge 路由验证结果。当前已确认 `codex/autoform-mcp-v1.1`、`codex/r13-r20-stabilization` 和 `autoform-mcp-standalone` 历史被主线包含。
+
 ## Unreleased - 2026-05-28
 
 补齐 R6 至 R11 低风险准备链路。新增 `autoform_agent/preparation_agents.py`，提供需求分诊、几何数据检查、最小证据检索、材料候选、工艺候选、低风险脚本登记和端到端回放；CLI 新增 `prepare-triage`、`prepare-evidence`、`prepare-script-run` 和 `prepare-r11-replay`。新增 `source_registry.csv`、`card_schema.yaml`、`eval_queries.jsonl`、`script_registry.yaml`、`fixtures/r11_low_risk_prepare_events.jsonl` 和 `handoff/ui_prepare_report.md`，前端工作台可通过 `?fixture=../fixtures/r11_low_risk_prepare_events.jsonl` 加载 R11 回放。多 Agent 注册表扩展到 15 个角色，并新增需求、几何、RAG、材料、工艺和脚本 6 个专业角色。新增 `tests/test_preparation_agents.py`，并同步更新 README、开发者指南、多 Agent 架构说明、schema 索引和中文新手文档。

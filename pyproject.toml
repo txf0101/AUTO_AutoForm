@@ -1,6 +1,6 @@
 [project]
 name = "autoform-agent"
-version = "1.0.0"
+version = "1.4.0"
 description = "Local AutoForm control helpers with a direct DeepSeek API runtime and MCP workflows."
 requires-python = ">=3.10"
 dependencies = []

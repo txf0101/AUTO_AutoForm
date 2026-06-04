@@ -41,11 +41,23 @@ AutoForm Agent is a local automation helper for AutoForm Forming. It exposes ver
 
 中文说明：AutoForm Agent 是面向 AutoForm Forming 的本地自动化辅助项目。项目把已经验证过的 AutoForm 工作流封装为 Python 命令行、可选 MCP server，以及本地 OpenAI-compatible Agent runtime。
 
-Version: `1.0.0`
+Version: `1.4.0`
 License: MIT
 Primary platform tested: Windows with AutoForm Forming R13
 
-## V1.0 Validation
+## V1.4 Release Scope
+
+V1.4 focuses on the local web workbench, Python API runtime, R5 center Agent, and MCP-sourced `AgentToolGateway` path.
+
+- The front-end approval switch is now scoped as local MCP tool control rather than a single demo-example switch.
+- User prompts for "new project" or "create project" map to `autoform_start_ui` before any example hint is considered.
+- Explicit `.afd` paths in prompts map to user project runs through `autoform_project_run(afd_path=...)`.
+- The example dropdown is only an example-project hint when the prompt does not name a new project or a user `.afd` path.
+- Release readiness expects package version `1.4.0` and includes [V1.4 release notes](docs/v1_4_release_notes.md).
+
+中文说明：V1.4 把网页输入、Python 后端运行时、中心 Agent 和 MCP 同源工具网关串成稳定主链路。前端批准开关表示本机白名单 MCP 工具控制批准；新建工程优先走 `autoform_start_ui`，显式 `.afd` 路径优先走用户工程，示例工程下拉只作为提示。
+
+## V1.0 Validation History
 
 The V1.0 validation evidence comes from this repository, local command output, and the local AutoForm Forming R13 installation.
 
@@ -225,7 +237,7 @@ The browser calls the local HTTP bridge at:
 http://127.0.0.1:4317/api/agent
 ```
 
-The HTTP bridge forwards prompts, runtime configuration, and optional UI execution consent to `autoform_agent.agent_runtime`. The runtime can use OpenAI, DeepSeek, or another OpenAI-compatible endpoint when an API key and `openai-agents` are available. When the workbench user explicitly enables local demo execution, the backend runtime maps that UI consent to a guarded `AgentToolGateway` request rather than letting the frontend choose AutoForm tools directly.
+The HTTP bridge forwards prompts, runtime configuration, and optional UI execution consent to `autoform_agent.agent_runtime`. The runtime can use OpenAI, DeepSeek, or another OpenAI-compatible endpoint when an API key and `openai-agents` are available. When the workbench user explicitly enables local MCP tool control, the backend runtime maps that UI consent to guarded `AgentToolGateway` requests rather than letting the frontend choose AutoForm tools directly.
 
 When a prompt names an official example such as `AutoComp_R13` and asks to copy, open a window, or run a solver, the center Agent first resolves the project with `autoform_resolve_project`. Controlled actions then go through `autoform_project_run`. With local execution disabled, `copy_project=true`, `open_gui=true`, and `execute=true` return `blocked_requires_approval`; after approval, `open_gui=true` with `execute=false` copies a safe run project and opens the GUI without running the solver.
 
@@ -274,7 +286,7 @@ python -m pytest -q
 Generate a source release plan:
 
 ```powershell
-python -m autoform_agent.cli release-package-plan output\release\autoform-agent-1.0
+python -m autoform_agent.cli release-package-plan output\release\autoform-agent-1.4
 ```
 
 Write-operation planning:
@@ -304,6 +316,7 @@ codex_mcp_config.autoform-agent.toml  MCP configuration template
 - [Beginner onboarding in Chinese](docs/beginner_onboarding_zh.md)
 - [Maintainer and developer reading guide in Chinese](维护者入门阅读文档/README.md)
 - [API runtime call chain](docs/api_runtime_call_chain.md)
+- [V1.4 release notes](docs/v1_4_release_notes.md)
 - [Installation guide](INSTALL.md)
 - [Uninstall guide](UNINSTALL.md)
 - [Release checklist](RELEASE_CHECKLIST.md)

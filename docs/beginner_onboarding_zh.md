@@ -4,7 +4,7 @@
 
 ## 一句话理解这个项目
 
-AutoForm Agent 是一个本地辅助工具项目。它把本机 AutoForm Forming 的安装发现、材料库处理、QuickLink 导出收集、命令预览、诊断信息读取、直接 API 后端运行时、多 Agent 项目预留层、P0 事件与权限契约、可选 MCP 工具入口、V1.1 GUI 结果审阅入口和浏览器预览页面整理到同一个工作区中。当前版本以前端到 HTTP bridge 再到 `autoform_agent.agent_runtime` 的 API runtime 链路作为应用主控，页面可以为 DeepSeek 或其他兼容 chat completions 的 endpoint 传入当次请求的 provider、Base URL、模型和 API key，普通用户可以先通过启动器和网页界面观察能力，开发者可以继续维护 Python 模块、测试、多 Agent 角色和可选 MCP 工具。
+AutoForm Agent 是一个本地辅助工具项目。它把本机 AutoForm Forming 的安装发现、材料库处理、QuickLink 导出收集、命令预览、诊断信息读取、直接 API 后端运行时、多 Agent 项目预留层、P0 事件与权限契约、可选 MCP 工具入口、V1.1 GUI 结果审阅入口和浏览器预览页面整理到同一个工作区中。当前 V1.4 版本以前端到 HTTP bridge 再到 `autoform_agent.agent_runtime` 的 API runtime 链路作为应用主控，页面可以为 DeepSeek 或其他兼容 chat completions 的 endpoint 传入当次请求的 provider、Base URL、模型和 API key，也可以通过“允许本机 MCP 工具控制”批准后端白名单 MCP 工具执行本机受控动作。普通用户可以先通过启动器和网页界面观察能力，开发者可以继续维护 Python 模块、测试、多 Agent 角色和可选 MCP 工具。
 
 这个结论依据项目根目录的 `README.md`、`DEVELOPERS.md`、`repo_scaffold.md`、`naming_policy.md`、`docs/api_runtime_call_chain.md`、`docs/multi_agent_architecture.md`、`docs/deprecated_ui_inventory.md`、`docs/ui_context_boundary.md`、`schemas/`、`fixtures/`、`policy/`、`evals/`、`autoform_agent/cli.py`、`autoform_agent/agent_system/`、`autoform_agent/mcp_server.py`、`autoform_agent/mcp_tools/`、`autoform_agent/http_bridge.py`、`frontend/README.md` 和 `start_autoform_agent.ps1`。
 
@@ -133,7 +133,7 @@ python -m autoform_agent.cli discover
 python -m autoform_agent.cli status
 ```
 
-检查 1.0 发布必需文件和安装检查计划：
+检查 V1.4 发布必需文件和安装检查计划：
 
 ```powershell
 python -m autoform_agent.cli release-readiness

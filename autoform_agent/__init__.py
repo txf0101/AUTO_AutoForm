@@ -5,8 +5,11 @@ This package is the main Python package for AutoForm Agent. Command-line tools, 
 
 from .paths import AutoFormInstallation, discover_installations, get_default_installation
 
+__version__ = "1.4.0"
+
 __all__ = [
     "AutoFormInstallation",
+    "__version__",
     "discover_installations",
     "get_default_installation",
 ]

@@ -24,11 +24,12 @@ def _write_release_files(root: Path) -> None:
         "docs/beginner_onboarding_zh.md",
         "docs/api_runtime_call_chain.md",
         "docs/multi_agent_architecture.md",
+        "docs/v1_4_release_notes.md",
     ]:
         path = root / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         if relative == "pyproject.toml":
-            path.write_text('[project]\nversion = "1.0.0"\n', encoding="utf-8")
+            path.write_text('[project]\nversion = "1.4.0"\n', encoding="utf-8")
         elif relative == "LICENSE":
             path.write_text("MIT License\n\nPermission is hereby granted\n", encoding="utf-8")
         else:

@@ -711,7 +711,7 @@ def main(argv: list[str] | None = None) -> int:
     evidence_copy_parser.add_argument("--limit", type=int, default=100)
     evidence_copy_parser.add_argument("--write", action="store_true")
 
-    subparsers.add_parser("release-readiness", help="Check 1.0 release readiness files and package plan.")
+    subparsers.add_parser("release-readiness", help="Check V1.4 release readiness files and package plan.")
 
     release_package_parser = subparsers.add_parser("release-package-plan", help="Plan or create a source release directory.")
     release_package_parser.add_argument("output_dir", type=Path)

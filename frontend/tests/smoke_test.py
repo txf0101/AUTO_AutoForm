@@ -39,6 +39,8 @@ def test_static_frontend_contains_required_hooks() -> None:
         "data-api-response",
         "data-provider-select",
         "data-provider-api-key",
+        "data-local-execution",
+        "data-demo-example",
         "data-test-connection",
         "data-api-mode",
         "data-api-runtime",
@@ -58,6 +60,9 @@ def test_static_frontend_contains_required_hooks() -> None:
         "stepReplay",
         "runReplayToEnd",
         "applyRunEvent",
+        "AGENT_NODE_ALIASES",
+        "normalizeGraphAgentId",
+        "normalizeAgentState",
         "context_view_built",
         "tool_requested",
         "tool_completed",
@@ -66,6 +71,9 @@ def test_static_frontend_contains_required_hooks() -> None:
         "edge_transfer",
         "toolLabel",
         "buildRuntimeConfigForRequest",
+        "buildLocalExecutionContext",
+        "appendToolRunDetails",
+        "compactToolRunsForDisplay",
         "applyRuntimeReply",
         "redactPayloadForDisplay",
         "renderSummary",
@@ -79,16 +87,32 @@ def test_static_frontend_contains_required_hooks() -> None:
     ]:
         _assert_contains(js, marker, "app.js")
 
+    for label in [
+        "中心Agent",
+        "需求与工艺规划Agent",
+        "几何与数据Agent",
+        "材料Agent",
+        "工艺设置Agent",
+        "求解执行Agent",
+        "后处理Agent",
+        "诊断与优化Agent",
+        "报告整理Agent",
+    ]:
+        _assert_contains(js, label, "app.js")
+
     for marker in [
         ".workbench-panel",
         ".status-summary",
         ".agent-graph",
         ".terminal-output",
         ".agent-node.is-planned",
+        ".agent-node.is-running",
         ".agent-node.is-blocked",
         ".agent-node.is-waiting_for_human",
         "overscroll-behavior: contain",
         "scrollbar-gutter: stable",
+        ".execution-options",
+        ".checkbox-field",
         ".api-config-grid",
         ".api-grid",
         ".usage-grid",

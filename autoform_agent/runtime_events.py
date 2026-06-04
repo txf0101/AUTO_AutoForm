@@ -158,6 +158,47 @@ def build_runtime_run_events(
     )
     next_index += 1
 
+    tool_runs = reply.get("toolRuns") if isinstance(reply.get("toolRuns"), list) else []
+    for sequence, tool_run in enumerate(tool_runs, start=1):
+        if not isinstance(tool_run, dict):
+            continue
+        tool_name = str(tool_run.get("tool") or "tool")
+        node_id = f"tool_{event_slug}_{sequence:02d}_{_slug(tool_name)}"
+        emit(
+            next_index,
+            "tool_requested",
+            "center_agent",
+            "mcp_gateway",
+            {
+                "object_type": "RuntimeToolRequest",
+                "node_id": node_id,
+                "sequence": sequence,
+                "tool": tool_name,
+                "status": "requested",
+                "role_id": "center_agent",
+                "reason": str(tool_run.get("reason") or ""),
+            },
+        )
+        next_index += 1
+        status = str(tool_run.get("status") or "unknown")
+        emit(
+            next_index,
+            _tool_event_type(status),
+            "mcp_gateway",
+            "ui_workbench",
+            {
+                "object_type": "RuntimeToolResult",
+                "node_id": node_id,
+                "sequence": sequence,
+                "tool": tool_name,
+                "status": status,
+                "gateway_status": tool_run.get("gatewayStatus"),
+                "result_summary": _tool_result_summary(tool_run),
+                "error": tool_run.get("error"),
+            },
+        )
+        next_index += 1
+
     command_payload = {
         "object_type": "ConsoleLine",
         "level": "info" if runtime.get("apiKeyConfigured") else "warn",
@@ -236,6 +277,9 @@ def _cached_tokens(data: dict[str, Any]) -> int:
 def _stage_status(runtime: dict[str, Any], connection_test: dict[str, Any] | None) -> str:
     if connection_test:
         return "complete" if connection_test.get("status") == "passed" else "blocked"
+    if int(runtime.get("localToolRunCount") or 0):
+        blocked_or_failed = int(runtime.get("localToolBlockedCount") or 0) + int(runtime.get("localToolFailedCount") or 0)
+        return "blocked" if blocked_or_failed else "complete"
     if runtime.get("directApiCalled"):
         return "complete"
     if runtime.get("apiKeyConfigured"):
@@ -246,6 +290,12 @@ def _stage_status(runtime: dict[str, Any], connection_test: dict[str, Any] | Non
 def _stage_blockers(runtime: dict[str, Any], connection_test: dict[str, Any] | None) -> list[str]:
     if connection_test and connection_test.get("status") != "passed":
         return [str(connection_test.get("status") or "connection_not_passed")]
+    if int(runtime.get("localToolBlockedCount") or 0):
+        return ["local_tool_blocked"]
+    if int(runtime.get("localToolFailedCount") or 0):
+        return ["local_tool_failed"]
+    if int(runtime.get("localToolRunCount") or 0):
+        return []
     if not runtime.get("apiKeyConfigured"):
         return ["api_key_missing"]
     return []
@@ -254,6 +304,8 @@ def _stage_blockers(runtime: dict[str, Any], connection_test: dict[str, Any] | N
 def _stage_next_actions(runtime: dict[str, Any], connection_test: dict[str, Any] | None) -> list[str]:
     if connection_test and connection_test.get("status") == "passed":
         return ["继续接入中心 Agent 路由和真实 token 用量聚合"]
+    if int(runtime.get("localToolRunCount") or 0):
+        return ["在 AutoForm 窗口继续展示，或从页面发送下一条结果审阅请求"]
     if not runtime.get("apiKeyConfigured"):
         return ["配置本机环境变量或在页面 password 输入框临时输入 key"]
     return ["检查后续 ContextPatch 和 EvidenceBundle 输出"]
@@ -263,6 +315,41 @@ def _stage_summary(reply: dict[str, Any], connection_test: dict[str, Any] | None
     if connection_test:
         return str(connection_test.get("summary") or "连接测试已完成。")
     return str(reply.get("text") or "后端运行时已返回结果。")[:360]
+
+
+def _tool_event_type(status: str) -> str:
+    if status == "completed":
+        return "tool_completed"
+    if status == "failed":
+        return "tool_failed"
+    if status.startswith("blocked") or status.startswith("rejected"):
+        return "tool_blocked"
+    return "tool_completed"
+
+
+def _tool_result_summary(tool_run: dict[str, Any]) -> dict[str, Any]:
+    result = tool_run.get("result") if isinstance(tool_run.get("result"), dict) else {}
+    summary: dict[str, Any] = {
+        "result_type": result.get("object_type") or result.get("schema_version") or result.get("status") or tool_run.get("gatewayStatus"),
+    }
+    for key in ("status", "run_dir", "working_project"):
+        if result.get(key) is not None:
+            summary[key] = result.get(key)
+    gui = result.get("gui_observation") if isinstance(result.get("gui_observation"), dict) else {}
+    if gui:
+        summary["gui_launched"] = gui.get("launched")
+        summary["gui_pid"] = gui.get("pid")
+    solver = result.get("solver") if isinstance(result.get("solver"), dict) else {}
+    cases = solver.get("cases") if isinstance(solver.get("cases"), list) else []
+    if cases and isinstance(cases[0], dict):
+        case = cases[0]
+        summary["solver_returncode"] = case.get("returncode")
+        stdout_summary = case.get("stdout_summary") if isinstance(case.get("stdout_summary"), dict) else {}
+        if stdout_summary:
+            summary["simulation_successful"] = stdout_summary.get("simulation_successful")
+            program_end = stdout_summary.get("program_end") if isinstance(stdout_summary.get("program_end"), dict) else {}
+            summary["program_end_code"] = program_end.get("code")
+    return summary
 
 
 def _connection_line(

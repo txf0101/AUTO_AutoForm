@@ -216,7 +216,7 @@ powershell -ExecutionPolicy Bypass -File .\start_autoform_agent.ps1
 The launcher can check the backend Agent runtime and start the local web page:
 
 ```text
-http://127.0.0.1:8765/index.html?bridge=http
+http://127.0.0.1:8765/frontend/index.html?bridge=http
 ```
 
 The browser calls the local HTTP bridge at:
@@ -225,9 +225,23 @@ The browser calls the local HTTP bridge at:
 http://127.0.0.1:4317/api/agent
 ```
 
-The HTTP bridge forwards prompts and runtime configuration to `autoform_agent.agent_runtime`. The runtime can use OpenAI, DeepSeek, or another OpenAI-compatible endpoint when an API key and `openai-agents` are available.
+The HTTP bridge forwards prompts, runtime configuration, and optional UI execution consent to `autoform_agent.agent_runtime`. The runtime can use OpenAI, DeepSeek, or another OpenAI-compatible endpoint when an API key and `openai-agents` are available. When the workbench user explicitly enables local demo execution, the backend runtime maps that UI consent to a guarded `AgentToolGateway` request rather than letting the frontend choose AutoForm tools directly.
 
-中文说明：前端页面用于本地演示和输入 prompt，HTTP bridge 会把请求转给 Python 后端运行时。MCP server 保留为外部 MCP host 的独立入口。
+When a prompt names an official example such as `AutoComp_R13` and asks to copy, open a window, or run a solver, the center Agent first resolves the project with `autoform_resolve_project`. Controlled actions then go through `autoform_project_run`. With local execution disabled, `copy_project=true`, `open_gui=true`, and `execute=true` return `blocked_requires_approval`; after approval, `open_gui=true` with `execute=false` copies a safe run project and opens the GUI without running the solver.
+
+When the workbench user says "new project" or asks to create a project without naming an `.afd`, the backend maps the prompt to the guarded MCP-sourced tool `autoform_start_ui`. Without local execution approval the tool returns `blocked_requires_approval`; with approval it starts AutoForm Forming through the same `AgentToolGateway` path. Filling the AutoForm new-project wizard still requires a dedicated future tool.
+
+中文说明：用户在网页里说“新建工程”但没有给出 `.afd` 时，后端会把请求转成受控的 `autoform_start_ui` 调用。未批准本机执行时返回审批阻断；批准后通过同一条 `AgentToolGateway` 链路启动 AutoForm Forming。自动填写 AutoForm 新建工程向导需要后续新增专门工具。
+
+中文说明：前端页面用于本地演示、输入 prompt 和提交本机执行批准，HTTP bridge 会把请求转给 Python 后端运行时。AutoForm 工具选择和受控执行仍由后端运行时与 `AgentToolGateway` 处理。MCP server 保留为外部 MCP host 的独立入口。
+
+If the launcher reports that ports `4317` or `8765` are already listening, it reuses the existing services by default. After changing backend or frontend source files, restart the launcher-managed bridge and frontend with:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\start_autoform_agent.ps1 -Mode ApiWithFrontend -RestartServices
+```
+
+中文说明：如果启动器提示复用 `4317` 或 `8765` 上的现有服务，而源码时间晚于后台服务时间，网页可能仍连接旧 HTTP bridge。此时使用上面的 `-RestartServices` 命令刷新本启动器 PID 文件中记录的 bridge 和前端服务。
 
 ## Official Example Baseline
 
@@ -288,6 +302,7 @@ codex_mcp_config.autoform-agent.toml  MCP configuration template
 ## Documentation
 
 - [Beginner onboarding in Chinese](docs/beginner_onboarding_zh.md)
+- [Maintainer and developer reading guide in Chinese](维护者入门阅读文档/README.md)
 - [API runtime call chain](docs/api_runtime_call_chain.md)
 - [Installation guide](INSTALL.md)
 - [Uninstall guide](UNINSTALL.md)

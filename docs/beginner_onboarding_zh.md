@@ -61,7 +61,7 @@ AutoForm Agent 是一个本地辅助工具项目。它把本机 AutoForm Forming
 
 `result-review` 指 V1.1 的 GUI 后处理入口。MCP host 可以调用 `autoform_result_query_capabilities` 查看支持的结果栏目、视角、任务路线和动画证据边界，也可以调用 `autoform_result_gui_evidence` 查看本机 R13 控件证据、V1.1 卡点和 V1.2 延后项，还可以调用 `autoform_result_blockers` 查看当前卡点、对策和需要用户协助的事项。审阅执行前可调用 `autoform_result_plan_review` 从一句用户请求生成审阅计划，并调用 `autoform_result_readiness` 检查最新结果工程、可见窗口、工程窗口匹配和控件证据边界，再调用 `autoform_result_open_latest`、`autoform_result_show_variable`、`autoform_result_set_view`、`autoform_result_view_evidence`、`autoform_result_play_forming_animation` 或 `autoform_result_capture_evidence` 组织结果审阅。涉及真实窗口操作时，需要显式传入 `execute=true`。
 
-`前端` 指 `frontend/` 里的本地网页。它通过本地 HTTP bridge 与 Python 后端运行时通信，默认页面地址是 `http://127.0.0.1:8765/frontend/index.html?bridge=http`。这个页面用于输入 prompt、回放 P0 fixture、显示状态、观察 Agent 图谱和命令输出，并在凭据边界面板配置 DeepSeek 或其他兼容 chat completions 的 endpoint。
+`前端` 指 `frontend/` 里的本地网页。它通过本地 HTTP bridge 与 Python 后端运行时通信，默认页面地址是 `http://127.0.0.1:8765/frontend/index.html?bridge=http`。这个页面用于输入 prompt、回放 P0 fixture、显示状态、观察 Agent 图谱和命令输出，并在凭据边界面板配置 DeepSeek 或其他兼容 chat completions 的 endpoint。Agent 图谱固定显示 9 个业务 Agent：中心Agent、需求与工艺规划Agent、几何与数据Agent、材料Agent、工艺设置Agent、求解执行Agent、后处理Agent、诊断与优化Agent、报告整理Agent；内部 role_id 会映射到这些节点，节点工作时显示绿色，结束后回到待命灰白态。
 
 ## 你需要先准备什么
 
@@ -99,7 +99,11 @@ powershell -ExecutionPolicy Bypass -File .\start_autoform_agent.ps1
 
 启动器会显示两个选项。根据 `README.md` 和 `start_autoform_agent.ps1` 的说明，选项一用于检查后端 Agent API runtime 是否能导入，选项二会同时启动网页需要的 HTTP bridge 和静态前端服务，并打开本地页面。
 
-如果端口已经被监听，启动器会复用现有服务。这个行为来自 `start_autoform_agent.ps1` 中的端口检查和启动逻辑。
+如果端口已经被监听，启动器会复用现有服务。这个行为来自 `start_autoform_agent.ps1` 中的端口检查和启动逻辑。若启动器提示 HTTP bridge 或前端服务早于当前源码，说明浏览器可能仍连接旧后台进程；需要刷新时运行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\start_autoform_agent.ps1 -Mode ApiWithFrontend -RestartServices
+```
 
 ## 手动检查项目是否正常
 
@@ -310,7 +314,13 @@ http://127.0.0.1:8765/frontend/index.html?fixture=../fixtures/r11_low_risk_prepa
 
 页面会自动加载该 fixture，用户可直接使用“单步”“跑完”和“重置”查看回放过程。
 
-这些命令依据 `frontend/README.md`、`docs/api_runtime_call_chain.md` 和 `start_autoform_agent.ps1`。静态服务从仓库根目录启动，便于页面读取 `fixtures/run_events_demo.jsonl`；HTTP bridge 会通过 `http://127.0.0.1:4317/api/agent` 把网页 prompt 转交给 `autoform_agent.agent_runtime`。
+如果需要从同一个网页窗口打开展示工程，在输入区勾选“允许本机执行示例工程”，展示工程选择 `Solver_R13` 或 `AutoComp_R13`，输入“打开一个适合展示的示例工程”并点击“发送”。页面会把 prompt、`uiContext.localExecution` 和 `agentToolExecutionApproved=true` 发给 HTTP bridge；后端运行时判断示例工程意图，生成 `autoform_project_run` 白名单请求，并通过 `AgentToolGateway` 执行。只说“复制并打开窗口”时，后端会设置 `copy_project=true`、`open_gui=true`、`execute=false`，先复制安全运行副本，再打开 AutoForm 窗口，求解器不执行。只有 prompt 明确包含求解、仿真、计算、solver 或 solve 等执行意图时，后端才会设置 `execute=true`。如果页面日志显示 `LOCAL execution=disabled`，后端仍会用 `autoform_resolve_project` 找到示例工程，但复制、开窗和求解会返回 `blocked_requires_approval`，需要用户重新启用本机执行批准。返回内容包括 `tool_requested`、`tool_completed` 或 `tool_blocked`、工程路径、GUI PID 和求解器状态，页面会把这些内容写入命令输出和 Runtime response。
+
+如果在网页里输入“新建工程”或“创建一个工程”，且没有指定 `.afd` 路径或官方示例名，后端会生成 `autoform_start_ui` 请求。该请求同样经过 `AgentToolGateway`：未勾选本机执行批准时返回审批阻断；勾选并批准后启动 AutoForm Forming 主界面。当前项目还没有自动填写 AutoForm 新建工程向导的白名单工具，因此软件启动后的工程类型、材料、几何和工序参数仍需在 AutoForm GUI 内确认，或等待后续新增专门 MCP wrapper。
+
+如果用户问“能不能通过项目 MCP 连接”，后端会优先调用只读的 `autoform_status_snapshot`，页面会显示工具完成事件和状态摘要。该检查用于确认网页请求已经进入 MCP 同源工具链。
+
+这些命令依据 `frontend/README.md`、`docs/api_runtime_call_chain.md` 和 `start_autoform_agent.ps1`。静态服务从仓库根目录启动，便于页面读取 `fixtures/run_events_demo.jsonl`；HTTP bridge 会通过 `http://127.0.0.1:4317/api/agent` 把网页 prompt、本机执行意图和批准状态转交给 `autoform_agent.agent_runtime`。
 
 如果 IT 只给了一个 API key，优先复制根目录 `.env.example` 为 `.env`，把 key 写入 `.env` 的 `DeepSeek_V4_API`，也可以放在 Windows 用户环境变量 `DeepSeek_V4_API`。`.gitignore` 已忽略 `.env`，因此这个本机文件不会进入 Git 仓库。临时测试时也可以把 key 粘贴到网页凭据边界面板；页面只会把 key 随本次 localhost 请求发送给后端，请求展示区会隐藏明文。
 
@@ -400,7 +410,7 @@ python -m autoform_agent.cli release-readiness
 
 ## 遇到问题时先看哪里
 
-启动器相关问题先看 `output/launcher_logs` 和 `output/launcher_pids`。日志和 PID 位置依据 `start_autoform_agent.ps1` 与 `README.md`。
+启动器相关问题先看 `output/launcher_logs` 和 `output/launcher_pids`。日志和 PID 位置依据 `start_autoform_agent.ps1` 与 `README.md`。如果源码已经更新，但网页响应仍像旧版本，应使用 `-RestartServices` 重启本启动器记录的 HTTP bridge 和前端服务。
 
 网页无法连接时，先确认 `http://127.0.0.1:4317/health` 是否能访问，再确认 `http://127.0.0.1:8765/frontend/index.html?bridge=http` 是否打开。端口依据 `frontend/README.md` 和 `start_autoform_agent.ps1`。
 
@@ -441,3 +451,6 @@ python -m autoform_agent.cli discover
 当前网页或 CLI 发送一次普通 prompt 时，`autoform_agent.agent_runtime` 会先直接调用 DeepSeek 或兼容 `chat/completions` 的 provider，要求模型只返回工具意图 JSON；随后 Python 后端按照白名单执行本地只读或规划工具；最后再把工具结果交给 provider 生成中文回答。普通用户可以从页面上看到工具运行结果、token 用量和 key 来源，但看不到明文 API key。
 
 这个说明依据 `autoform_agent/agent_runtime.py` 中的 `TOOL_INTENT_SCHEMA_VERSION`、`_execute_runtime_tool_intents()` 和 `_runtime_tool_registry()`。安全边界依据同一文件中的白名单逻辑：未知工具会被拒绝，工程运行计划不会自动执行，桌面探测默认不截图，AFD 摘要工具只接受 `.afd` 路径。对应测试依据为 `tests/test_agent_runtime.py` 中的两次 direct API 调用、队列工具执行、用量合并和未知工具拒绝测试。
+## 维护者和开发者延伸阅读
+
+如果你要接手维护或继续开发本项目，请阅读根目录 `维护者入门阅读文档/README.md`。该文件夹按项目全景、启动运行、核心调用链、九个业务 Agent、开发修改步骤和排错验收清单组织，面向维护者和开发者说明每一层代码的职责和修改边界。

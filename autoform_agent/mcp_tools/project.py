@@ -49,6 +49,7 @@ def autoform_project_run(
     execute: bool = False,
     timeout: int | None = None,
     open_gui: bool = False,
+    copy_project: bool | None = None,
     gui_wait_seconds: float = 3.0,
     workspace: str | None = None,
 ) -> dict:
@@ -68,6 +69,7 @@ def autoform_project_run(
         execute=execute,
         timeout=timeout,
         open_gui=open_gui,
+        copy_project=copy_project,
         gui_wait_seconds=gui_wait_seconds,
         workspace=workspace,
     )

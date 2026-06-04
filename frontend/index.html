@@ -77,6 +77,25 @@ This page is the local browser entry point for AutoForm Agent. It only lays out 
             </div>
           </div>
 
+          <div class="execution-options" data-execution-options>
+            <label class="checkbox-field" for="local-execution">
+              <input id="local-execution" data-local-execution type="checkbox" />
+              <span>允许本机执行示例工程</span>
+            </label>
+            <div class="api-field">
+              <label for="demo-example">展示工程</label>
+              <select id="demo-example" data-demo-example>
+                <option value="Solver_R13">Solver_R13</option>
+                <option value="AutoComp_R13">AutoComp_R13</option>
+                <option value="Sigma_R13">Sigma_R13</option>
+                <option value="Trim_R13">Trim_R13</option>
+                <option value="Thermo_R13">Thermo_R13</option>
+                <option value="Triboform_R13">Triboform_R13</option>
+                <option value="PhaseChange_R13">PhaseChange_R13</option>
+              </select>
+            </div>
+          </div>
+
           <div class="button-row">
             <button type="button" data-insert-example>示例</button>
             <button type="button" data-step-replay disabled>单步</button>

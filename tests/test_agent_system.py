@@ -24,8 +24,14 @@ def test_default_agent_registry_is_grounded_and_serializable() -> None:
     role_ids = {role["role_id"] for role in snapshot["roles"]}
 
     assert "manager" in role_ids
+    assert "center_agent" in role_ids
+    assert "demand_process_planning_agent" in role_ids
     assert "solver" in role_ids
+    assert "solver_execution_agent" in role_ids
     assert "result_review" in role_ids
+    assert "postprocessing_agent" in role_ids
+    assert "diagnosis_optimization_agent" in role_ids
+    assert "report_collation_agent" in role_ids
     assert "mcp_gateway" in role_ids
     assert "demand_triage_agent" in role_ids
     assert "geometry_data_agent" in role_ids
@@ -33,7 +39,7 @@ def test_default_agent_registry_is_grounded_and_serializable() -> None:
     assert "material_agent" in role_ids
     assert "process_planning_agent" in role_ids
     assert "script_agent" in role_ids
-    assert len(snapshot["roles"]) == 15
+    assert len(snapshot["roles"]) == 22
     assert all(role["source_files"] for role in snapshot["roles"])
     json.dumps(snapshot, ensure_ascii=False)
 
@@ -51,9 +57,9 @@ def test_agent_system_plan_selects_requested_and_keyword_roles() -> None:
     assert role_ids[0] == "manager"
     assert "materials" in role_ids
     assert "quicklink" in role_ids
-    assert "solver" in role_ids
-    assert "result_review" in role_ids
-    assert "reporting" in role_ids
+    assert "solver_execution_agent" in role_ids
+    assert "postprocessing_agent" in role_ids
+    assert "report_collation_agent" in role_ids
     assert data["missing_roles"] == []
     assert data["integration_points"]["mcp_tool_layers"] == "autoform_agent.mcp_tools.register_all_tools"
 
@@ -107,6 +113,19 @@ def test_agent_tool_gateway_blocks_unapproved_autoform_control() -> None:
     assert result["status"] == "blocked_requires_approval"
     assert result["approval_required"] is True
     assert "execute" in result["blocked_arguments"]
+
+
+def test_agent_tool_gateway_allows_canonical_business_agent_aliases() -> None:
+    """Canonical business-facing Agent ids should retain access to their mapped MCP owner tools."""
+
+    gateway = build_agent_tool_gateway()
+    result = gateway.call_tool(
+        "autoform_result_query_capabilities",
+        {},
+        agent_id="postprocessing_agent",
+    )
+
+    assert result["status"] == "completed"
 
 
 def test_agent_tool_gateway_blocks_unapproved_r12_window_demo() -> None:

@@ -14,6 +14,7 @@ from autoform_agent.agent_runtime import (
     load_agent_runtime_config,
     run_agent_runtime_turn,
 )
+from autoform_agent.agent_system import tool_gateway as gateway_module
 
 
 def _offline_config() -> AgentRuntimeConfig:
@@ -266,12 +267,558 @@ def test_agent_runtime_direct_api_turn_returns_events_and_usage(monkeypatch: pyt
         "context_patch_proposed",
         "patch_reviewed",
         "agent_node_started",
+        "tool_requested",
+        "tool_completed",
         "command_line",
         "token_usage_snapshot",
         "stage_summary",
     ]
     assert reply["events"][1]["payload"]["object_type"] == "TaskCard"
     assert reply["events"][4]["payload"]["object_type"] == "ContextPatch"
+
+
+def test_agent_runtime_frontend_gateway_request_returns_tool_runs(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Frontend-approved gateway requests should execute through the backend and return visible tool events."""
+
+    class FakeGateway:
+        def list_tools(self, *, agent_id=None, include_guarded=True):
+            return [{"name": "autoform_project_run", "owner_agent": "project_workflow"}]
+
+        def call_tool(self, tool_name, arguments, *, agent_id="manager", execution_approved=False, secret_values=()):
+            assert tool_name == "autoform_project_run"
+            assert agent_id == "project_workflow"
+            assert execution_approved is True
+            return {
+                "object_type": "AgentToolGatewayResult",
+                "tool": tool_name,
+                "agent_id": agent_id,
+                "arguments": arguments,
+                "started_at": "2026-06-04T00:00:00+00:00",
+                "finished_at": "2026-06-04T00:00:01+00:00",
+                "status": "completed",
+                "result": {
+                    "status": "completed",
+                    "run_dir": "F:/demo/run",
+                    "working_project": "F:/demo/run/Solver_R13.afd",
+                    "gui_observation": {"launched": True, "pid": 1234},
+                    "solver": {
+                        "cases": [
+                            {
+                                "returncode": 0,
+                                "stdout_summary": {
+                                    "simulation_successful": True,
+                                    "program_end": {"code": 0},
+                                },
+                            }
+                        ]
+                    },
+                },
+            }
+
+    monkeypatch.setattr("autoform_agent.agent_system.kernel.build_agent_tool_gateway", lambda project_root=None: FakeGateway())
+
+    reply = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-frontend-tool",
+            "prompt": "打开一个适合展示的示例工程",
+            "agentToolExecutionApproved": True,
+            "agentToolRequests": [
+                {
+                    "agent_id": "project_workflow",
+                    "tool": "autoform_project_run",
+                    "arguments": {
+                        "example_name": "Solver_R13",
+                        "mode": "kinematic",
+                        "threads": 1,
+                        "execute": True,
+                        "open_gui": True,
+                    },
+                }
+            ],
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    assert reply["runtime"]["directApiCalled"] is False
+    assert reply["runtime"]["localToolRunCount"] == 1
+    assert reply["runtime"]["localToolCompletedCount"] == 1
+    assert reply["toolRuns"][0]["tool"] == "autoform_project_run"
+    assert reply["toolRuns"][0]["status"] == "completed"
+    assert reply["toolRuns"][0]["result"]["working_project"] == "F:/demo/run/Solver_R13.afd"
+    assert "F:/demo/run/Solver_R13.afd" in reply["text"]
+    assert "api_key_missing" not in reply["events"][-1]["payload"]["blocked_by"]
+    assert "tool_requested" in [event["type"] for event in reply["events"]]
+    assert "tool_completed" in [event["type"] for event in reply["events"]]
+
+
+def test_agent_runtime_example_project_location_query_uses_readonly_local_tool(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A customer-style frontend question about official example paths should not depend on model tool guessing."""
+
+    def fail_provider(*args, **kwargs):
+        raise AssertionError("example path query should be answered by local evidence")
+
+    monkeypatch.setattr("autoform_agent.agent_runtime.call_provider_chat_completion", fail_provider)
+    monkeypatch.setattr(
+        "autoform_agent.agent_runtime.list_example_projects",
+        lambda: [
+            {
+                "name": "Solver_R13.afd",
+                "path": "C:/ProgramData/AutoForm/AFplus/R13F/test/Solver_R13.afd",
+                "size_bytes": 123,
+                "last_modified": 1760433440.0,
+            }
+        ],
+    )
+    config = AgentRuntimeConfig(
+        provider="deepseek",
+        model="deepseek-v4-flash",
+        base_url="https://api.deepseek.com",
+        api_mode="chat_completions",
+        api_key="request-" + "sensitive-" + "value-" + "0123456789",
+        api_key_configured=True,
+        api_key_source="environment:DeepSeek_V4_API",
+        project_root=Path.cwd(),
+    )
+
+    reply = run_agent_runtime_turn(
+        {"conversationId": "conv-example-path", "prompt": "找一下官方的示例项目地址在哪里"},
+        config=config,
+        snapshot=_snapshot(),
+    )
+    event_types = [event["type"] for event in reply["events"]]
+
+    assert reply["runtime"]["directApiCalled"] is False
+    assert reply["runtime"]["deterministicLocalAnswer"] is True
+    assert reply["runtime"]["localToolCompletedCount"] == 1
+    assert reply["toolRuns"][0]["tool"] == "autoform_list_example_projects"
+    assert reply["toolRuns"][0]["status"] == "completed"
+    assert "C:/ProgramData/AutoForm/AFplus/R13F/test" in reply["text"]
+    assert "Solver_R13.afd" in reply["text"]
+    assert "api_key_missing" not in reply["events"][-1]["payload"]["blocked_by"]
+    assert "tool_requested" in event_types
+    assert "tool_completed" in event_types
+
+
+def test_agent_tool_gateway_accepts_example_projects_compatibility_alias(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The old runtime alias should remain callable through AgentToolGateway."""
+
+    monkeypatch.setattr(
+        gateway_module,
+        "autoform_list_example_projects",
+        lambda: [{"name": "Solver_R13.afd", "path": "C:/ProgramData/AutoForm/AFplus/R13F/test/Solver_R13.afd"}],
+    )
+
+    result = gateway_module.build_agent_tool_gateway().call_tool(
+        "autoform_example_projects",
+        {},
+        agent_id="project_workflow",
+    )
+
+    assert result["status"] == "completed"
+    assert result["tool"] == "autoform_example_projects"
+    assert result["result"][0]["name"] == "Solver_R13.afd"
+
+
+def test_agent_runtime_ui_local_execution_context_builds_project_run_request(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The backend should turn UI local-execution consent into a whitelisted project run request."""
+
+    class FakeGateway:
+        def list_tools(self, *, agent_id=None, include_guarded=True):
+            return [{"name": "autoform_project_run", "owner_agent": "project_workflow"}]
+
+        def call_tool(self, tool_name, arguments, *, agent_id="manager", execution_approved=False, secret_values=()):
+            assert tool_name == "autoform_project_run"
+            assert agent_id == "project_workflow"
+            assert execution_approved is True
+            assert arguments["example_name"] == "Solver_R13"
+            assert arguments["execute"] is False
+            assert arguments["open_gui"] is True
+            assert arguments["copy_project"] is True
+            return {
+                "object_type": "AgentToolGatewayResult",
+                "tool": tool_name,
+                "agent_id": agent_id,
+                "arguments": arguments,
+                "started_at": "2026-06-04T00:00:00+00:00",
+                "finished_at": "2026-06-04T00:00:01+00:00",
+                "status": "completed",
+                "result": {
+                    "status": "planned",
+                    "working_project": "F:/demo/run/Solver_R13.afd",
+                    "copy_project": True,
+                    "gui_observation": {"launched": True, "pid": 4321},
+                    "solver": {
+                        "cases": [
+                            {
+                                "executed": False,
+                            }
+                        ]
+                    },
+                },
+            }
+
+    monkeypatch.setattr("autoform_agent.agent_system.kernel.build_agent_tool_gateway", lambda project_root=None: FakeGateway())
+
+    reply = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-ui-local-execution",
+            "prompt": "打开一个适合展示的示例工程",
+            "uiContext": {
+                "surface": "p0-run-event-workbench",
+                "localExecution": {"enabled": True, "approved": True, "exampleName": "Solver_R13"},
+            },
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    assert reply["runtime"]["directApiCalled"] is False
+    assert reply["runtime"]["localToolCompletedCount"] == 1
+    assert reply["toolRuns"][0]["tool"] == "autoform_project_run"
+    assert reply["toolRuns"][0]["result"]["working_project"] == "F:/demo/run/Solver_R13.afd"
+
+
+def test_agent_runtime_new_project_prompt_blocks_start_ui_without_approval(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A front-end "new project" prompt should reach the MCP gateway and stop at approval."""
+
+    calls: list[tuple[str, dict, bool]] = []
+
+    class FakeGateway:
+        def list_tools(self, *, agent_id=None, include_guarded=True):
+            return [{"name": "autoform_start_ui", "owner_agent": "project_workflow"}]
+
+        def call_tool(self, tool_name, arguments, *, agent_id="manager", execution_approved=False, secret_values=()):
+            calls.append((tool_name, arguments, execution_approved))
+            assert tool_name == "autoform_start_ui"
+            assert agent_id == "project_workflow"
+            assert execution_approved is False
+            assert arguments == {"graphics": "directx11", "dry_run": False}
+            return {
+                "object_type": "AgentToolGatewayResult",
+                "tool": tool_name,
+                "agent_id": agent_id,
+                "arguments": arguments,
+                "started_at": "2026-06-04T00:00:00+00:00",
+                "finished_at": "2026-06-04T00:00:01+00:00",
+                "status": "blocked_requires_approval",
+                "approval_required": True,
+                "policy": {"requires_approval": True},
+            }
+
+    monkeypatch.setattr("autoform_agent.agent_system.kernel.build_agent_tool_gateway", lambda project_root=None: FakeGateway())
+
+    reply = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-new-project-blocked",
+            "prompt": "你好，新建一个工程",
+            "uiContext": {"surface": "p0-run-event-workbench", "localExecution": {"enabled": False, "approved": False}},
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    assert calls == [("autoform_start_ui", {"graphics": "directx11", "dry_run": False}, False)]
+    assert reply["runtime"]["directApiCalled"] is False
+    assert reply["runtime"]["localToolBlockedCount"] == 1
+    assert reply["toolRuns"][0]["tool"] == "autoform_start_ui"
+    assert reply["toolRuns"][0]["status"] == "blocked_requires_approval"
+    assert reply["toolRuns"][0]["approvalRequired"] is True
+
+
+def test_agent_runtime_new_project_prompt_launches_start_ui_with_approval(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Approved local execution may start AutoForm UI through the same gateway path."""
+
+    class FakeGateway:
+        def list_tools(self, *, agent_id=None, include_guarded=True):
+            return [{"name": "autoform_start_ui", "owner_agent": "project_workflow"}]
+
+        def call_tool(self, tool_name, arguments, *, agent_id="manager", execution_approved=False, secret_values=()):
+            assert tool_name == "autoform_start_ui"
+            assert agent_id == "project_workflow"
+            assert execution_approved is True
+            assert arguments == {"graphics": "directx11", "dry_run": False}
+            return {
+                "object_type": "AgentToolGatewayResult",
+                "tool": tool_name,
+                "agent_id": agent_id,
+                "arguments": arguments,
+                "started_at": "2026-06-04T00:00:00+00:00",
+                "finished_at": "2026-06-04T00:00:01+00:00",
+                "status": "completed",
+                "result": ["AFForming.exe", "-afformingui", "-directx11"],
+            }
+
+    monkeypatch.setattr("autoform_agent.agent_system.kernel.build_agent_tool_gateway", lambda project_root=None: FakeGateway())
+
+    reply = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-new-project-approved",
+            "prompt": "你好，新建一个工程",
+            "uiContext": {
+                "surface": "p0-run-event-workbench",
+                "localExecution": {"enabled": True, "approved": True},
+            },
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    assert reply["runtime"]["directApiCalled"] is False
+    assert reply["runtime"]["localToolCompletedCount"] == 1
+    assert reply["toolRuns"][0]["tool"] == "autoform_start_ui"
+    assert reply["toolRuns"][0]["status"] == "completed"
+    assert "自动填写新建工程向导仍需要新增专门工具" in reply["text"]
+
+
+def test_agent_runtime_disabled_local_project_request_resolves_then_blocks_controlled_run(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Without local approval, the center agent should still resolve the project and block copy or GUI actions."""
+
+    calls: list[tuple[str, dict, bool]] = []
+
+    class FakeGateway:
+        def list_tools(self, *, agent_id=None, include_guarded=True):
+            return [
+                {"name": "autoform_resolve_project", "owner_agent": "project_workflow"},
+                {"name": "autoform_project_run", "owner_agent": "project_workflow"},
+            ]
+
+        def call_tool(self, tool_name, arguments, *, agent_id="manager", execution_approved=False, secret_values=()):
+            calls.append((tool_name, arguments, execution_approved))
+            assert agent_id == "project_workflow"
+            if tool_name == "autoform_resolve_project":
+                assert execution_approved is False
+                assert arguments["example_name"] == "AutoComp_R13"
+                return {
+                    "object_type": "AgentToolGatewayResult",
+                    "tool": tool_name,
+                    "agent_id": agent_id,
+                    "arguments": arguments,
+                    "started_at": "2026-06-04T00:00:00+00:00",
+                    "finished_at": "2026-06-04T00:00:00+00:00",
+                    "status": "completed",
+                    "result": {
+                        "source": "official_example",
+                        "path": "C:/ProgramData/AutoForm/AFplus/R13F/test/AutoComp_R13.afd",
+                        "name": "AutoComp_R13.afd",
+                    },
+                }
+            assert tool_name == "autoform_project_run"
+            assert execution_approved is False
+            assert arguments["example_name"] == "AutoComp_R13"
+            assert arguments["execute"] is False
+            assert arguments["open_gui"] is True
+            assert arguments["copy_project"] is True
+            return {
+                "object_type": "AgentToolGatewayResult",
+                "tool": tool_name,
+                "agent_id": agent_id,
+                "arguments": arguments,
+                "started_at": "2026-06-04T00:00:00+00:00",
+                "finished_at": "2026-06-04T00:00:01+00:00",
+                "status": "blocked_requires_approval",
+                "approval_required": True,
+                "blocked_arguments": ["open_gui", "copy_project"],
+            }
+
+    monkeypatch.setattr("autoform_agent.agent_system.kernel.build_agent_tool_gateway", lambda project_root=None: FakeGateway())
+
+    reply = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-ui-local-disabled-copy-open",
+            "prompt": "\u5bf9\u4e8e\u8fd9\u4e2a\u5de5\u7a0b\uff1aAutoComp_R13\uff0c\u590d\u5236\u4e00\u4efd\u5230\u5b89\u5168\u7684\u5730\u65b9\uff0c\u5e76\u4e14\u6253\u5f00\u7a97\u53e3",
+            "uiContext": {
+                "surface": "p0-run-event-workbench",
+                "localExecution": {"enabled": False, "approved": False, "exampleName": "AutoComp_R13"},
+            },
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    assert [call[0] for call in calls] == ["autoform_resolve_project", "autoform_project_run"]
+    assert reply["runtime"]["directApiCalled"] is False
+    assert reply["runtime"]["localToolRunCount"] == 2
+    assert reply["runtime"]["localToolCompletedCount"] == 1
+    assert reply["runtime"]["localToolBlockedCount"] == 1
+    assert reply["toolRuns"][0]["tool"] == "autoform_resolve_project"
+    assert reply["toolRuns"][0]["status"] == "completed"
+    assert reply["toolRuns"][1]["tool"] == "autoform_project_run"
+    assert reply["toolRuns"][1]["status"] == "blocked_requires_approval"
+    assert reply["toolRuns"][1]["approvalRequired"] is True
+    assert reply["toolRuns"][1]["blockedArguments"] == ["open_gui", "copy_project"]
+
+
+def test_agent_runtime_mcp_connection_question_reads_status_snapshot(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A question about using the project MCP should produce visible gateway evidence."""
+
+    class FakeGateway:
+        def list_tools(self, *, agent_id=None, include_guarded=True):
+            return [{"name": "autoform_status_snapshot", "owner_agent": "installation"}]
+
+        def call_tool(self, tool_name, arguments, *, agent_id="manager", execution_approved=False, secret_values=()):
+            assert tool_name == "autoform_status_snapshot"
+            assert agent_id == "mcp_gateway"
+            assert execution_approved is False
+            assert arguments == {}
+            return {
+                "object_type": "AgentToolGatewayResult",
+                "tool": tool_name,
+                "agent_id": agent_id,
+                "arguments": arguments,
+                "started_at": "2026-06-04T00:00:00+00:00",
+                "finished_at": "2026-06-04T00:00:01+00:00",
+                "status": "completed",
+                "result": {"status": "ok", "tool_count": 112},
+            }
+
+    monkeypatch.setattr("autoform_agent.agent_system.kernel.build_agent_tool_gateway", lambda project_root=None: FakeGateway())
+
+    reply = run_agent_runtime_turn(
+        {"conversationId": "conv-mcp-status", "prompt": "你不能通过项目的MCP连接吗"},
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    assert reply["runtime"]["directApiCalled"] is False
+    assert reply["runtime"]["localToolCompletedCount"] == 1
+    assert reply["toolRuns"][0]["tool"] == "autoform_status_snapshot"
+    assert reply["toolRuns"][0]["status"] == "completed"
+
+
+def test_agent_runtime_ui_local_execution_approval_does_not_approve_explicit_tool_requests(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """UI demo consent should not approve arbitrary explicit frontend tool requests."""
+
+    class FakeGateway:
+        def list_tools(self, *, agent_id=None, include_guarded=True):
+            return [{"name": "autoform_project_run", "owner_agent": "project_workflow"}]
+
+        def call_tool(self, tool_name, arguments, *, agent_id="manager", execution_approved=False, secret_values=()):
+            assert execution_approved is False
+            return {
+                "object_type": "AgentToolGatewayResult",
+                "tool": tool_name,
+                "agent_id": agent_id,
+                "arguments": arguments,
+                "started_at": "2026-06-04T00:00:00+00:00",
+                "finished_at": "2026-06-04T00:00:01+00:00",
+                "status": "blocked_requires_approval",
+                "approval_required": True,
+                "blocked_arguments": ["execute"],
+            }
+
+    monkeypatch.setattr("autoform_agent.agent_system.kernel.build_agent_tool_gateway", lambda project_root=None: FakeGateway())
+
+    reply = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-ui-local-explicit-request",
+            "prompt": "打开一个适合展示的示例工程",
+            "uiContext": {
+                "surface": "p0-run-event-workbench",
+                "localExecution": {"enabled": True, "approved": True, "exampleName": "Solver_R13"},
+            },
+            "agentToolRequests": [
+                {
+                    "agent_id": "project_workflow",
+                    "tool": "autoform_project_run",
+                    "arguments": {"example_name": "Solver_R13", "execute": True},
+                }
+            ],
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    assert reply["runtime"]["localToolCompletedCount"] == 0
+    assert reply["runtime"]["localToolBlockedCount"] == 1
+    assert reply["toolRuns"][0]["status"] == "blocked_requires_approval"
+
+
+def test_agent_runtime_frontend_gateway_keeps_project_summary_for_large_tool_result(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Large project-run payloads should keep UI evidence fields while truncating verbose logs."""
+
+    class FakeGateway:
+        def list_tools(self, *, agent_id=None, include_guarded=True):
+            return [{"name": "autoform_project_run", "owner_agent": "project_workflow"}]
+
+        def call_tool(self, tool_name, arguments, *, agent_id="manager", execution_approved=False, secret_values=()):
+            return {
+                "object_type": "AgentToolGatewayResult",
+                "tool": tool_name,
+                "agent_id": agent_id,
+                "arguments": arguments,
+                "started_at": "2026-06-04T00:00:00+00:00",
+                "finished_at": "2026-06-04T00:00:01+00:00",
+                "status": "completed",
+                "result": {
+                    "status": "completed",
+                    "run_dir": "F:/demo/run",
+                    "working_project": "F:/demo/run/Solver_R13.afd",
+                    "execute": True,
+                    "gui_observation": {"launched": True, "pid": 5678, "startup_wait_seconds": 5},
+                    "solver": {
+                        "case_count": 1,
+                        "executed": True,
+                        "cases": [
+                            {
+                                "executed": True,
+                                "returncode": 0,
+                                "stdout": "solver log " * 700,
+                                "stdout_summary": {
+                                    "simulation_successful": True,
+                                    "program_end": {"code": 0},
+                                },
+                            }
+                        ],
+                    },
+                },
+            }
+
+    monkeypatch.setattr("autoform_agent.agent_system.kernel.build_agent_tool_gateway", lambda project_root=None: FakeGateway())
+
+    reply = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-large-frontend-tool",
+            "prompt": "open demo project",
+            "agentToolExecutionApproved": True,
+            "agentToolRequests": [
+                {
+                    "agent_id": "project_workflow",
+                    "tool": "autoform_project_run",
+                    "arguments": {"example_name": "Solver_R13", "execute": True, "open_gui": True},
+                }
+            ],
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    result = reply["toolRuns"][0]["result"]
+    assert result["truncated"] is True
+    assert result["working_project"] == "F:/demo/run/Solver_R13.afd"
+    assert result["gui_observation"]["pid"] == 5678
+    assert result["solver"]["cases"][0]["returncode"] == 0
+    assert result["solver"]["cases"][0]["stdout_summary"]["simulation_successful"] is True
+    assert "stdout" not in result["solver"]["cases"][0]
+    assert "F:/demo/run/Solver_R13.afd" in reply["text"]
 
 
 def test_agent_runtime_rejects_unknown_tool_intent(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -426,3 +973,6 @@ def test_agent_runtime_registers_result_review_catalog_entries() -> None:
     assert "autoform_center_agent_plan" in names
     assert "autoform_agent_tool_gateway_catalog" in names
     assert "autoform_agent_mcp_gateway_call" in names
+    assert "autoform_list_example_projects" in names
+    assert "autoform_example_projects" in names
+    assert "autoform_start_ui" in names

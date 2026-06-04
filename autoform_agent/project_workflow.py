@@ -58,6 +58,7 @@ def project_run_workflow(
     execute: bool = False,
     timeout: int | None = None,
     open_gui: bool = False,
+    copy_project: bool | None = None,
     gui_wait_seconds: float = DEFAULT_GUI_OBSERVATION_WAIT_SECONDS,
     workspace: str | Path | None = None,
     install: AutoFormInstallation | None = None,
@@ -77,12 +78,17 @@ def project_run_workflow(
     run_dir = _run_dir(Path(output_root or DEFAULT_RUN_ROOT), source_path, normalized_mode)
     working_project = run_dir / source_path.name
     timeout_seconds = timeout or (120 if normalized_mode == "kinematic" else 300)
+    # Copying and solving are separated because the user may ask for a safe
+    # project duplicate and an AutoForm window without asking the solver to run.
+    # `copy_project=None` keeps the old behavior: solver execution copies the
+    # project, and GUI-only work also copies so the source example stays clean.
+    should_copy_project = execute or (bool(open_gui) if copy_project is None else bool(copy_project))
 
-    # Executed runs work from a copied `.afd` so official examples and user
-    # source projects stay unchanged.  `open_afd()` validates that the target
-    # project exists even in dry-run mode, so the copy has to happen before the
-    # GUI command is calculated for an executed workflow.
-    if execute:
+    # Executed or explicitly copied runs work from a copied `.afd` so official
+    # examples and user source projects stay unchanged. `open_afd()` validates
+    # that the target exists even in dry-run mode, so the copy happens before
+    # GUI commands are calculated.
+    if should_copy_project:
         run_dir.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source_path, working_project)
         command_input = working_project
@@ -101,14 +107,27 @@ def project_run_workflow(
         "project": resolved,
         "run_dir": str(run_dir.resolve()),
         "working_project": str(working_project.resolve()),
-        "copy_project": execute,
+        "copy_project": should_copy_project,
         "gui_command": gui_command,
         "gui_observation": gui_observation,
         "summary": _safe_project_summary(source_path),
     }
     if not execute:
+        # Planning mode may still open a visible AutoForm window when the
+        # gateway approved `open_gui`. The solver probe remains non-executing,
+        # so this branch is suitable for "copy and open" checks.
+        if open_gui:
+            result["gui_observation"] = open_afd_observer(command_input, install=install, dry_run=False)
+            result["gui_command"] = result["gui_observation"]["command"]
+            result["gui_open_requested"] = True
+            if gui_wait_seconds > 0:
+                time.sleep(gui_wait_seconds)
+            result["gui_observation"]["startup_wait_seconds"] = max(gui_wait_seconds, 0)
         result["solver"] = _solver_probe(command_input, normalized_mode, threads, False, timeout_seconds, run_dir)
         result["status"] = "planned"
+        if should_copy_project or open_gui:
+            run_dir.mkdir(parents=True, exist_ok=True)
+            _write_json(run_dir / "run_manifest.json", result)
         return result
 
     if open_gui:

@@ -57,6 +57,49 @@ def test_project_run_workflow_defaults_to_plan(tmp_path: Path, monkeypatch) -> N
     assert not Path(result["run_dir"]).exists()
 
 
+def test_project_run_workflow_copy_and_open_gui_without_solver_execution(tmp_path: Path, monkeypatch) -> None:
+    install = _install(tmp_path, monkeypatch)
+
+    def fake_solver_probe(afd_path: Path, _mode: str, _threads: int, execute: bool, _timeout: int, working_dir: Path) -> dict:
+        assert execute is False
+        assert Path(afd_path).exists()
+        assert Path(working_dir).exists()
+        return {"executed": False, "cases": [{"executed": False}]}
+
+    def fake_open_afd_observer(afd_path: Path, *_args, dry_run: bool = True, **_kwargs) -> dict:
+        return {
+            "mode": "gui_project_observer",
+            "dry_run": dry_run,
+            "command": ["AFFormingUI.exe", "-file", str(Path(afd_path).resolve())],
+            "launched": not dry_run,
+            "pid": 2468 if not dry_run else None,
+            "progress_visibility": "best_effort",
+        }
+
+    monkeypatch.setattr(workflow, "_solver_probe", fake_solver_probe)
+    monkeypatch.setattr(workflow, "open_afd_observer", fake_open_afd_observer)
+
+    result = project_run_workflow(
+        example_name="Solver_R13",
+        mode="kinematic",
+        output_root=tmp_path / "runs",
+        execute=False,
+        open_gui=True,
+        copy_project=True,
+        gui_wait_seconds=0,
+        install=install,
+    )
+
+    assert result["status"] == "planned"
+    assert result["copy_project"] is True
+    assert result["gui_open_requested"] is True
+    assert result["gui_observation"]["launched"] is True
+    assert result["gui_observation"]["pid"] == 2468
+    assert result["solver"]["executed"] is False
+    assert Path(result["working_project"]).exists()
+    assert (Path(result["run_dir"]) / "run_manifest.json").exists()
+
+
 def test_project_run_workflow_execute_copies_project_before_gui_plan(tmp_path: Path, monkeypatch) -> None:
     install = _install(tmp_path, monkeypatch)
 

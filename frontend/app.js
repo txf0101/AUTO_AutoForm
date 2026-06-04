@@ -30,37 +30,68 @@ const PROVIDER_PRESETS = {
 };
 
 const DEFAULT_AGENTS = [
-  "user",
-  "ui_workbench",
-  "runtime_executor",
   "center_agent",
-  "demand_triage_agent",
+  "demand_process_planning_agent",
   "geometry_data_agent",
-  "rag_evidence_agent",
   "material_agent",
-  "process_planning_agent",
-  "validator",
-  "script_agent",
-  "human_reviewer",
-  "mcp_gateway",
-  "autoform_adapter",
+  "process_setting_agent",
+  "solver_execution_agent",
+  "postprocessing_agent",
+  "diagnosis_optimization_agent",
+  "report_collation_agent",
 ];
 
+// The graph is a business view, not a raw debug dump of backend role IDs.
+// These nine nodes match the Agent development documents. Internal nodes such
+// as User, UI, Runtime, Gateway, manager, solver, and result_review are mapped
+// below so old events still animate the correct business square.
 const AGENT_LABELS = {
-  user: "User",
-  ui_workbench: "UI",
-  runtime_executor: "Runtime",
-  center_agent: "Center",
-  demand_triage_agent: "Demand",
-  geometry_data_agent: "Geometry",
-  rag_evidence_agent: "RAG",
-  material_agent: "Material",
-  process_planning_agent: "Process",
-  validator: "Validator",
-  script_agent: "Script",
-  human_reviewer: "Reviewer",
-  mcp_gateway: "Gateway",
-  autoform_adapter: "Adapter",
+  center_agent: "中心Agent",
+  demand_process_planning_agent: "需求与工艺规划Agent",
+  geometry_data_agent: "几何与数据Agent",
+  material_agent: "材料Agent",
+  process_setting_agent: "工艺设置Agent",
+  solver_execution_agent: "求解执行Agent",
+  postprocessing_agent: "后处理Agent",
+  diagnosis_optimization_agent: "诊断与优化Agent",
+  report_collation_agent: "报告整理Agent",
+};
+
+const AGENT_NODE_ALIASES = {
+  manager: "center_agent",
+  ui_workbench: "center_agent",
+  runtime_executor: "center_agent",
+  user: "",
+  human_reviewer: "center_agent",
+  validator: "center_agent",
+  mcp_gateway: "center_agent",
+  demand_triage_agent: "demand_process_planning_agent",
+  rag_evidence_agent: "demand_process_planning_agent",
+  process_planning_agent: "demand_process_planning_agent",
+  quicklink: "geometry_data_agent",
+  materials: "material_agent",
+  project_workflow: "process_setting_agent",
+  script_agent: "process_setting_agent",
+  autoform_adapter: "process_setting_agent",
+  solver: "solver_execution_agent",
+  result_review: "postprocessing_agent",
+  installation: "diagnosis_optimization_agent",
+  reporting: "report_collation_agent",
+};
+
+// Visual rule: green means "working right now". Finished states are normalized
+// back to idle so completed work does not look active in the graph.
+const AGENT_STATE_LABELS = {
+  idle: "待命",
+  planned: "待命",
+  running: "工作中",
+  done: "待命",
+  complete: "待命",
+  completed: "待命",
+  ready: "待命",
+  blocked: "阻断",
+  failed: "失败",
+  waiting_for_human: "待批准",
 };
 
 const appState = {
@@ -84,6 +115,10 @@ const appState = {
     model: PROVIDER_PRESETS.deepseek.model,
     apiMode: PROVIDER_PRESETS.deepseek.apiMode,
     apiKey: "",
+  },
+  localExecution: {
+    enabled: false,
+    exampleName: "Solver_R13",
   },
   summary: {
     run: "未加载",
@@ -122,6 +157,7 @@ class AgentRuntimeBridge {
 
   async sendPrompt(prompt, options = {}) {
     const runtimeConfig = buildRuntimeConfigForRequest(options);
+    const localExecution = buildLocalExecutionContext();
     const payload = {
       conversationId: this.state.conversationId,
       prompt,
@@ -129,8 +165,12 @@ class AgentRuntimeBridge {
       uiContext: {
         surface: "p0-run-event-workbench",
         requestedPanels: ["input", "summary", "graph", "terminal", "credentials", "usage"],
+        localExecution,
       },
     };
+    if (localExecution.approved) {
+      payload.agentToolExecutionApproved = true;
+    }
 
     this.state.lastPayload = redactPayloadForDisplay(payload);
     renderApiPanel();
@@ -138,6 +178,9 @@ class AgentRuntimeBridge {
     appendTerminal(
       `CONFIG provider=${runtimeConfig.provider} model=${runtimeConfig.model || "(provider default)"} api_mode=${runtimeConfig.apiMode} key=${runtimeConfig.apiKey ? "request" : "env-or-missing"}`,
     );
+    if (localExecution.approved) {
+      appendTerminal(`LOCAL approved frontend demo example=${localExecution.exampleName} mode=${localExecution.mode}`);
+    }
     appendTerminal(`POST ${this.state.endpoint}`);
 
     const startedAt = performance.now();
@@ -190,6 +233,8 @@ const elements = {
   providerModel: document.querySelector("[data-provider-model]"),
   apiMode: document.querySelector("[data-api-mode]"),
   providerApiKey: document.querySelector("[data-provider-api-key]"),
+  localExecution: document.querySelector("[data-local-execution]"),
+  demoExample: document.querySelector("[data-demo-example]"),
   applyProviderPreset: document.querySelector("[data-apply-provider-preset]"),
   testConnectionButton: document.querySelector("[data-test-connection]"),
   clearApiKey: document.querySelector("[data-clear-api-key]"),
@@ -290,8 +335,6 @@ function runReplayToEnd() {
 
 function applyRunEvent(event) {
   const payload = event.payload || {};
-  markAgent(event.source_agent, "done");
-  markAgent(event.target_agent, event.type === "agent_node_started" ? "running" : "done");
 
   appState.summary.run = event.run_id;
   if (payload.task_id) {
@@ -315,7 +358,7 @@ function applyRunEvent(event) {
     case "route_decision":
       if (Array.isArray(payload.route)) {
         for (const roleId of payload.route) {
-          markAgent(roleId, roleId === "manager" || roleId === "center_agent" ? "running" : "planned");
+          markAgent(roleId, "planned");
         }
         for (let index = 0; index < payload.route.length - 1; index += 1) {
           addEdge(`route_${index}_${payload.route[index]}_${payload.route[index + 1]}`, payload.route[index], payload.route[index + 1], "transferring");
@@ -373,8 +416,8 @@ function applyRunEvent(event) {
       appendTerminal(`TOOL request ${payload.tool} by ${payload.role_id || event.source_agent}`);
       break;
     case "tool_completed":
-      markAgent(event.source_agent, "done");
-      markAgent(event.target_agent, "running");
+      markAgent(event.source_agent, "idle");
+      markAgent(event.target_agent, "idle");
       addEdge(`tool_${payload.node_id || event.event_id}_${payload.sequence || 1}`, event.source_agent, event.target_agent, "completed");
       appendTerminal(`TOOL complete ${toolLabel(payload)}`);
       break;
@@ -471,28 +514,59 @@ function toolLabel(payload) {
 }
 
 function closeRunningAgents() {
+  // Stage summaries and run-completed events mean the visible work burst ended.
+  // Any node still marked running is reset to the quiet standby color.
   for (const [agentId, state] of Object.entries(appState.graph.nodes)) {
     if (state === "running") {
-      appState.graph.nodes[agentId] = "done";
+      appState.graph.nodes[agentId] = "idle";
     }
   }
 }
 
 function markAgent(agentId, state) {
-  if (!agentId) {
+  // Unknown or hidden internal roles return an empty string and are skipped.
+  // That keeps raw runtime noise out of the nine-node business graph.
+  const graphAgentId = normalizeGraphAgentId(agentId);
+  if (!graphAgentId) {
     return;
   }
-  appState.graph.nodes[agentId] = state;
+  appState.graph.nodes[graphAgentId] = normalizeAgentState(state);
 }
 
 function addEdge(edgeId, sourceAgent, targetAgent, state) {
+  // Edges also use the business-role mapping. If two internal roles collapse to
+  // the same visible node, the edge is omitted because it would only show noise.
+  const source = normalizeGraphAgentId(sourceAgent);
+  const target = normalizeGraphAgentId(targetAgent);
+  if (!source || !target || source === target) {
+    return;
+  }
   const existingIndex = appState.graph.edges.findIndex((edge) => edge.edge_id === edgeId);
-  const edge = { edge_id: edgeId, source_agent: sourceAgent, target_agent: targetAgent, state };
+  const edge = { edge_id: edgeId, source_agent: source, target_agent: target, state };
   if (existingIndex >= 0) {
     appState.graph.edges[existingIndex] = edge;
   } else {
     appState.graph.edges.push(edge);
   }
+}
+
+function normalizeGraphAgentId(agentId) {
+  const raw = String(agentId || "").trim();
+  if (!raw) {
+    return "";
+  }
+  if (DEFAULT_AGENTS.includes(raw)) {
+    return raw;
+  }
+  return AGENT_NODE_ALIASES[raw] || "";
+}
+
+function normalizeAgentState(state) {
+  const normalized = String(state || "idle").trim();
+  if (normalized === "done" || normalized === "complete" || normalized === "completed" || normalized === "ready") {
+    return "idle";
+  }
+  return AGENT_STATE_LABELS[normalized] ? normalized : "idle";
 }
 
 function applyUsage(payload) {
@@ -523,7 +597,7 @@ function applyRuntimeReply(reply, elapsedMs) {
 
   appendTerminal(`HTTP 200 in ${elapsedMs} ms`);
   appendTerminal(
-    `RUNTIME provider=${runtime.providerLabel || runtime.provider || "unknown"} model=${runtime.model || "unknown"} api_mode=${runtime.apiMode || "unknown"} direct_api=${appState.api.runtime} key=${appState.api.apiKeySource}`,
+    `RUNTIME provider=${runtime.providerLabel || runtime.provider || "unknown"} model=${runtime.model || "unknown"} api_mode=${runtime.apiMode || "unknown"} direct_api_called=${appState.api.directApiCalled} direct_api_available=${appState.api.runtime} key=${appState.api.apiKeySource}`,
   );
   if (reply.usage) {
     applyUsage(reply.usage);
@@ -537,9 +611,44 @@ function applyRuntimeReply(reply, elapsedMs) {
       appendTerminal(`STEP ${step.state}: ${step.title} - ${step.detail}`);
     }
   }
+  appendToolRunDetails(reply.toolRuns);
   appendTerminal(`AGENT> ${reply.text || "(empty response)"}`);
 
   renderAll();
+}
+
+function appendToolRunDetails(toolRuns) {
+  if (!Array.isArray(toolRuns) || !toolRuns.length) {
+    return;
+  }
+  for (const run of toolRuns) {
+    appendTerminal(`TOOL_RESULT ${run.tool || "tool"} status=${run.status || "unknown"}`);
+    const result = run.result && typeof run.result === "object" ? run.result : {};
+    if (result.working_project) {
+      appendTerminal(`PROJECT ${result.working_project}`);
+    } else if (result.run_dir) {
+      appendTerminal(`RUN_DIR ${result.run_dir}`);
+    }
+    const gui = result.gui_observation && typeof result.gui_observation === "object" ? result.gui_observation : {};
+    if (Object.keys(gui).length) {
+      appendTerminal(`GUI launched=${Boolean(gui.launched)} pid=${gui.pid || "none"}`);
+    }
+    const solverCase = firstSolverCase(result);
+    if (solverCase) {
+      const stdoutSummary = solverCase.stdout_summary || {};
+      appendTerminal(
+        `SOLVER returncode=${solverCase.returncode} simulation_successful=${Boolean(stdoutSummary.simulation_successful)}`,
+      );
+    }
+    if (run.error) {
+      appendTerminal(`TOOL_ERROR ${run.error}`);
+    }
+  }
+}
+
+function firstSolverCase(result) {
+  const cases = result?.solver?.cases;
+  return Array.isArray(cases) && cases.length && typeof cases[0] === "object" ? cases[0] : null;
 }
 
 function buildRuntimeConfigForRequest(options = {}) {
@@ -560,6 +669,17 @@ function buildRuntimeConfigForRequest(options = {}) {
   return runtimeConfig;
 }
 
+function buildLocalExecutionContext() {
+  syncLocalExecutionFromDom();
+  const enabled = Boolean(appState.localExecution.enabled);
+  return {
+    enabled,
+    approved: enabled,
+    exampleName: appState.localExecution.exampleName || "Solver_R13",
+    mode: "kinematic",
+  };
+}
+
 function syncApiConfigFromDom() {
   appState.apiConfig = {
     provider: elements.providerSelect.value,
@@ -567,6 +687,13 @@ function syncApiConfigFromDom() {
     model: elements.providerModel.value.trim(),
     apiMode: elements.apiMode.value,
     apiKey: elements.providerApiKey.value.trim(),
+  };
+}
+
+function syncLocalExecutionFromDom() {
+  appState.localExecution = {
+    enabled: Boolean(elements.localExecution?.checked),
+    exampleName: elements.demoExample?.value || "Solver_R13",
   };
 }
 
@@ -620,7 +747,7 @@ function renderGraph() {
       const node = document.createElement("div");
       node.className = `agent-node is-${state}`;
       node.dataset.agentId = agentId;
-      node.innerHTML = `<strong>${agentLabel(agentId)}</strong><span>${state}</span>`;
+      node.innerHTML = `<strong>${agentLabel(agentId)}</strong><span>${agentStateLabel(state)}</span>`;
       return node;
     }),
   );
@@ -694,6 +821,9 @@ function applyStartupOptions() {
   if (endpoint) {
     appState.endpoint = endpoint;
   }
+  appState.terminalLines = appState.terminalLines.map((line) =>
+    line.startsWith("Local bridge: ") ? `Local bridge: ${appState.endpoint}` : line,
+  );
 
   const fixture = options.get("fixture");
   if (fixture) {
@@ -738,6 +868,16 @@ function bindEvents() {
     });
   }
 
+  for (const input of [elements.localExecution, elements.demoExample]) {
+    input.addEventListener("change", () => {
+      syncLocalExecutionFromDom();
+      appendTerminal(
+        `LOCAL execution=${appState.localExecution.enabled ? "enabled" : "disabled"} example=${appState.localExecution.exampleName}`,
+      );
+      renderAll();
+    });
+  }
+
   elements.applyProviderPreset.addEventListener("click", () => {
     applyProviderPreset(true);
   });
@@ -767,7 +907,8 @@ function bindEvents() {
   });
 
   elements.insertExampleButton.addEventListener("click", () => {
-    elements.promptInput.value = "准备一个低风险 AutoForm 仿真前检查流程。";
+    elements.promptInput.value = "打开一个适合展示的示例工程";
+    syncLocalExecutionFromDom();
     elements.promptInput.focus();
   });
 
@@ -807,11 +948,36 @@ function trimRuntimeResponse(reply) {
     runtime: reply.runtime,
     preview: reply.preview,
     centerPlan: compactCenterPlanForDisplay(reply.centerPlan),
+    toolRuns: compactToolRunsForDisplay(reply.toolRuns),
     connectionTest: reply.connectionTest,
     usage: reply.usage,
     eventCount: Array.isArray(reply.events) ? reply.events.length : 0,
     eventTypes: Array.isArray(reply.events) ? reply.events.map((event) => event.type).slice(0, 16) : [],
   };
+}
+
+function compactToolRunsForDisplay(toolRuns) {
+  if (!Array.isArray(toolRuns)) {
+    return undefined;
+  }
+  return toolRuns.map((run) => {
+    const result = run.result && typeof run.result === "object" ? run.result : {};
+    const gui = result.gui_observation && typeof result.gui_observation === "object" ? result.gui_observation : {};
+    const solverCase = firstSolverCase(result);
+    return {
+      tool: run.tool,
+      status: run.status,
+      gatewayStatus: run.gatewayStatus,
+      example: run.arguments?.example_name,
+      working_project: result.working_project,
+      run_dir: result.run_dir,
+      gui_pid: gui.pid,
+      gui_launched: gui.launched,
+      solver_returncode: solverCase?.returncode,
+      simulation_successful: solverCase?.stdout_summary?.simulation_successful,
+      error: run.error,
+    };
+  });
 }
 
 function redactPayloadForDisplay(value) {
@@ -891,7 +1057,12 @@ function providerLabel(provider) {
 }
 
 function agentLabel(agentId) {
-  return AGENT_LABELS[agentId] || agentId.replaceAll("_", " ");
+  const graphAgentId = normalizeGraphAgentId(agentId) || String(agentId || "");
+  return AGENT_LABELS[graphAgentId] || graphAgentId.replaceAll("_", " ");
+}
+
+function agentStateLabel(state) {
+  return AGENT_STATE_LABELS[state] || state;
 }
 
 applyStartupOptions();

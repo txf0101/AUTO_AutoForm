@@ -31,6 +31,7 @@ from ..mcp_tools import (
     autoform_result_set_view,
     autoform_result_show_variable,
     autoform_result_view_evidence,
+    autoform_start_ui,
     autoform_status_snapshot,
 )
 
@@ -39,6 +40,22 @@ R5_EXECUTION_CLASS_READ_ONLY = "read_only"
 R5_EXECUTION_CLASS_PLANNING = "planning"
 R5_EXECUTION_CLASS_GUARDED_GUI = "guarded_gui"
 R5_EXECUTION_CLASS_GUARDED_SOLVER = "guarded_solver"
+
+AGENT_TOOL_OWNER_ALIASES = {
+    "center_agent": ("manager",),
+    "demand_process_planning_agent": ("process_planning_agent", "project_workflow"),
+    "process_setting_agent": ("project_workflow", "process_planning_agent"),
+    "solver_execution_agent": ("solver", "project_workflow"),
+    "postprocessing_agent": ("result_review",),
+    "diagnosis_optimization_agent": ("installation", "result_review", "reporting"),
+    "report_collation_agent": ("reporting", "result_review"),
+}
+
+# The frontend now shows business-facing agents, while older events and tools
+# still use internal owner names such as `project_workflow`, `solver`, and
+# `result_review`. This alias table is the compatibility bridge. It lets the
+# business agent ask for the existing tool family without weakening the
+# approval checks below.
 
 
 @dataclass(frozen=True)
@@ -141,6 +158,10 @@ class AgentToolGateway:
         merged_arguments = {**spec.default_arguments, **(arguments or {})}
         controlled = _active_controlled_arguments(merged_arguments, spec.controlled_arguments)
         if (spec.requires_approval or controlled) and not execution_approved:
+            # This is the important safety stop. Reading project facts can run
+            # immediately, but copying projects, opening AutoForm windows, or
+            # submitting solver work must surface as `blocked_requires_approval`
+            # until the caller has an explicit approval flag.
             return {
                 **base,
                 "status": "blocked_requires_approval",
@@ -171,7 +192,8 @@ class AgentToolGateway:
 
     @staticmethod
     def _agent_can_request(agent_id: str, spec: GatewayToolSpec) -> bool:
-        return agent_id in {"manager", "center_agent", "mcp_gateway", spec.owner_agent}
+        owner_aliases = AGENT_TOOL_OWNER_ALIASES.get(agent_id, ())
+        return agent_id in {"manager", "center_agent", "mcp_gateway", spec.owner_agent} or spec.owner_agent in owner_aliases
 
 
 def build_agent_tool_gateway(project_root: Path | None = None) -> AgentToolGateway:
@@ -210,6 +232,15 @@ def _default_gateway_tools() -> tuple[GatewayToolSpec, ...]:
             risk_level="low",
         ),
         GatewayToolSpec(
+            name="autoform_example_projects",
+            owner_agent="project_workflow",
+            purpose="兼容旧 runtime 名称，列出本机官方示例工程。",
+            handler=autoform_list_example_projects,
+            source_layer="autoform_agent.mcp_tools.project.autoform_list_example_projects",
+            execution_class=R5_EXECUTION_CLASS_READ_ONLY,
+            risk_level="low",
+        ),
+        GatewayToolSpec(
             name="autoform_resolve_project",
             owner_agent="project_workflow",
             purpose="解析用户工程路径或官方示例工程名。",
@@ -226,8 +257,19 @@ def _default_gateway_tools() -> tuple[GatewayToolSpec, ...]:
             source_layer="autoform_agent.mcp_tools.project.autoform_project_run",
             execution_class=R5_EXECUTION_CLASS_GUARDED_SOLVER,
             risk_level="medium",
-            default_arguments={"execute": False, "open_gui": False},
-            controlled_arguments=("execute", "open_gui"),
+            default_arguments={"execute": False, "open_gui": False, "copy_project": None},
+            controlled_arguments=("execute", "open_gui", "copy_project"),
+        ),
+        GatewayToolSpec(
+            name="autoform_start_ui",
+            owner_agent="project_workflow",
+            purpose="显式启动 AutoForm Forming 主界面，用于人工新建工程或继续 GUI 操作。",
+            handler=autoform_start_ui,
+            source_layer="autoform_agent.mcp_tools.project.autoform_start_ui",
+            execution_class=R5_EXECUTION_CLASS_GUARDED_GUI,
+            risk_level="medium",
+            default_arguments={"graphics": "directx11", "dry_run": False},
+            requires_approval=True,
         ),
         GatewayToolSpec(
             name="autoform_gui_window_snapshot",

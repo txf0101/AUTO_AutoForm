@@ -11,6 +11,10 @@ from typing import Iterable
 from .contracts import AgentRoleSpec
 
 
+# The first business-facing roles are the names shown in the frontend graph and
+# in the new development DOCX files. Older implementation roles remain below so
+# existing CLI commands, tests, and historical events keep working while the UI
+# presents a cleaner nine-agent model.
 DEFAULT_AGENT_ROLES: tuple[AgentRoleSpec, ...] = (
     AgentRoleSpec(
         role_id="manager",
@@ -37,6 +41,114 @@ DEFAULT_AGENT_ROLES: tuple[AgentRoleSpec, ...] = (
             "reporting",
             "mcp_gateway",
         ),
+    ),
+    AgentRoleSpec(
+        role_id="center_agent",
+        display_name="中心Agent",
+        responsibility="统一接收用户目标，生成任务卡和任务图，分配专业 Agent，审查 ContextPatch，维护审批、事件流和阶段复盘。",
+        source_files=(
+            "autoform_agent/agent_system/kernel.py",
+            "autoform_agent/agent_runtime.py",
+            "VC开发文档/Auto_Autoform思路整理/06_Agent开发规划_01_中心Agent.docx",
+        ),
+        default_tools=("build_center_agent_plan", "validate_context_patch", "build_agent_tool_gateway"),
+        handoff_targets=(
+            "demand_process_planning_agent",
+            "geometry_data_agent",
+            "material_agent",
+            "process_setting_agent",
+            "solver_execution_agent",
+            "postprocessing_agent",
+            "diagnosis_optimization_agent",
+            "report_collation_agent",
+        ),
+    ),
+    AgentRoleSpec(
+        role_id="demand_process_planning_agent",
+        display_name="需求与工艺规划Agent",
+        responsibility="把用户目标转成仿真准备任务书，识别缺失信息、任务风险、初步工艺路线和下一步专业 Agent 路由。",
+        source_files=(
+            "autoform_agent/preparation_agents.py",
+            "VC开发文档/Auto_Autoform思路整理/06_Agent开发规划_02_需求与工艺规划Agent.docx",
+        ),
+        default_tools=("triage_request", "build_process_plan", "retrieve_evidence_bundle"),
+        handoff_targets=("center_agent", "geometry_data_agent", "material_agent", "process_setting_agent"),
+    ),
+    AgentRoleSpec(
+        role_id="process_setting_agent",
+        display_name="工艺设置Agent",
+        responsibility="围绕工序、坯料、压边力、拉延筋、润滑、模面和求解前设置生成候选 ProcessContextPatch。",
+        source_files=(
+            "autoform_agent/preparation_agents.py",
+            "autoform_agent/project_workflow.py",
+            "VC开发文档/Auto_Autoform思路整理/06_Agent开发规划_05_工艺设置Agent.docx",
+        ),
+        default_tools=("build_process_plan", "autoform_resolve_project", "autoform_project_run"),
+        handoff_targets=("center_agent", "solver_execution_agent", "diagnosis_optimization_agent"),
+    ),
+    AgentRoleSpec(
+        role_id="solver_execution_agent",
+        display_name="求解执行Agent",
+        responsibility="在审批通过后提交 AutoForm 求解，监控许可证、队列、进程、日志和运行副本状态，输出 SolverRunRecord。",
+        source_files=(
+            "autoform_agent/solver.py",
+            "autoform_agent/project_workflow.py",
+            "VC开发文档/Auto_Autoform思路整理/06_Agent开发规划_06_求解执行Agent.docx",
+        ),
+        default_tools=(
+            "autoform_solver_capability_specs",
+            "autoform_forming_solver_kinematic_plan",
+            "autoform_forming_solver_kinematic_batch_probe",
+            "autoform_project_run",
+        ),
+        handoff_targets=("center_agent", "postprocessing_agent", "diagnosis_optimization_agent"),
+    ),
+    AgentRoleSpec(
+        role_id="postprocessing_agent",
+        display_name="后处理Agent",
+        responsibility="读取结果工程、窗口状态和结果证据，组织减薄、FLD、起皱、回弹、动画和截图取证。",
+        source_files=(
+            "autoform_agent/result_viewer.py",
+            "autoform_agent/gui_automation.py",
+            "VC开发文档/Auto_Autoform思路整理/06_Agent开发规划_07_后处理Agent.docx",
+        ),
+        default_tools=(
+            "autoform_result_query_capabilities",
+            "autoform_result_readiness",
+            "autoform_result_view_evidence",
+            "autoform_result_capture_evidence",
+        ),
+        handoff_targets=("center_agent", "diagnosis_optimization_agent", "report_collation_agent"),
+    ),
+    AgentRoleSpec(
+        role_id="diagnosis_optimization_agent",
+        display_name="诊断与优化Agent",
+        responsibility="把求解日志、后处理指标、材料和工艺证据转成缺陷诊断、原因假设、优化方案和验证计划。",
+        source_files=(
+            "autoform_agent/results.py",
+            "autoform_agent/result_viewer.py",
+            "VC开发文档/Auto_Autoform思路整理/06_Agent开发规划_08_诊断与优化Agent.docx",
+        ),
+        default_tools=("autoform_result_inventory", "autoform_result_blockers", "autoform_official_sample_run_summary"),
+        handoff_targets=("center_agent", "process_setting_agent", "solver_execution_agent", "report_collation_agent"),
+    ),
+    AgentRoleSpec(
+        role_id="report_collation_agent",
+        display_name="报告整理Agent",
+        responsibility="整理任务背景、输入、证据、求解记录、后处理结论、诊断建议和交付物索引，生成报告草案和证据包。",
+        source_files=(
+            "autoform_agent/report.py",
+            "autoform_agent/results.py",
+            "autoform_agent/release.py",
+            "VC开发文档/Auto_Autoform思路整理/06_Agent开发规划_09_报告整理Agent.docx",
+        ),
+        default_tools=(
+            "autoform_result_inventory",
+            "autoform_report_delivery_plan",
+            "autoform_report_inventory",
+            "autoform_release_readiness_check",
+        ),
+        handoff_targets=("center_agent",),
     ),
     AgentRoleSpec(
         role_id="installation",
@@ -159,7 +271,7 @@ DEFAULT_AGENT_ROLES: tuple[AgentRoleSpec, ...] = (
     ),
     AgentRoleSpec(
         role_id="geometry_data_agent",
-        display_name="Geometry And Data Agent",
+        display_name="几何与数据Agent",
         responsibility="生成 PartCard、DataChecklist、CandidateValue 和几何数据候选补丁。",
         source_files=(
             "autoform_agent/preparation_agents.py",
@@ -185,7 +297,7 @@ DEFAULT_AGENT_ROLES: tuple[AgentRoleSpec, ...] = (
     ),
     AgentRoleSpec(
         role_id="material_agent",
-        display_name="Material Agent",
+        display_name="材料Agent",
         responsibility="生成 MaterialCard、MaterialGapList、MaterialPatch 和 ReviewRequest。",
         source_files=(
             "autoform_agent/preparation_agents.py",

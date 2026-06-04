@@ -19,6 +19,8 @@ def test_power_shell_launcher_contains_required_menu_and_commands() -> None:
         "4317",
         "8765",
         "?bridge=http",
+        "RestartServices",
+        "后台服务早于当前源码",
         "Start-Process",
         "launcher_logs",
         "launcher_pids",

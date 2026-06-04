@@ -413,11 +413,19 @@ def _build_route_context_patch(*, task_id: str, role_ids: tuple[str, ...], creat
 
 def _task_type(prompt: str, role_ids: tuple[str, ...]) -> str:
     normalized = prompt.lower()
-    if "materials" in role_ids or "材料" in prompt or "material" in normalized:
+    if "materials" in role_ids or "material_agent" in role_ids or "材料" in prompt or "material" in normalized:
         return "material_check"
-    if "quicklink" in role_ids or "几何" in prompt or "geometry" in normalized:
+    if "quicklink" in role_ids or "geometry_data_agent" in role_ids or "几何" in prompt or "geometry" in normalized:
         return "geometry_check"
-    if "solver" in role_ids or "工艺" in prompt or "process" in normalized or "求解" in prompt:
+    if (
+        "solver" in role_ids
+        or "solver_execution_agent" in role_ids
+        or "process_setting_agent" in role_ids
+        or "demand_process_planning_agent" in role_ids
+        or "工艺" in prompt
+        or "process" in normalized
+        or "求解" in prompt
+    ):
         return "process_planning"
     if "脚本" in prompt or "script" in normalized:
         return "script_dry_run"

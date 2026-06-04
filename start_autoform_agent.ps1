@@ -8,6 +8,10 @@ param(
     # Help 只打印说明并退出，便于快速检查脚本是否可以被 PowerShell 正常解析。
     [switch]$Help,
 
+    # RestartServices 会停止本启动器 PID 文件中记录的 HTTP bridge 和前端服务，
+    # 再重新启动。用于源码更新后刷新旧后台进程。
+    [switch]$RestartServices,
+
     # Mode 允许自动化调用时跳过菜单；普通双击或手动运行时可以不填，脚本会显示两个选项。
     [ValidateSet("ApiOnly", "ApiWithFrontend")]
     [string]$Mode
@@ -28,7 +32,9 @@ param(
 # - 本脚本只负责启动服务和打开页面。
 # - 服务使用 Start-Process 独立启动，脚本窗口关闭后服务仍继续运行。
 # - 脚本不会结束已有 Python、AutoForm 或浏览器进程。
-# - 如果目标端口已经在监听，脚本会复用该服务，避免重复启动和误伤现有运行。
+# - 如果目标端口已经在监听，脚本默认复用该服务，避免重复启动和误伤现有运行。
+# - 如果源码晚于后台服务启动时间，脚本会提示旧进程风险；需要刷新时使用
+#   -RestartServices，只停止本启动器 PID 文件中记录的服务。
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
@@ -67,6 +73,9 @@ function Show-Help {
     Write-Host ""
     Write-Host "检查后端 Agent API runtime 并打开可视化前端："
     Write-Host "  powershell -ExecutionPolicy Bypass -File .\start_autoform_agent.ps1 -Mode ApiWithFrontend"
+    Write-Host ""
+    Write-Host "源码更新后重启本启动器管理的 HTTP bridge 和前端服务："
+    Write-Host "  powershell -ExecutionPolicy Bypass -File .\start_autoform_agent.ps1 -Mode ApiWithFrontend -RestartServices"
     Write-Host ""
     Write-Host "说明：前端 HTTP bridge 会调用 Python 后端 Agent API runtime。"
 }
@@ -153,6 +162,150 @@ function Wait-LocalPortListening {
     throw "$ServiceName 未能在预期时间内监听端口 $Port。请查看日志目录：$LogDir"
 }
 
+function Get-ManagedServicePid {
+    param(
+        # PID 文件名。
+        [Parameter(Mandatory = $true)]
+        [string]$PidFileName
+    )
+
+    $pidPath = Join-Path $PidDir $PidFileName
+    if (-not (Test-Path $pidPath)) {
+        return $null
+    }
+
+    $rawPid = (Get-Content -Path $pidPath -ErrorAction SilentlyContinue | Select-Object -First 1)
+    $parsedPid = 0
+    if ([int]::TryParse([string]$rawPid, [ref]$parsedPid)) {
+        return $parsedPid
+    }
+    return $null
+}
+
+function Get-ServiceSourceLatestWriteTime {
+    param(
+        # 与服务运行代码相关的文件路径。
+        [Parameter(Mandatory = $true)]
+        [string[]]$SourcePaths
+    )
+
+    $latest = $null
+    foreach ($sourcePath in $SourcePaths) {
+        if (-not (Test-Path $sourcePath)) {
+            continue
+        }
+        $item = Get-Item -LiteralPath $sourcePath
+        if ($null -eq $latest -or $item.LastWriteTime -gt $latest) {
+            $latest = $item.LastWriteTime
+        }
+    }
+    return $latest
+}
+
+function Get-ServiceProcessStartTime {
+    param(
+        # 进程号。
+        [Parameter(Mandatory = $true)]
+        [int]$ProcessId
+    )
+
+    try {
+        $process = Get-Process -Id $ProcessId -ErrorAction Stop
+        return $process.StartTime
+    }
+    catch {
+        return $null
+    }
+}
+
+function Write-ServiceReuseNotice {
+    param(
+        # 服务名称。
+        [Parameter(Mandatory = $true)]
+        [string]$Name,
+
+        # 服务端口。
+        [Parameter(Mandatory = $true)]
+        [int]$Port,
+
+        # PID 文件名。
+        [Parameter(Mandatory = $true)]
+        [string]$PidFileName,
+
+        # 与服务运行代码相关的文件路径。
+        [Parameter(Mandatory = $true)]
+        [string[]]$SourcePaths
+    )
+
+    $servicePid = Get-ManagedServicePid -PidFileName $PidFileName
+    Write-Host "$Name 已经在 http://$HostAddress`:$Port 监听，继续复用现有服务。"
+    if ($null -ne $servicePid) {
+        Write-Host "$Name PID 文件记录: $servicePid"
+    }
+
+    $latestSourceWriteTime = Get-ServiceSourceLatestWriteTime -SourcePaths $SourcePaths
+    if ($null -eq $latestSourceWriteTime) {
+        return
+    }
+
+    $referenceTime = $null
+    if ($null -ne $servicePid) {
+        $referenceTime = Get-ServiceProcessStartTime -ProcessId $servicePid
+    }
+    if ($null -eq $referenceTime) {
+        $pidPath = Join-Path $PidDir $PidFileName
+        if (Test-Path $pidPath) {
+            $referenceTime = (Get-Item -LiteralPath $pidPath).LastWriteTime
+        }
+    }
+
+    if ($null -ne $referenceTime -and $latestSourceWriteTime -gt $referenceTime) {
+        Write-Host "警告：$Name 后台服务早于当前源码，页面可能仍连接旧运行时。"
+        Write-Host "服务时间: $referenceTime"
+        Write-Host "源码时间: $latestSourceWriteTime"
+        Write-Host "如需刷新，请运行：powershell -ExecutionPolicy Bypass -File .\start_autoform_agent.ps1 -Mode ApiWithFrontend -RestartServices"
+    }
+}
+
+function Stop-ManagedServiceProcess {
+    param(
+        # 服务名称。
+        [Parameter(Mandatory = $true)]
+        [string]$Name,
+
+        # 服务端口。
+        [Parameter(Mandatory = $true)]
+        [int]$Port,
+
+        # PID 文件名。
+        [Parameter(Mandatory = $true)]
+        [string]$PidFileName
+    )
+
+    $servicePid = Get-ManagedServicePid -PidFileName $PidFileName
+    if ($null -eq $servicePid) {
+        Write-Host "未找到 $Name 的 PID 文件记录，跳过自动停止。"
+        return
+    }
+
+    $process = Get-Process -Id $servicePid -ErrorAction SilentlyContinue
+    if ($null -eq $process) {
+        Write-Host "$Name PID $servicePid 已经不存在。"
+        return
+    }
+
+    Write-Host "正在停止本启动器记录的 $Name，PID: $servicePid"
+    Stop-Process -Id $servicePid -Force
+    for ($attempt = 0; $attempt -lt 20; $attempt++) {
+        if (-not (Test-LocalPortListening -Port $Port)) {
+            return
+        }
+        Start-Sleep -Milliseconds 250
+    }
+
+    throw "$Name PID $servicePid 已停止请求已发出，但端口 $Port 仍在监听。请检查是否有其他服务占用该端口。"
+}
+
 function Start-DetachedPythonProcess {
     param(
         # 用于日志文件名和控制台输出的服务名称。
@@ -228,8 +381,20 @@ function Start-HttpBridge {
       该服务提供 /health 和 /api/agent 两个 HTTP 路由，前端在 HTTP 模式下会向
       /api/agent 发送 prompt，并把返回结果渲染到页面。
     #>
+    $bridgeSources = @(
+        (Join-Path $WorkspaceRoot "autoform_agent\http_bridge.py"),
+        (Join-Path $WorkspaceRoot "autoform_agent\agent_runtime.py"),
+        (Join-Path $WorkspaceRoot "autoform_agent\agent_system\kernel.py"),
+        (Join-Path $WorkspaceRoot "autoform_agent\agent_system\tool_gateway.py"),
+        (Join-Path $WorkspaceRoot "autoform_agent\mcp_tools\project.py")
+    )
+
+    if ($RestartServices -and (Test-LocalPortListening -Port $BridgePort)) {
+        Stop-ManagedServiceProcess -Name "HTTP bridge" -Port $BridgePort -PidFileName "http_bridge.pid"
+    }
+
     if (Test-LocalPortListening -Port $BridgePort) {
-        Write-Host "HTTP bridge 已经在 http://$HostAddress`:$BridgePort 监听，继续复用现有服务。"
+        Write-ServiceReuseNotice -Name "HTTP bridge" -Port $BridgePort -PidFileName "http_bridge.pid" -SourcePaths $bridgeSources
         return
     }
 
@@ -247,8 +412,18 @@ function Start-FrontendServer {
       前端目录只包含 HTML、CSS 和浏览器 JavaScript，所以 Python 标准库的
       http.server 已经足够。服务只绑定到 127.0.0.1，避免把开发页面暴露到局域网。
     #>
+    $frontendSources = @(
+        (Join-Path $WorkspaceRoot "frontend\index.html"),
+        (Join-Path $WorkspaceRoot "frontend\app.js"),
+        (Join-Path $WorkspaceRoot "frontend\styles.css")
+    )
+
+    if ($RestartServices -and (Test-LocalPortListening -Port $FrontendPort)) {
+        Stop-ManagedServiceProcess -Name "可视化前端" -Port $FrontendPort -PidFileName "frontend.pid"
+    }
+
     if (Test-LocalPortListening -Port $FrontendPort) {
-        Write-Host "可视化前端已经在 http://$HostAddress`:$FrontendPort 监听，继续复用现有服务。"
+        Write-ServiceReuseNotice -Name "可视化前端" -Port $FrontendPort -PidFileName "frontend.pid" -SourcePaths $frontendSources
         return
     }
 

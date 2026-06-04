@@ -43,12 +43,32 @@ TOOL_INTENT_SCHEMA_VERSION = "autoform.direct_tool_intent.v1"
 MAX_TOOL_INTENTS = 3
 MAX_TOOL_RESULT_TEXT = 4000
 SUPPORTED_API_MODES = {"chat_completions"}
+
+# Runtime flow in plain language:
+# 1. The web page or CLI sends user text here.
+# 2. This module builds a center-agent plan from local project facts.
+# 3. If a local AutoForm action is needed, it is converted into a gateway
+#    request. The gateway checks role, tool name, and approval before calling
+#    any MCP-sourced function.
+# 4. If no local action can answer the turn, a chat-completions provider may be
+#    called. The provider sees only redacted context and can request tools from
+#    the small registry below.
+# 5. The response is shaped into one JSON object for both HTTP and CLI callers.
 PLACEHOLDER_API_KEYS = {
     "your_provider_api_key_here",
     "your_deepseek_api_key_here",
     "your_deepseek_v4_api_key_here",
 }
 DEEPSEEK_API_KEY_ENV_NAMES = ("DeepSeek_V4_API", "DEEPSEEK_API_KEY", "CHAT_API_KEY")
+FRONTEND_DEMO_EXAMPLES = {
+    "Solver_R13",
+    "AutoComp_R13",
+    "Sigma_R13",
+    "Trim_R13",
+    "Thermo_R13",
+    "Triboform_R13",
+    "PhaseChange_R13",
+}
 
 
 PROVIDER_PRESETS: dict[str, dict[str, str | None]] = {
@@ -178,10 +198,38 @@ def run_agent_runtime_turn(
         prompt,
         conversation_id=conversation_id,
         requested_roles=_payload_requested_roles(payload),
-        tool_requests=_payload_agent_tool_requests(payload),
+        tool_requests=_payload_agent_tool_requests(payload, prompt=prompt),
         execution_approved=_payload_execution_approved(payload),
         project_root=runtime_config.project_root,
     )
+
+    if _center_plan_has_tool_results(center_plan):
+        return _finalize_runtime_reply(
+            _build_gateway_tool_runtime_result(
+                prompt=prompt,
+                conversation_id=conversation_id,
+                config=runtime_config,
+                snapshot=runtime_snapshot,
+                center_plan=center_plan,
+            ).as_dict(),
+            prompt=prompt,
+            conversation_id=conversation_id,
+            config=runtime_config,
+        )
+
+    if _prompt_requests_example_project_locations(prompt):
+        return _finalize_runtime_reply(
+            _build_example_projects_runtime_result(
+                prompt=prompt,
+                conversation_id=conversation_id,
+                config=runtime_config,
+                snapshot=runtime_snapshot,
+                center_plan=center_plan,
+            ).as_dict(),
+            prompt=prompt,
+            conversation_id=conversation_id,
+            config=runtime_config,
+        )
 
     if not runtime_config.api_key_configured:
         return _finalize_runtime_reply(
@@ -359,12 +407,14 @@ def build_runtime_tool_catalog(project_root: Path | None = None) -> list[dict[st
         {"name": "autoform_discover_installation", "domain": "installation", "purpose": "发现本机 AutoForm 安装和关键路径"},
         {"name": "autoform_environment_snapshot", "domain": "diagnostics", "purpose": "读取本机环境和项目状态快照"},
         {"name": "autoform_queue_health_check", "domain": "queue", "purpose": "检查 AutoForm 队列相关进程"},
+        {"name": "autoform_list_example_projects", "domain": "project", "purpose": "列出本机官方示例工程路径"},
         {"name": "autoform_example_projects", "domain": "project", "purpose": "列出本机官方示例工程"},
         {"name": "autoform_command_specs", "domain": "commands", "purpose": "返回已登记的 AutoForm 命令入口"},
         {"name": "autoform_quicklink_exports", "domain": "quicklink", "purpose": "读取 QuickLink 导出包"},
         {"name": "autoform_afd_summary", "domain": "project", "purpose": "解析单个 AFD 工程摘要"},
         {"name": "autoform_kinematic_plan", "domain": "solver", "purpose": "规划低风险 kinematic 检查命令"},
         {"name": "autoform_project_run_plan", "domain": "project", "purpose": "规划可复现工程运行流程"},
+        {"name": "autoform_start_ui", "domain": "gui", "purpose": "通过 AgentToolGateway 受控启动 AutoForm Forming 主界面"},
         {"name": "autoform_official_sample_run_summary", "domain": "project", "purpose": "汇总官方样例运行证据"},
         {"name": "autoform_computer_use_probe", "domain": "gui", "purpose": "探测桌面截图和 AutoForm 窗口可见性"},
         {"name": "autoform_gui_control_demo", "domain": "gui", "purpose": "规划 R12 基础可见窗口控制演示，真实动作通过 AgentToolGateway 审批"},
@@ -718,6 +768,9 @@ def _runtime_tool_registry(
     root = config.project_root
     gateway = build_agent_tool_gateway(project_root=root)
 
+    # Keep this registry deliberately small. A provider can only ask for names
+    # in this dict, and each entry narrows paths, numbers, booleans, and
+    # execution flags before it reaches the underlying AutoForm helper.
     return {
         "autoform_center_agent_plan": lambda args: build_center_agent_plan(
             str(args.get("prompt") or prompt),
@@ -739,6 +792,7 @@ def _runtime_tool_registry(
         "autoform_discover_installation": lambda args: [installation.as_dict() for installation in discover_installations()],
         "autoform_environment_snapshot": lambda args: environment_snapshot(write=False),
         "autoform_queue_health_check": lambda args: queue_health_check(),
+        "autoform_list_example_projects": lambda args: list_example_projects(),
         "autoform_example_projects": lambda args: list_example_projects(),
         "autoform_command_specs": lambda args: list_command_specs(),
         "autoform_quicklink_exports": lambda args: list_quicklink_exports(root),
@@ -756,6 +810,16 @@ def _runtime_tool_registry(
             execute=False,
             open_gui=False,
             workspace=_optional_path(args.get("workspace"), config),
+        ),
+        "autoform_start_ui": lambda args: gateway.call_tool(
+            "autoform_start_ui",
+            {
+                "graphics": str(args.get("graphics") or "directx11"),
+                "dry_run": _bool_arg(args.get("dry_run"), default=False),
+            },
+            agent_id="project_workflow",
+            execution_approved=False,
+            secret_values=(config.api_key,) if config.api_key else (),
         ),
         "autoform_official_sample_run_summary": lambda args: official_sample_run_summary(
             search_dir=_optional_path(args.get("search_dir"), config),
@@ -868,6 +932,7 @@ def _tool_argument_hints(name: str) -> dict[str, Any]:
         "autoform_afd_summary": {"required": ["afd_path"]},
         "autoform_kinematic_plan": {"required": ["afd_path"], "optional": ["threads"]},
         "autoform_project_run_plan": {"optional": ["afd_path", "example_name", "mode", "threads", "output_root", "workspace"]},
+        "autoform_start_ui": {"optional": ["graphics", "dry_run"]},
         "autoform_official_sample_run_summary": {"optional": ["search_dir", "mode", "limit"]},
         "autoform_gui_control_demo": {"optional": ["output_dir", "execute", "action", "title_contains"]},
         "autoform_r12_project_view_demo": {"optional": ["example_name", "afd_path", "execute", "verify_screenshot", "output_dir"]},
@@ -885,11 +950,132 @@ def _sanitize_tool_payload(value: Any, config: AgentRuntimeConfig) -> Any:
     encoded = json.dumps(safe, ensure_ascii=False, default=str)
     if len(encoded) <= MAX_TOOL_RESULT_TEXT:
         return safe
+    compact = _compact_large_tool_payload(safe)
+    if compact is not None:
+        compact["truncated"] = True
+        compact["char_count"] = len(encoded)
+        compact["preview"] = encoded[:MAX_TOOL_RESULT_TEXT]
+        return compact
     return {
         "truncated": True,
         "char_count": len(encoded),
         "preview": encoded[:MAX_TOOL_RESULT_TEXT],
     }
+
+
+def _compact_large_tool_payload(value: Any) -> dict[str, Any] | None:
+    if not isinstance(value, dict):
+        return None
+    if not any(key in value for key in ("working_project", "run_dir", "solver", "gui_observation")):
+        return None
+
+    compact: dict[str, Any] = {}
+    for key in (
+        "schema_version",
+        "created_at",
+        "mode",
+        "threads",
+        "execute",
+        "timeout_seconds",
+        "status",
+        "run_dir",
+        "working_project",
+        "copy_project",
+        "gui_open_requested",
+    ):
+        if key in value:
+            compact[key] = value[key]
+
+    project = value.get("project")
+    if isinstance(project, dict):
+        compact["project"] = _keep_dict_keys(project, ("source", "path", "name"))
+
+    gui = value.get("gui_observation")
+    if isinstance(gui, dict):
+        compact["gui_observation"] = _keep_dict_keys(
+            gui,
+            (
+                "mode",
+                "dry_run",
+                "project_path",
+                "launched",
+                "pid",
+                "cwd",
+                "progress_visibility",
+                "startup_wait_seconds",
+            ),
+        )
+
+    summary = value.get("summary")
+    if isinstance(summary, dict):
+        compact["summary"] = _keep_dict_keys(
+            summary,
+            (
+                "path",
+                "name",
+                "source",
+                "project_name",
+                "feature_name",
+                "operation_name",
+                "material",
+                "usage",
+                "note",
+            ),
+        )
+
+    solver = value.get("solver")
+    if isinstance(solver, dict):
+        solver_compact = _keep_dict_keys(
+            solver,
+            ("case_count", "threads", "executed", "timeout_per_case", "working_dir"),
+        )
+        cases = solver.get("cases")
+        if isinstance(cases, list):
+            solver_compact["cases"] = [_compact_solver_case(case) for case in cases[:3] if isinstance(case, dict)]
+            if len(cases) > 3:
+                solver_compact["case_result_truncated_count"] = len(cases) - 3
+        compact["solver"] = solver_compact
+
+    report_package = value.get("report_package")
+    if isinstance(report_package, dict):
+        compact["report_package"] = _keep_dict_keys(
+            report_package,
+            ("output_dir", "manifest_path", "file_count", "status"),
+        )
+
+    return compact
+
+
+def _compact_solver_case(case: dict[str, Any]) -> dict[str, Any]:
+    compact = _keep_dict_keys(
+        case,
+        ("afd_path", "executed", "returncode", "timed_out", "duration_seconds"),
+    )
+    plan = case.get("plan")
+    if isinstance(plan, dict):
+        compact["plan"] = _keep_dict_keys(
+            plan,
+            ("kind", "command", "executable", "executable_exists", "requires_confirmation"),
+        )
+    stdout_summary = case.get("stdout_summary")
+    if isinstance(stdout_summary, dict):
+        compact["stdout_summary"] = _keep_dict_keys(
+            stdout_summary,
+            (
+                "simulation_successful",
+                "program_end",
+                "version",
+                "opened_postfiles",
+                "closed_postfiles",
+                "warning_count",
+                "error_count",
+            ),
+        )
+    return compact
+
+
+def _keep_dict_keys(source: dict[str, Any], keys: tuple[str, ...]) -> dict[str, Any]:
+    return {key: source[key] for key in keys if key in source}
 
 
 def _json_safe(value: Any) -> Any:
@@ -956,6 +1142,7 @@ def _compact_center_plan(center_plan: dict[str, Any] | None) -> dict[str, Any]:
     task_card = center_plan.get("task_card") if isinstance(center_plan.get("task_card"), dict) else {}
     context_view = center_plan.get("context_view") if isinstance(center_plan.get("context_view"), dict) else {}
     gateway_tools = context_view.get("allowed_gateway_tools") if isinstance(context_view.get("allowed_gateway_tools"), list) else []
+    tool_results = center_plan.get("tool_results") if isinstance(center_plan.get("tool_results"), list) else []
     return {
         "schema_version": center_plan.get("schema_version"),
         "status": center_plan.get("status"),
@@ -974,8 +1161,314 @@ def _compact_center_plan(center_plan: dict[str, Any] | None) -> dict[str, Any]:
             for review in center_plan.get("patch_reviews", [])
             if isinstance(review, dict)
         ],
+        "tool_result_count": len(tool_results),
+        "tool_result_statuses": [
+            result.get("status")
+            for result in tool_results
+            if isinstance(result, dict)
+        ],
         "execution_boundary": center_plan.get("execution_boundary", {}),
     }
+
+
+def _center_plan_has_tool_results(center_plan: dict[str, Any]) -> bool:
+    tool_results = center_plan.get("tool_results")
+    return isinstance(tool_results, list) and bool(tool_results)
+
+
+def _build_gateway_tool_runtime_result(
+    *,
+    prompt: str,
+    conversation_id: str,
+    config: AgentRuntimeConfig,
+    snapshot: dict[str, Any],
+    center_plan: dict[str, Any],
+) -> AgentRuntimeResult:
+    """Build the response for explicit frontend-to-gateway tool requests."""
+
+    tool_runs = _gateway_tool_runs_from_center_plan(center_plan, config=config)
+    completed_count = sum(1 for run in tool_runs if run.get("status") == "completed")
+    blocked_count = sum(1 for run in tool_runs if _tool_run_is_blocked(run))
+    failed_count = sum(1 for run in tool_runs if run.get("status") == "failed")
+    active_tool = _active_runtime_tool(tool_runs) or "autoform_agent_mcp_gateway_call"
+
+    return AgentRuntimeResult(
+        role="assistant",
+        text=_gateway_tool_response_text(
+            conversation_id=conversation_id,
+            prompt=prompt,
+            tool_runs=tool_runs,
+            completed_count=completed_count,
+            blocked_count=blocked_count,
+            failed_count=failed_count,
+        ),
+        time=_utc_now(),
+        timeline=_runtime_timeline(
+            direct_api_called=False,
+            snapshot=snapshot,
+            config=config,
+            tool_runs=tool_runs,
+        ),
+        preview=_runtime_preview(
+            active_tool=active_tool,
+            phase="Frontend Gateway Runtime",
+            title="前端驱动的本机工具执行",
+            subtitle=f"conversationId={conversation_id}",
+            solver="后端工具层",
+            solver_detail=_gateway_tool_solver_detail(tool_runs) or snapshot["queue_summary"],
+        ),
+        metrics={
+            **_runtime_metrics(config=config, snapshot=snapshot, direct_api_called=False),
+            "connection": "前端请求已进入本机工具层",
+            "tools": str(len(tool_runs)),
+        },
+        runtime={
+            "name": "autoform-direct-api-runtime",
+            "provider": config.provider,
+            "providerLabel": _provider_label(config.provider),
+            "model": config.model,
+            "baseUrl": config.base_url,
+            "apiMode": config.api_mode,
+            "directApiCalled": False,
+            "directApiAvailable": True,
+            "apiKeyConfigured": config.api_key_configured,
+            "apiKeySource": config.api_key_source,
+            "apiKeyFingerprint": credential_fingerprint(config.api_key),
+            "frontendOwnsControl": False,
+            "localToolRunCount": len(tool_runs),
+            "localToolCompletedCount": completed_count,
+            "localToolBlockedCount": blocked_count,
+            "localToolFailedCount": failed_count,
+            "centerAgentStatus": center_plan.get("status"),
+            "centerAgentSchema": center_plan.get("schema_version"),
+        },
+        tool_runs=tool_runs,
+        center_plan=center_plan,
+    )
+
+
+def _gateway_tool_runs_from_center_plan(
+    center_plan: dict[str, Any],
+    *,
+    config: AgentRuntimeConfig,
+) -> list[dict[str, Any]]:
+    tool_results = center_plan.get("tool_results") if isinstance(center_plan.get("tool_results"), list) else []
+    runs: list[dict[str, Any]] = []
+    for item in tool_results:
+        if not isinstance(item, dict):
+            continue
+        gateway_status = str(item.get("status") or "unknown")
+        run: dict[str, Any] = {
+            "tool": str(item.get("tool") or ""),
+            "arguments": redact_secret_data(item.get("arguments") if isinstance(item.get("arguments"), dict) else {}, (config.api_key,)),
+            "reason": "frontend_agent_tool_request",
+            "started_at": str(item.get("started_at") or _utc_now()),
+            "finished_at": str(item.get("finished_at") or _utc_now()),
+            "status": _tool_run_status_from_gateway(gateway_status),
+            "gatewayStatus": gateway_status,
+        }
+        if item.get("approval_required"):
+            run["approvalRequired"] = True
+        if item.get("blocked_arguments"):
+            run["blockedArguments"] = item.get("blocked_arguments")
+        if gateway_status == "completed" and "result" in item:
+            run["result"] = _sanitize_tool_payload(item.get("result"), config)
+        elif "error" in item:
+            run["error"] = str(item.get("error") or "")[:900]
+        elif gateway_status != "completed":
+            run["error"] = gateway_status
+        runs.append(run)
+    return runs
+
+
+def _tool_run_status_from_gateway(gateway_status: str) -> str:
+    if gateway_status == "completed":
+        return "completed"
+    if gateway_status in {"failed", "timeout"}:
+        return "failed"
+    return gateway_status or "unknown"
+
+
+def _tool_run_is_blocked(run: dict[str, Any]) -> bool:
+    status = str(run.get("status") or "")
+    return status.startswith("blocked") or status.startswith("rejected")
+
+
+def _gateway_tool_response_text(
+    *,
+    conversation_id: str,
+    prompt: str,
+    tool_runs: list[dict[str, Any]],
+    completed_count: int,
+    blocked_count: int,
+    failed_count: int,
+) -> str:
+    lines = [
+        f"前端窗口请求已由 Python 后端处理，conversationId={conversation_id}。",
+        f"本次 prompt 为：{prompt}。",
+        f"本轮工具结果：完成 {completed_count} 个，阻断 {blocked_count} 个，失败 {failed_count} 个。",
+    ]
+    for run in tool_runs:
+        raw_result = run.get("result")
+        result = raw_result if isinstance(raw_result, dict) else {}
+        summary = _project_run_result_summary(result)
+        if summary:
+            lines.append(summary)
+        elif run.get("tool") == "autoform_start_ui" and isinstance(raw_result, list):
+            command = " ".join(str(part) for part in raw_result)
+            lines.append(
+                "autoform_start_ui 已返回 AutoForm Forming 启动命令："
+                f"`{command}`。当前白名单负责受控启动软件；自动填写新建工程向导仍需要新增专门工具。"
+            )
+        elif run.get("error"):
+            lines.append(f"{run.get('tool')} 状态为 {run.get('status')}，原因：{run.get('error')}。")
+        else:
+            lines.append(f"{run.get('tool')} 状态为 {run.get('status')}。")
+    return " ".join(lines)
+
+
+def _build_example_projects_runtime_result(
+    *,
+    prompt: str,
+    conversation_id: str,
+    config: AgentRuntimeConfig,
+    snapshot: dict[str, Any],
+    center_plan: dict[str, Any],
+) -> AgentRuntimeResult:
+    started_at = _utc_now()
+    examples, error = _safe_call(list_example_projects, fallback=[])
+    result: dict[str, Any] = {
+        "object_type": "AutoFormExampleProjects",
+        "example_count": len(examples),
+        "examples": examples,
+        "common_directory": _common_example_directory(examples),
+    }
+    if error:
+        result["error"] = error
+    tool_runs = [
+        {
+            "tool": "autoform_list_example_projects",
+            "arguments": {},
+            "reason": "用户询问官方示例工程路径，后端使用只读本机清点工具回答。",
+            "started_at": started_at,
+            "finished_at": _utc_now(),
+            "status": "failed" if error else "completed",
+            "result": _sanitize_tool_payload(result, config),
+            **({"error": error} if error else {}),
+        }
+    ]
+    completed_count = 0 if error else 1
+    failed_count = 1 if error else 0
+    return AgentRuntimeResult(
+        role="assistant",
+        text=_example_projects_response_text(examples, error=error),
+        time=_utc_now(),
+        timeline=_runtime_timeline(direct_api_called=False, snapshot=snapshot, config=config, tool_runs=tool_runs),
+        preview=_runtime_preview(
+            active_tool="autoform_list_example_projects",
+            phase="Local Evidence Runtime",
+            title="官方示例工程路径",
+            subtitle=f"conversationId={conversation_id}",
+            solver="只读本机清点",
+            solver_detail=_example_projects_solver_detail(examples, error=error),
+        ),
+        metrics={
+            **_runtime_metrics(config=config, snapshot=snapshot, direct_api_called=False),
+            "connection": "本机只读示例工程清点",
+            "tools": str(len(tool_runs)),
+        },
+        runtime={
+            "name": "autoform-direct-api-runtime",
+            "provider": config.provider,
+            "providerLabel": _provider_label(config.provider),
+            "model": config.model,
+            "baseUrl": config.base_url,
+            "apiMode": config.api_mode,
+            "directApiCalled": False,
+            "directApiAvailable": True,
+            "apiKeyConfigured": config.api_key_configured,
+            "apiKeySource": config.api_key_source,
+            "apiKeyFingerprint": credential_fingerprint(config.api_key),
+            "frontendOwnsControl": False,
+            "localToolRunCount": len(tool_runs),
+            "localToolCompletedCount": completed_count,
+            "localToolBlockedCount": 0,
+            "localToolFailedCount": failed_count,
+            "centerAgentStatus": center_plan.get("status"),
+            "centerAgentSchema": center_plan.get("schema_version"),
+            "deterministicLocalAnswer": True,
+        },
+        tool_runs=tool_runs,
+        center_plan=center_plan,
+    )
+
+
+def _example_projects_response_text(examples: list[dict], *, error: str | None) -> str:
+    if error:
+        return f"已调用只读工具 `autoform_list_example_projects`，但本机示例工程清点失败：{error}。"
+    if not examples:
+        return "已调用只读工具 `autoform_list_example_projects`，当前本机未发现官方 `.afd` 示例工程。"
+    common_directory = _common_example_directory(examples)
+    lines = [
+        f"官方示例工程目录：`{common_directory}`。",
+        f"当前本机发现 {len(examples)} 个官方 `.afd` 示例：",
+    ]
+    for item in examples:
+        lines.append(f"- `{item.get('name')}`：`{item.get('path')}`")
+    return "\n".join(lines)
+
+
+def _example_projects_solver_detail(examples: list[dict], *, error: str | None) -> str:
+    if error:
+        return "官方示例路径读取失败"
+    if not examples:
+        return "未发现官方示例工程"
+    return f"{len(examples)} 个示例，目录 {_common_example_directory(examples)}"
+
+
+def _common_example_directory(examples: list[dict]) -> str:
+    paths = [Path(str(item.get("path"))) for item in examples if item.get("path")]
+    if not paths:
+        return ""
+    parents = {str(path.parent) for path in paths}
+    return next(iter(parents)) if len(parents) == 1 else str(paths[0].parent)
+
+
+def _project_run_result_summary(result: dict[str, Any]) -> str:
+    if not result:
+        return ""
+    working_project = result.get("working_project")
+    run_dir = result.get("run_dir")
+    status = result.get("status")
+    gui = result.get("gui_observation") if isinstance(result.get("gui_observation"), dict) else {}
+    solver_case = _first_solver_case_from_result(result)
+    solver_bits: list[str] = []
+    if solver_case:
+        solver_bits.append(f"求解器返回码 {solver_case.get('returncode')}")
+        stdout_summary = solver_case.get("stdout_summary") if isinstance(solver_case.get("stdout_summary"), dict) else {}
+        if "simulation_successful" in stdout_summary:
+            solver_bits.append(f"simulation_successful={stdout_summary.get('simulation_successful')}")
+    gui_text = f"GUI launched={gui.get('launched')} pid={gui.get('pid')}" if gui else ""
+    details = "，".join(bit for bit in [f"状态 {status}" if status else "", gui_text, *solver_bits] if bit)
+    path_text = f"工程 {working_project}" if working_project else f"运行目录 {run_dir}" if run_dir else "工程路径未返回"
+    return f"autoform_project_run 已返回：{path_text}；{details}。"
+
+
+def _gateway_tool_solver_detail(tool_runs: list[dict[str, Any]]) -> str:
+    for run in tool_runs:
+        result = run.get("result") if isinstance(run.get("result"), dict) else {}
+        summary = _project_run_result_summary(result)
+        if summary:
+            return summary[:180]
+    return ""
+
+
+def _first_solver_case_from_result(result: dict[str, Any]) -> dict[str, Any]:
+    solver = result.get("solver") if isinstance(result.get("solver"), dict) else {}
+    cases = solver.get("cases") if isinstance(solver.get("cases"), list) else []
+    if cases and isinstance(cases[0], dict):
+        return cases[0]
+    return {}
 
 
 def _build_local_runtime_result(
@@ -1091,13 +1584,16 @@ def _runtime_timeline(
     """Return the three visual steps consumed by the existing frontend."""
 
     runtime_state = "complete" if direct_api_called else "ready"
-    if direct_api_called:
+    if tool_runs is not None and not direct_api_called:
+        runtime_detail = "前端请求已交给 Python 后端本机工具层"
+        runtime_state = "complete"
+    elif direct_api_called:
         runtime_detail = f"{_provider_label(config.provider) if config else 'DeepSeek'} 已通过直接 API 执行"
     elif config is not None and not config.api_key_configured:
         runtime_detail = "等待 API key"
     else:
         runtime_detail = "等待云端运行时配置"
-    if direct_api_called and tool_runs is not None:
+    if tool_runs is not None:
         tool_detail = f"本轮执行 {len(tool_runs)} 个白名单工具"
         tool_state = "complete"
     else:
@@ -1224,18 +1720,355 @@ def _payload_requested_roles(payload: dict[str, Any]) -> tuple[str, ...]:
     return tuple(str(role).strip() for role in raw_roles if str(role).strip())
 
 
-def _payload_agent_tool_requests(payload: dict[str, Any]) -> list[dict[str, Any]]:
+def _payload_agent_tool_requests(payload: dict[str, Any], *, prompt: str = "") -> list[dict[str, Any]]:
+    # Explicit `agentToolRequests` are used by tests and future trusted callers.
+    # The normal browser path goes through the two helpers below: first the
+    # checkbox-driven local execution consent, then the safer project-operation
+    # parser that resolves an example before asking the gateway to act.
     raw_requests = payload.get("agentToolRequests")
-    if not isinstance(raw_requests, list):
+    if isinstance(raw_requests, list):
+        return [request for request in raw_requests if isinstance(request, dict)]
+    local_requests = _frontend_local_execution_tool_requests(payload, prompt=prompt)
+    if local_requests:
+        return local_requests
+    ui_requests = _autoform_ui_tool_requests(payload, prompt=prompt)
+    if ui_requests:
+        return ui_requests
+    mcp_status_requests = _mcp_gateway_status_tool_requests(prompt=prompt)
+    if mcp_status_requests:
+        return mcp_status_requests
+    return _project_operation_tool_requests(payload, prompt=prompt)
+
+
+def _frontend_local_execution_tool_requests(payload: dict[str, Any], *, prompt: str) -> list[dict[str, Any]]:
+    local_execution = _payload_local_execution_context(payload)
+    if not _local_execution_is_approved(local_execution):
         return []
-    return [request for request in raw_requests if isinstance(request, dict)]
+    if not _prompt_requests_frontend_demo_project(prompt):
+        return []
+    arguments = _project_operation_arguments(local_execution, prompt=prompt, default_example="Solver_R13")
+    if not arguments:
+        return []
+    return [
+        {
+            "agent_id": "project_workflow",
+            "tool": "autoform_project_run",
+            "arguments": arguments,
+            "reason": "Frontend local execution consent plus project-operation prompt.",
+        }
+    ]
 
 
 def _payload_execution_approved(payload: dict[str, Any]) -> bool:
     runtime_config = payload.get("runtimeConfig")
     if isinstance(runtime_config, dict) and runtime_config.get("agentToolExecutionApproved") is True:
         return True
-    return payload.get("agentToolExecutionApproved") is True
+    if payload.get("agentToolExecutionApproved") is True:
+        return True
+    if isinstance(payload.get("agentToolRequests"), list):
+        return False
+    return _local_execution_is_approved(_payload_local_execution_context(payload))
+
+
+def _payload_local_execution_context(payload: dict[str, Any]) -> dict[str, Any]:
+    ui_context = payload.get("uiContext")
+    if not isinstance(ui_context, dict):
+        return {}
+    local_execution = ui_context.get("localExecution")
+    return local_execution if isinstance(local_execution, dict) else {}
+
+
+def _local_execution_is_approved(local_execution: dict[str, Any]) -> bool:
+    return local_execution.get("enabled") is True and local_execution.get("approved") is True
+
+
+def _autoform_ui_tool_requests(payload: dict[str, Any], *, prompt: str) -> list[dict[str, Any]]:
+    if not _prompt_requests_autoform_ui_start(prompt):
+        return []
+    return [
+        {
+            "agent_id": "project_workflow",
+            "tool": "autoform_start_ui",
+            "arguments": {"graphics": "directx11", "dry_run": False},
+            "reason": "User asked to create or start an AutoForm project; launch the guarded AutoForm UI entry through MCP-sourced gateway.",
+        }
+    ]
+
+
+def _mcp_gateway_status_tool_requests(*, prompt: str) -> list[dict[str, Any]]:
+    if not _prompt_requests_mcp_gateway_status(prompt):
+        return []
+    return [
+        {
+            "agent_id": "mcp_gateway",
+            "tool": "autoform_status_snapshot",
+            "arguments": {},
+            "reason": "User asked whether the project MCP gateway can be used; read the local MCP-sourced status snapshot.",
+        }
+    ]
+
+
+def _project_operation_tool_requests(payload: dict[str, Any], *, prompt: str) -> list[dict[str, Any]]:
+    local_execution = _payload_local_execution_context(payload)
+    if not _prompt_requests_project_operation(prompt, local_execution=local_execution):
+        return []
+    arguments = _project_operation_arguments(local_execution, prompt=prompt, default_example="")
+    if not arguments:
+        return []
+    example_name = str(arguments.get("example_name") or "")
+    # Two requests are emitted on purpose. The first one is read-only path
+    # resolution, so the user can see which project was found. The second one is
+    # the controlled action request, and the gateway may block it until explicit
+    # local execution approval is present.
+    return [
+        {
+            "agent_id": "project_workflow",
+            "tool": "autoform_resolve_project",
+            "arguments": {"example_name": example_name},
+            "reason": "Resolve the requested official example before any controlled project action.",
+        },
+        {
+            "agent_id": "project_workflow",
+            "tool": "autoform_project_run",
+            "arguments": arguments,
+            "reason": "Project copy, GUI opening, or solver execution must pass AgentToolGateway approval.",
+        },
+    ]
+
+
+def _project_operation_arguments(
+    local_execution: dict[str, Any],
+    *,
+    prompt: str,
+    default_example: str = "",
+) -> dict[str, Any] | None:
+    example_name = _project_operation_example_name(local_execution, prompt=prompt, default_example=default_example)
+    if not example_name:
+        return None
+    execute_solver = _prompt_requests_solver_execution(prompt)
+    open_gui = _prompt_requests_window_open(prompt)
+    copy_project = _prompt_requests_project_copy(prompt) or open_gui or execute_solver
+    if not (copy_project or open_gui or execute_solver):
+        return None
+    return {
+        "example_name": example_name,
+        "mode": "kinematic",
+        "threads": 1,
+        "output_root": "output/project_runs",
+        "execute": execute_solver,
+        "open_gui": open_gui,
+        "copy_project": copy_project,
+        "gui_wait_seconds": 5,
+        "workspace": ".",
+    }
+
+
+def _project_operation_example_name(
+    local_execution: dict[str, Any],
+    *,
+    prompt: str,
+    default_example: str = "",
+) -> str:
+    prompt_example = _known_frontend_demo_example_from_prompt(prompt)
+    if prompt_example:
+        return prompt_example
+    if local_execution.get("exampleName") not in {None, ""}:
+        return _normalize_frontend_demo_example(local_execution.get("exampleName")) or default_example
+    return default_example
+
+
+def _frontend_demo_example_name(local_execution: dict[str, Any], *, prompt: str = "") -> str:
+    return _project_operation_example_name(local_execution, prompt=prompt, default_example="Solver_R13")
+
+
+def _normalize_frontend_demo_example(value: Any) -> str:
+    raw = str(value or "").strip().strip("'\"")
+    if not raw:
+        return ""
+    name = raw.replace("\\", "/").rsplit("/", 1)[-1]
+    if name.casefold().endswith(".afd"):
+        name = name[:-4]
+    for example in FRONTEND_DEMO_EXAMPLES:
+        if name.casefold() == example.casefold():
+            return example
+    return ""
+
+
+def _known_frontend_demo_example_from_prompt(prompt: str) -> str:
+    text = str(prompt or "").casefold()
+    for example in sorted(FRONTEND_DEMO_EXAMPLES, key=len, reverse=True):
+        lowered = example.casefold()
+        if lowered in text or f"{lowered}.afd" in text:
+            return example
+    return ""
+
+
+def _prompt_requests_project_operation(prompt: str, *, local_execution: dict[str, Any]) -> bool:
+    text = str(prompt or "").casefold()
+    has_project_reference = bool(_known_frontend_demo_example_from_prompt(prompt)) or local_execution.get("exampleName") not in {None, ""}
+    has_project_reference = has_project_reference or _text_contains_any(
+        text,
+        ("\u5de5\u7a0b", "\u9879\u76ee", "\u793a\u4f8b", "\u6837\u4f8b", ".afd", "afd", "autoform", "project"),
+    )
+    return has_project_reference and (
+        _prompt_requests_project_copy(prompt)
+        or _prompt_requests_window_open(prompt)
+        or _prompt_requests_solver_execution(prompt)
+    )
+
+
+def _prompt_requests_project_copy(prompt: str) -> bool:
+    text = str(prompt or "").casefold()
+    return _text_contains_any(
+        text,
+        ("\u590d\u5236", "\u62f7\u8d1d", "\u5907\u4efd", "\u5b89\u5168\u7684\u5730\u65b9", "copy", "backup"),
+    )
+
+
+def _prompt_requests_window_open(prompt: str) -> bool:
+    text = str(prompt or "").casefold()
+    return _text_contains_any(
+        text,
+        ("\u6253\u5f00", "\u7a97\u53e3", "\u542f\u52a8", "\u5c55\u793a", "\u6f14\u793a", "open", "window", "gui"),
+    )
+
+
+def _prompt_requests_solver_execution(prompt: str) -> bool:
+    text = str(prompt or "").casefold()
+    return _text_contains_any(
+        text,
+        (
+            "\u6c42\u89e3",
+            "\u8dd1\u6c42\u89e3",
+            "\u6267\u884c\u6c42\u89e3",
+            "\u8fd0\u884c\u6c42\u89e3",
+            "\u4eff\u771f",
+            "\u8ba1\u7b97",
+            "solve",
+            "solver",
+            "simulate",
+            "simulation",
+        ),
+    )
+
+
+def _prompt_requests_autoform_ui_start(prompt: str) -> bool:
+    text = str(prompt or "").casefold()
+    has_project_scope = _text_contains_any(text, ("\u5de5\u7a0b", "\u9879\u76ee", "project", "autoform"))
+    has_start_intent = _text_contains_any(
+        text,
+        (
+            "\u65b0\u5efa",
+            "\u521b\u5efa",
+            "\u5efa\u4e00\u4e2a",
+            "\u65b0\u5f00",
+            "\u542f\u52a8autoform",
+            "\u6253\u5f00autoform",
+            "new project",
+            "create project",
+            "start autoform",
+            "open autoform",
+        ),
+    )
+    return has_project_scope and has_start_intent
+
+
+def _prompt_requests_mcp_gateway_status(prompt: str) -> bool:
+    text = str(prompt or "").casefold()
+    if not _text_contains_any(text, ("mcp", "\u7f51\u5173", "gateway")):
+        return False
+    if (
+        _prompt_requests_autoform_ui_start(prompt)
+        or _prompt_requests_project_copy(prompt)
+        or _prompt_requests_window_open(prompt)
+        or _prompt_requests_solver_execution(prompt)
+    ):
+        return False
+    return _text_contains_any(
+        text,
+        (
+            "\u8fde\u63a5",
+            "\u80fd\u4e0d\u80fd",
+            "\u53ef\u4ee5",
+            "\u53ef\u7528",
+            "\u5de5\u5177",
+            "\u767d\u540d\u5355",
+            "\u72b6\u6001",
+            "\u8c03\u7528",
+            "connect",
+            "available",
+            "catalog",
+            "tool",
+            "status",
+        ),
+    )
+
+
+def _text_contains_any(text: str, needles: tuple[str, ...]) -> bool:
+    return any(needle.casefold() in text for needle in needles)
+
+
+def _prompt_requests_frontend_demo_project(prompt: str) -> bool:
+    text = str(prompt or "").casefold()
+    has_project_word = _text_contains_any(
+        text,
+        (
+            "\u793a\u4f8b",
+            "\u6837\u4f8b",
+            "\u5de5\u7a0b",
+            "\u9879\u76ee",
+            "afd",
+            "autoform",
+            "solver_r13",
+            "autocomp_r13",
+        ),
+    )
+    has_action_word = _text_contains_any(
+        text,
+        (
+            "\u6253\u5f00",
+            "\u7a97\u53e3",
+            "\u8fd0\u884c",
+            "\u6c42\u89e3",
+            "\u5c55\u793a",
+            "\u6f14\u793a",
+            "\u542f\u52a8",
+            "\u590d\u5236",
+            "\u62f7\u8d1d",
+            "\u5907\u4efd",
+            "copy",
+            "backup",
+            "open",
+            "window",
+            "gui",
+            "solve",
+            "solver",
+        ),
+    )
+    return has_project_word and has_action_word
+
+
+def _prompt_requests_example_project_locations(prompt: str) -> bool:
+    text = str(prompt or "").casefold()
+    has_example_scope = _text_contains_any(text, ("\u5b98\u65b9", "\u793a\u4f8b", "\u6837\u4f8b", "example", "sample"))
+    has_project_scope = _text_contains_any(text, ("\u5de5\u7a0b", "\u9879\u76ee", ".afd", "afd", "project"))
+    has_location_intent = _text_contains_any(
+        text,
+        (
+            "\u5730\u5740",
+            "\u8def\u5f84",
+            "\u76ee\u5f55",
+            "\u4f4d\u7f6e",
+            "\u5728\u54ea",
+            "\u54ea\u513f",
+            "\u627e",
+            "\u5217\u51fa",
+            "list",
+            "where",
+            "path",
+        ),
+    )
+    return has_example_scope and has_project_scope and has_location_intent
 
 
 def _load_env_file(env_path: Path) -> None:

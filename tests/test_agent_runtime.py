@@ -519,7 +519,7 @@ def test_agent_runtime_new_project_prompt_blocks_start_ui_without_approval(
     reply = run_agent_runtime_turn(
         {
             "conversationId": "conv-new-project-blocked",
-            "prompt": "你好，新建一个工程",
+            "prompt": "AutoFrom，打开，并且新建一个项目",
             "uiContext": {"surface": "p0-run-event-workbench", "localExecution": {"enabled": False, "approved": False}},
         },
         config=_offline_config(),
@@ -532,6 +532,8 @@ def test_agent_runtime_new_project_prompt_blocks_start_ui_without_approval(
     assert reply["toolRuns"][0]["tool"] == "autoform_start_ui"
     assert reply["toolRuns"][0]["status"] == "blocked_requires_approval"
     assert reply["toolRuns"][0]["approvalRequired"] is True
+    assert "没有携带本机执行批准" in reply["text"]
+    assert "允许本机执行和 AutoForm 控制" in reply["text"]
 
 
 def test_agent_runtime_new_project_prompt_launches_start_ui_with_approval(

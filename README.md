@@ -229,9 +229,9 @@ The HTTP bridge forwards prompts, runtime configuration, and optional UI executi
 
 When a prompt names an official example such as `AutoComp_R13` and asks to copy, open a window, or run a solver, the center Agent first resolves the project with `autoform_resolve_project`. Controlled actions then go through `autoform_project_run`. With local execution disabled, `copy_project=true`, `open_gui=true`, and `execute=true` return `blocked_requires_approval`; after approval, `open_gui=true` with `execute=false` copies a safe run project and opens the GUI without running the solver.
 
-When the workbench user says "new project" or asks to create a project without naming an `.afd`, the backend maps the prompt to the guarded MCP-sourced tool `autoform_start_ui`. Without local execution approval the tool returns `blocked_requires_approval`; with approval it starts AutoForm Forming through the same `AgentToolGateway` path. Filling the AutoForm new-project wizard still requires a dedicated future tool.
+When the workbench user says "new project" or asks to create a project without naming an `.afd`, the backend maps the prompt to the guarded MCP-sourced tool `autoform_start_ui`. Without local execution approval the tool returns `blocked_requires_approval` and tells the user to enable the workbench control switch; with approval it starts AutoForm Forming through the same `AgentToolGateway` path. Filling the AutoForm new-project wizard still requires a dedicated future tool.
 
-中文说明：用户在网页里说“新建工程”但没有给出 `.afd` 时，后端会把请求转成受控的 `autoform_start_ui` 调用。未批准本机执行时返回审批阻断；批准后通过同一条 `AgentToolGateway` 链路启动 AutoForm Forming。自动填写 AutoForm 新建工程向导需要后续新增专门工具。
+中文说明：用户在网页里说“新建工程”但没有给出 `.afd` 时，后端会把请求转成受控的 `autoform_start_ui` 调用。未批准本机执行时返回审批阻断，并提示勾选“允许本机执行和 AutoForm 控制”；批准后通过同一条 `AgentToolGateway` 链路启动 AutoForm Forming。自动填写 AutoForm 新建工程向导需要后续新增专门工具。
 
 中文说明：前端页面用于本地演示、输入 prompt 和提交本机执行批准，HTTP bridge 会把请求转给 Python 后端运行时。AutoForm 工具选择和受控执行仍由后端运行时与 `AgentToolGateway` 处理。MCP server 保留为外部 MCP host 的独立入口。
 

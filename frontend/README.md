@@ -38,7 +38,7 @@ Agent 图谱固定显示 9 个业务 Agent：中心Agent、需求与工艺规划
 http://127.0.0.1:8765/frontend/index.html?bridge=http
 ```
 
-应用运行时链路使用 `python -m autoform_agent.http_bridge --host 127.0.0.1 --port 4317` 接收页面 prompt，再调用 `autoform_agent.agent_runtime`。页面勾选“允许本机执行示例工程”且 prompt 表达打开、运行、展示或求解示例工程时，前端只随请求发送 `uiContext.localExecution` 和 `agentToolExecutionApproved=true`；后端运行时负责判断示例工程意图，生成 `autoform_project_run` 白名单请求，并通过 `AgentToolGateway` 执行。用户输入“新建工程”且没有指定 `.afd` 时，后端会生成受控的 `autoform_start_ui` 请求，未批准时返回审批阻断，批准后启动 AutoForm Forming 主界面。响应会把 `tool_requested`、`tool_completed`、`tool_blocked`、工程路径、GUI PID 和求解器状态返回同一页面。源码依据见根目录 [README.md](../README.md)、[docs/api_runtime_call_chain.md](../docs/api_runtime_call_chain.md)、[docs/ui_context_boundary.md](../docs/ui_context_boundary.md) 和 [schemas/index.md](../schemas/index.md)。
+应用运行时链路使用 `python -m autoform_agent.http_bridge --host 127.0.0.1 --port 4317` 接收页面 prompt，再调用 `autoform_agent.agent_runtime`。页面勾选“允许本机执行和 AutoForm 控制”且 prompt 表达打开、运行、展示或求解示例工程时，前端随请求发送 `uiContext.localExecution` 和 `agentToolExecutionApproved=true`；后端运行时负责判断示例工程意图，生成 `autoform_project_run` 白名单请求，并通过 `AgentToolGateway` 执行。用户输入“新建工程”且没有指定 `.afd` 时，后端会生成受控的 `autoform_start_ui` 请求；未批准时返回审批阻断，并在回复中提示需要勾选同一个本机执行开关；批准后启动 AutoForm Forming 主界面。响应会把 `tool_requested`、`tool_completed`、`tool_blocked`、工程路径、GUI PID 和求解器状态返回同一页面。源码依据见根目录 [README.md](../README.md)、[docs/api_runtime_call_chain.md](../docs/api_runtime_call_chain.md)、[docs/ui_context_boundary.md](../docs/ui_context_boundary.md) 和 [schemas/index.md](../schemas/index.md)。
 
 ## R3 回放
 
@@ -48,7 +48,7 @@ http://127.0.0.1:8765/frontend/index.html?bridge=http
 ../fixtures/run_events_demo.jsonl
 ```
 
-页面会按 `RunEvent` 顺序更新状态总结、9 个业务 Agent 节点、连接传输、命令输出和 `TokenUsageSnapshot`。fixture 回放只覆盖低风险仿真准备闭环，不触发真实 AutoForm 求解、后处理、优化或正式报告生成。用户从输入区发送 prompt 时，页面可以根据“允许本机执行示例工程”开关提交本机受控执行意图；工具选择和受控参数仍由后端运行时与 `AgentToolGateway` 处理，执行结果由 HTTP bridge 返回到同一页面。默认 fixture 由前端自动读取，页面不再显示 fixture 加载入口；普通用户只需要使用“单步”“跑完”和“重置”。
+页面会按 `RunEvent` 顺序更新状态总结、9 个业务 Agent 节点、连接传输、命令输出和 `TokenUsageSnapshot`。fixture 回放只覆盖低风险仿真准备闭环，不触发真实 AutoForm 求解、后处理、优化或正式报告生成。用户从输入区发送 prompt 时，页面可以根据“允许本机执行和 AutoForm 控制”开关提交本机受控执行意图；工具选择和受控参数仍由后端运行时与 `AgentToolGateway` 处理，执行结果由 HTTP bridge 返回到同一页面。默认 fixture 由前端自动读取，页面不再显示 fixture 加载入口；普通用户只需要使用“单步”“跑完”和“重置”。
 
 R18、R19 和 R20 的执行器回放可以通过 URL 参数切换 fixture：
 

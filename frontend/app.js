@@ -178,9 +178,9 @@ class AgentRuntimeBridge {
     appendTerminal(
       `CONFIG provider=${runtimeConfig.provider} model=${runtimeConfig.model || "(provider default)"} api_mode=${runtimeConfig.apiMode} key=${runtimeConfig.apiKey ? "request" : "env-or-missing"}`,
     );
-    if (localExecution.approved) {
-      appendTerminal(`LOCAL approved frontend demo example=${localExecution.exampleName} mode=${localExecution.mode}`);
-    }
+    appendTerminal(
+      `LOCAL execution=${localExecution.approved ? "approved" : "disabled"} autoform_control=${localExecution.approved ? "approved" : "blocked"} example=${localExecution.exampleName} mode=${localExecution.mode}`,
+    );
     appendTerminal(`POST ${this.state.endpoint}`);
 
     const startedAt = performance.now();
@@ -872,7 +872,7 @@ function bindEvents() {
     input.addEventListener("change", () => {
       syncLocalExecutionFromDom();
       appendTerminal(
-        `LOCAL execution=${appState.localExecution.enabled ? "enabled" : "disabled"} example=${appState.localExecution.exampleName}`,
+        `LOCAL execution=${appState.localExecution.enabled ? "enabled" : "disabled"} autoform_control=${appState.localExecution.enabled ? "approved" : "blocked"} example=${appState.localExecution.exampleName}`,
       );
       renderAll();
     });

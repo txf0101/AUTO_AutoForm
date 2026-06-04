@@ -314,9 +314,9 @@ http://127.0.0.1:8765/frontend/index.html?fixture=../fixtures/r11_low_risk_prepa
 
 页面会自动加载该 fixture，用户可直接使用“单步”“跑完”和“重置”查看回放过程。
 
-如果需要从同一个网页窗口打开展示工程，在输入区勾选“允许本机执行示例工程”，展示工程选择 `Solver_R13` 或 `AutoComp_R13`，输入“打开一个适合展示的示例工程”并点击“发送”。页面会把 prompt、`uiContext.localExecution` 和 `agentToolExecutionApproved=true` 发给 HTTP bridge；后端运行时判断示例工程意图，生成 `autoform_project_run` 白名单请求，并通过 `AgentToolGateway` 执行。只说“复制并打开窗口”时，后端会设置 `copy_project=true`、`open_gui=true`、`execute=false`，先复制安全运行副本，再打开 AutoForm 窗口，求解器不执行。只有 prompt 明确包含求解、仿真、计算、solver 或 solve 等执行意图时，后端才会设置 `execute=true`。如果页面日志显示 `LOCAL execution=disabled`，后端仍会用 `autoform_resolve_project` 找到示例工程，但复制、开窗和求解会返回 `blocked_requires_approval`，需要用户重新启用本机执行批准。返回内容包括 `tool_requested`、`tool_completed` 或 `tool_blocked`、工程路径、GUI PID 和求解器状态，页面会把这些内容写入命令输出和 Runtime response。
+如果需要从同一个网页窗口打开展示工程，在输入区勾选“允许本机执行和 AutoForm 控制”，展示工程选择 `Solver_R13` 或 `AutoComp_R13`，输入“打开一个适合展示的示例工程”并点击“发送”。页面会把 prompt、`uiContext.localExecution` 和 `agentToolExecutionApproved=true` 发给 HTTP bridge；后端运行时判断示例工程意图，生成 `autoform_project_run` 白名单请求，并通过 `AgentToolGateway` 执行。只说“复制并打开窗口”时，后端会设置 `copy_project=true`、`open_gui=true`、`execute=false`，先复制安全运行副本，再打开 AutoForm 窗口，求解器不执行。只有 prompt 明确包含求解、仿真、计算、solver 或 solve 等执行意图时，后端才会设置 `execute=true`。如果页面日志显示 `LOCAL execution=disabled autoform_control=blocked`，后端仍会用 `autoform_resolve_project` 找到示例工程，但复制、开窗和求解会返回 `blocked_requires_approval`，需要用户重新启用本机执行批准。返回内容包括 `tool_requested`、`tool_completed` 或 `tool_blocked`、工程路径、GUI PID 和求解器状态，页面会把这些内容写入命令输出和 Runtime response。
 
-如果在网页里输入“新建工程”或“创建一个工程”，且没有指定 `.afd` 路径或官方示例名，后端会生成 `autoform_start_ui` 请求。该请求同样经过 `AgentToolGateway`：未勾选本机执行批准时返回审批阻断；勾选并批准后启动 AutoForm Forming 主界面。当前项目还没有自动填写 AutoForm 新建工程向导的白名单工具，因此软件启动后的工程类型、材料、几何和工序参数仍需在 AutoForm GUI 内确认，或等待后续新增专门 MCP wrapper。
+如果在网页里输入“新建工程”或“创建一个工程”，且没有指定 `.afd` 路径或官方示例名，后端会生成 `autoform_start_ui` 请求。该请求同样经过 `AgentToolGateway`：未勾选本机执行批准时返回审批阻断，并提示需要勾选“允许本机执行和 AutoForm 控制”；勾选并批准后启动 AutoForm Forming 主界面。当前项目还没有自动填写 AutoForm 新建工程向导的白名单工具，因此软件启动后的工程类型、材料、几何和工序参数仍需在 AutoForm GUI 内确认，或等待后续新增专门 MCP wrapper。
 
 如果用户问“能不能通过项目 MCP 连接”，后端会优先调用只读的 `autoform_status_snapshot`，页面会显示工具完成事件和状态摘要。该检查用于确认网页请求已经进入 MCP 同源工具链。
 

@@ -1320,6 +1320,12 @@ def _gateway_tool_response_text(
                 "autoform_start_ui 已返回 AutoForm Forming 启动命令："
                 f"`{command}`。当前白名单负责受控启动软件；自动填写新建工程向导仍需要新增专门工具。"
             )
+        elif run.get("tool") == "autoform_start_ui" and run.get("status") == "blocked_requires_approval":
+            lines.append(
+                "autoform_start_ui 已进入 MCP 网关，但本轮请求没有携带本机执行批准。"
+                "请在前端勾选“允许本机执行和 AutoForm 控制”后重新发送；"
+                "后端收到 `agentToolExecutionApproved=true` 或 `uiContext.localExecution.approved=true` 后才会启动 AutoForm Forming。"
+            )
         elif run.get("error"):
             lines.append(f"{run.get('tool')} 状态为 {run.get('status')}，原因：{run.get('error')}。")
         else:

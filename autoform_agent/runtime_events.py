@@ -144,6 +144,51 @@ def build_runtime_run_events(
                 emit(next_index, "patch_reviewed", "center_agent", "ui_workbench", review)
                 next_index += 1
 
+    agent_messages = reply.get("agentMessages") if isinstance(reply.get("agentMessages"), list) else []
+    for message in agent_messages:
+        if not isinstance(message, dict):
+            continue
+        agent_id = str(message.get("agent_id") or message.get("speaker") or "center_agent")
+        emit(
+            next_index,
+            "agent_message",
+            agent_id,
+            "ui_workbench",
+            {
+                "object_type": "AgentMessage",
+                "agent_id": agent_id,
+                "speaker": str(message.get("speaker") or agent_id),
+                "text": str(message.get("text") or ""),
+                "created_at": str(message.get("created_at") or utc_now()),
+            },
+        )
+        next_index += 1
+
+    pending_user_input = reply.get("pendingUserInput") if isinstance(reply.get("pendingUserInput"), dict) else {}
+    questions = pending_user_input.get("questions") if isinstance(pending_user_input.get("questions"), list) else []
+    if pending_user_input and questions:
+        emit(
+            next_index,
+            "user_input_requested",
+            str(pending_user_input.get("source_agent") or "center_agent"),
+            "ui_workbench",
+            {
+                "object_type": "UserInputRequestSet",
+                "request_id": str(pending_user_input.get("request_id") or ""),
+                "task_id": str(pending_user_input.get("task_id") or default_task_id),
+                "source_agent": str(pending_user_input.get("source_agent") or ""),
+                "target_agent": str(pending_user_input.get("target_agent") or "center_agent"),
+                "status": str(pending_user_input.get("status") or ""),
+                "reason": str(pending_user_input.get("reason") or ""),
+                "questions": [
+                    question
+                    for question in questions
+                    if isinstance(question, dict)
+                ],
+            },
+        )
+        next_index += 1
+
     emit(
         next_index,
         "agent_node_started",

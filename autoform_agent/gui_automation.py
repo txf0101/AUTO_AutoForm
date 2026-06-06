@@ -21,6 +21,14 @@ MOUSEEVENTF_LEFTDOWN = 0x0002
 MOUSEEVENTF_LEFTUP = 0x0004
 KEYEVENTF_KEYUP = 0x0002
 VK_SHIFT = 0x10
+VK_CONTROL = 0x11
+VK_MENU = 0x12
+VK_RETURN = 0x0D
+VK_ESCAPE = 0x1B
+VK_TAB = 0x09
+VK_SPACE = 0x20
+GMEM_MOVEABLE = 0x0002
+CF_UNICODETEXT = 13
 
 user32 = ctypes.WinDLL("user32", use_last_error=True)
 kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
@@ -49,6 +57,16 @@ user32.SetCursorPos.argtypes = [ctypes.c_int, ctypes.c_int]
 user32.SetCursorPos.restype = wintypes.BOOL
 user32.mouse_event.argtypes = [wintypes.DWORD, wintypes.DWORD, wintypes.DWORD, wintypes.DWORD, ctypes.c_void_p]
 user32.keybd_event.argtypes = [wintypes.BYTE, wintypes.BYTE, wintypes.DWORD, ctypes.c_void_p]
+user32.EnumChildWindows.argtypes = [wintypes.HWND, EnumWindowsProc, wintypes.LPARAM]
+user32.EnumChildWindows.restype = wintypes.BOOL
+user32.OpenClipboard.argtypes = [wintypes.HWND]
+user32.OpenClipboard.restype = wintypes.BOOL
+user32.EmptyClipboard.argtypes = []
+user32.EmptyClipboard.restype = wintypes.BOOL
+user32.SetClipboardData.argtypes = [wintypes.UINT, wintypes.HANDLE]
+user32.SetClipboardData.restype = wintypes.HANDLE
+user32.CloseClipboard.argtypes = []
+user32.CloseClipboard.restype = wintypes.BOOL
 
 kernel32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
 kernel32.OpenProcess.restype = wintypes.HANDLE
@@ -56,6 +74,12 @@ kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
 kernel32.CloseHandle.restype = wintypes.BOOL
 kernel32.QueryFullProcessImageNameW.argtypes = [wintypes.HANDLE, wintypes.DWORD, wintypes.LPWSTR, ctypes.POINTER(wintypes.DWORD)]
 kernel32.QueryFullProcessImageNameW.restype = wintypes.BOOL
+kernel32.GlobalAlloc.argtypes = [wintypes.UINT, ctypes.c_size_t]
+kernel32.GlobalAlloc.restype = wintypes.HGLOBAL
+kernel32.GlobalLock.argtypes = [wintypes.HGLOBAL]
+kernel32.GlobalLock.restype = ctypes.c_void_p
+kernel32.GlobalUnlock.argtypes = [wintypes.HGLOBAL]
+kernel32.GlobalUnlock.restype = wintypes.BOOL
 
 
 def autoform_window_snapshot(title_contains: str | None = None, pid: int | None = None) -> dict:
@@ -72,6 +96,36 @@ def autoform_window_snapshot(title_contains: str | None = None, pid: int | None 
         "interaction_ready_window_count": len(interaction_ready_windows),
         "interaction_ready_windows": interaction_ready_windows,
         "windows": autoform_windows,
+    }
+
+
+def autoform_window_tree_snapshot(
+    title_contains: str | None = None,
+    pid: int | None = None,
+    *,
+    max_children: int = 400,
+) -> dict:
+    """Return a bounded child-window tree for the best AutoForm window."""
+
+    window = _best_autoform_window(title_contains=title_contains, pid=pid)
+    if window is None:
+        return {
+            "status": "no_interaction_ready_autoform_window",
+            "title_contains": title_contains,
+            "pid": pid,
+            "window_snapshot": autoform_window_snapshot(title_contains=title_contains, pid=pid),
+            "children": [],
+        }
+    hwnd = int(window["handle"], 16)
+    children = _child_windows(hwnd, max_children=max_children)
+    return {
+        "status": "completed",
+        "title_contains": title_contains,
+        "pid": pid,
+        "window": window,
+        "child_count": len(children),
+        "children": children,
+        "truncated": len(children) >= max_children,
     }
 
 
@@ -191,16 +245,19 @@ def click_autoform_window(
     relative: bool = True,
     focus_first: bool = True,
     restore_window: bool = True,
+    title_contains: str | None = None,
+    pid: int | None = None,
     wait_seconds: float = 0.2,
 ) -> dict:
     """Click either a relative or absolute coordinate in the AutoForm window."""
 
-    focused = (
-        focus_autoform_window(restore_window=restore_window)
-        if focus_first
-        else {"focused": False, "reason": "focus_first_false"}
-    )
-    window = focused.get("window") or _best_autoform_window()
+    focus_kwargs = {"restore_window": restore_window}
+    if title_contains is not None:
+        focus_kwargs["title_contains"] = title_contains
+    if pid is not None:
+        focus_kwargs["pid"] = pid
+    focused = focus_autoform_window(**focus_kwargs) if focus_first else {"focused": False, "reason": "focus_first_false"}
+    window = focused.get("window") or _best_autoform_window(title_contains=title_contains, pid=pid)
     if window is None:
         return {"clicked": False, "reason": "no_visible_autoform_window", "focused_window": focused}
     rect = window["rect"]
@@ -223,6 +280,8 @@ def click_autoform_window(
         "window": window,
         "focused_window": focused,
         "restore_window": restore_window,
+        "title_contains": title_contains,
+        "pid": pid,
     }
 
 
@@ -293,7 +352,7 @@ def send_autoform_keystroke(
     key_sequence = _normalize_keystroke(keys)
     if not key_sequence:
         return {"sent": False, "reason": "empty_keystroke"}
-    unsupported = [key for key in key_sequence if _virtual_key(key) is None]
+    unsupported = [key for key in key_sequence if _gui_virtual_key(key) is None]
     if unsupported:
         return {"sent": False, "reason": "unsupported_key", "unsupported_keys": unsupported}
     focused = (
@@ -306,20 +365,64 @@ def send_autoform_keystroke(
         return {"sent": False, "reason": "no_interaction_ready_autoform_window", "focused_window": focused}
     if wait_seconds > 0:
         time.sleep(wait_seconds)
-    modifiers = [key for key in key_sequence[:-1] if key in {"shift"}]
+    modifiers = [key for key in key_sequence[:-1] if key in {"shift", "control", "alt"}]
     primary_key = key_sequence[-1]
     for modifier in modifiers:
-        _key_event(_virtual_key(modifier), key_up=False)
-    _key_event(_virtual_key(primary_key), key_up=False)
-    _key_event(_virtual_key(primary_key), key_up=True)
+        _key_event(_gui_virtual_key(modifier), key_up=False)
+    _key_event(_gui_virtual_key(primary_key), key_up=False)
+    _key_event(_gui_virtual_key(primary_key), key_up=True)
     for modifier in reversed(modifiers):
-        _key_event(_virtual_key(modifier), key_up=True)
+        _key_event(_gui_virtual_key(modifier), key_up=True)
     return {
         "sent": True,
         "keys": key_sequence,
         "window": window,
         "focused_window": focused,
         "restore_window": restore_window,
+        "title_contains": title_contains,
+        "pid": pid,
+    }
+
+
+def paste_text_to_autoform(
+    text: str,
+    *,
+    focus_first: bool = True,
+    restore_window: bool = False,
+    title_contains: str | None = None,
+    pid: int | None = None,
+    wait_seconds: float = 0.2,
+) -> dict:
+    """Paste Unicode text into the focused AutoForm-owned control."""
+
+    if text is None:
+        return {"pasted": False, "reason": "empty_text"}
+    focused = (
+        focus_autoform_window(restore_window=restore_window, title_contains=title_contains, pid=pid)
+        if focus_first
+        else {"focused": False, "reason": "focus_first_false"}
+    )
+    window = focused.get("window") or _best_autoform_window(title_contains=title_contains, pid=pid)
+    if window is None:
+        return {"pasted": False, "reason": "no_interaction_ready_autoform_window", "focused_window": focused}
+    try:
+        _set_clipboard_text(str(text))
+    except Exception as exc:
+        return {
+            "pasted": False,
+            "reason": "clipboard_write_failed",
+            "error_type": type(exc).__name__,
+            "error": str(exc),
+            "focused_window": focused,
+        }
+    if wait_seconds > 0:
+        time.sleep(wait_seconds)
+    _send_gui_key_chord(["control", "v"])
+    return {
+        "pasted": True,
+        "text_length": len(str(text)),
+        "window": window,
+        "focused_window": focused,
         "title_contains": title_contains,
         "pid": pid,
     }
@@ -648,6 +751,74 @@ def _key_event(vk_code: int | None, *, key_up: bool) -> None:
     user32.keybd_event(vk_code, 0, flags, None)
 
 
+def _gui_virtual_key(key: str) -> int | None:
+    mapping = {
+        "shift": VK_SHIFT,
+        "control": VK_CONTROL,
+        "ctrl": VK_CONTROL,
+        "alt": VK_MENU,
+        "menu": VK_MENU,
+        "enter": VK_RETURN,
+        "return": VK_RETURN,
+        "escape": VK_ESCAPE,
+        "esc": VK_ESCAPE,
+        "tab": VK_TAB,
+        "space": VK_SPACE,
+    }
+    normalized = str(key).strip().lower()
+    if normalized in mapping:
+        return mapping[normalized]
+    if len(normalized) == 1 and normalized.isascii() and normalized.isalnum():
+        return ord(normalized.upper())
+    return None
+
+
+def _send_gui_key_chord(keys: str | Sequence[str]) -> dict:
+    if isinstance(keys, str):
+        sequence = [item.strip().lower() for item in keys.replace("+", " ").split() if item.strip()]
+    else:
+        sequence = [str(item).strip().lower() for item in keys if str(item).strip()]
+    if not sequence:
+        return {"sent": False, "reason": "empty_keystroke"}
+    unsupported = [key for key in sequence if _gui_virtual_key(key) is None]
+    if unsupported:
+        return {"sent": False, "reason": "unsupported_key", "unsupported_keys": unsupported}
+    modifiers = [key for key in sequence[:-1] if key in {"shift", "control", "ctrl", "alt", "menu"}]
+    primary_key = sequence[-1]
+    for modifier in modifiers:
+        _key_event(_gui_virtual_key(modifier), key_up=False)
+    _key_event(_gui_virtual_key(primary_key), key_up=False)
+    _key_event(_gui_virtual_key(primary_key), key_up=True)
+    for modifier in reversed(modifiers):
+        _key_event(_gui_virtual_key(modifier), key_up=True)
+    return {"sent": True, "keys": sequence}
+
+
+def _set_clipboard_text(text: str) -> None:
+    data = str(text)
+    encoded = data.encode("utf-16-le") + b"\x00\x00"
+    handle = kernel32.GlobalAlloc(GMEM_MOVEABLE, len(encoded))
+    if not handle:
+        raise ctypes.WinError(ctypes.get_last_error())
+    locked = kernel32.GlobalLock(handle)
+    if not locked:
+        raise ctypes.WinError(ctypes.get_last_error())
+    try:
+        ctypes.memmove(locked, encoded, len(encoded))
+    finally:
+        kernel32.GlobalUnlock(handle)
+    if not user32.OpenClipboard(None):
+        raise ctypes.WinError(ctypes.get_last_error())
+    try:
+        if not user32.EmptyClipboard():
+            raise ctypes.WinError(ctypes.get_last_error())
+        if not user32.SetClipboardData(CF_UNICODETEXT, handle):
+            raise ctypes.WinError(ctypes.get_last_error())
+        handle = None
+    finally:
+        user32.CloseClipboard()
+
+
 def _computer_use_next_actions(blockers: list[str], capture: bool) -> list[str]:
     actions = []
     if "desktop_screenshot_capture" in blockers:
@@ -716,6 +887,36 @@ def _top_level_windows() -> list[dict]:
         error = ctypes.get_last_error()
         if error:
             raise ctypes.WinError(error)
+    return results
+
+
+def _child_windows(parent_hwnd: int, *, max_children: int) -> list[dict]:
+    """Enumerate child windows for a selected top-level window."""
+
+    results: list[dict] = []
+    parent = wintypes.HWND(parent_hwnd)
+
+    def collect(hwnd: wintypes.HWND, _lparam: wintypes.LPARAM) -> bool:
+        if len(results) >= max_children:
+            return False
+        pid = wintypes.DWORD()
+        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+        rect = _window_rect(hwnd)
+        results.append(
+            {
+                "handle": hex(hwnd),
+                "pid": int(pid.value),
+                "process_name": _process_name(pid.value),
+                "title": _window_text(hwnd),
+                "class_name": _class_name(hwnd),
+                "visible": bool(user32.IsWindowVisible(hwnd)),
+                "rect": rect,
+                "area": rect["width"] * rect["height"],
+            }
+        )
+        return True
+
+    user32.EnumChildWindows(parent, EnumWindowsProc(collect), 0)
     return results
 
 

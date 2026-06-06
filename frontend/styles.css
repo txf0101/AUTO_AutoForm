@@ -17,8 +17,8 @@ This stylesheet controls layout, color, buttons, panels, and responsive behavior
   --ok: #168a45;
   --warn: #9a6a00;
   --red: #bf2e2e;
-  --terminal: #0d1117;
-  --terminal-text: #d6e2f0;
+  --terminal: #050505;
+  --terminal-text: #ffffff;
   font-family: "Segoe UI", "Microsoft YaHei", Arial, sans-serif;
 }
 
@@ -133,6 +133,8 @@ button:disabled {
 .usage-panel {
   grid-column: 3;
   grid-row: 4;
+  display: grid;
+  gap: 12px;
 }
 
 .panel-heading {
@@ -382,6 +384,91 @@ select {
   background: #f2f7ff;
 }
 
+.agent-dialog {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-height: 280px;
+  max-height: clamp(330px, calc(100vh - 260px), 660px);
+  padding: 12px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fbfcfd;
+}
+
+.agent-message {
+  display: grid;
+  gap: 4px;
+  width: min(100%, 92%);
+  padding: 10px 11px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.agent-message.is-agent {
+  justify-self: start;
+  border-left: 4px solid var(--accent);
+}
+
+.agent-message.is-user {
+  justify-self: end;
+  border-right: 4px solid var(--ok);
+  background: #f3fbf6;
+}
+
+.agent-message.is-user .agent-speaker {
+  color: var(--ok);
+  text-align: right;
+}
+
+.agent-speaker {
+  color: var(--accent-dark);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.agent-message-text {
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.agent-message-details {
+  margin-top: 4px;
+  border-top: 1px solid var(--line);
+  padding-top: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.agent-message-details summary {
+  width: fit-content;
+  cursor: pointer;
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+
+.agent-message-detail-item {
+  display: grid;
+  gap: 2px;
+  padding: 7px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.agent-message-detail-item strong {
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.agent-message-detail-item span {
+  color: var(--muted);
+}
+
 .terminal-output {
   min-height: 240px;
   max-height: clamp(280px, calc(100vh - 260px), 660px);
@@ -390,13 +477,20 @@ select {
   overflow: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
+  scrollbar-color: #8b8f96 #050505;
   border-radius: 6px;
   color: var(--terminal-text);
   background: var(--terminal);
   font-family: Consolas, "Cascadia Mono", "Courier New", monospace;
   font-size: 12px;
+  font-weight: 500;
   line-height: 1.55;
   white-space: pre-wrap;
+}
+
+.terminal-output-compact {
+  min-height: 170px;
+  max-height: 260px;
 }
 
 .api-config-grid,
@@ -418,7 +512,7 @@ select {
 }
 
 code,
-.api-block pre {
+.api-block pre:not(.terminal-output) {
   font-family: Consolas, "Cascadia Mono", "Courier New", monospace;
 }
 
@@ -432,7 +526,7 @@ code {
   margin-top: 10px;
 }
 
-.api-block pre {
+.api-block pre:not(.terminal-output) {
   max-height: 170px;
   margin: 0;
   overflow: auto;

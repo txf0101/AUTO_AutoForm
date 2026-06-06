@@ -5,6 +5,9 @@ This file provides a preview of multi-agent routing. It mainly explains which ro
 
 from __future__ import annotations
 
+import re
+
+from ..intent_utils import prompt_affirms_any
 from .contracts import AgentSystemPlan, AgentSystemRequest
 from .registry import AgentRoleRegistry, build_default_agent_registry
 
@@ -14,13 +17,29 @@ from .registry import AgentRoleRegistry, build_default_agent_registry
 # business-facing roles first; legacy roles can remain as compatibility targets
 # when an old tool family has not yet been renamed.
 KEYWORD_ROLE_MAP: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("新建", ("demand_process_planning_agent",)),
+    ("创建", ("demand_process_planning_agent", "geometry_data_agent")),
+    ("修改", ("geometry_data_agent",)),
+    ("调整", ("geometry_data_agent",)),
+    ("改成", ("geometry_data_agent",)),
+    ("改为", ("geometry_data_agent",)),
+    ("尺寸", ("geometry_data_agent",)),
+    ("大小", ("geometry_data_agent",)),
+    ("薄板", ("geometry_data_agent", "material_agent")),
+    ("铝合金", ("material_agent",)),
+    ("6061", ("material_agent",)),
+    ("aa6061", ("material_agent",)),
+    ("20*20", ("geometry_data_agent",)),
+    ("20×20", ("geometry_data_agent",)),
+    ("50*40", ("geometry_data_agent",)),
+    ("50×40", ("geometry_data_agent",)),
     ("安装", ("diagnosis_optimization_agent",)),
     ("环境", ("diagnosis_optimization_agent",)),
     ("诊断", ("diagnosis_optimization_agent",)),
     ("优化", ("diagnosis_optimization_agent",)),
     ("队列", ("installation",)),
-    ("工程", ("process_setting_agent",)),
-    ("项目", ("process_setting_agent",)),
+    ("工程", ("demand_process_planning_agent", "process_setting_agent")),
+    ("项目", ("demand_process_planning_agent", "process_setting_agent")),
     ("afd", ("process_setting_agent",)),
     ("需求", ("demand_process_planning_agent",)),
     ("分诊", ("demand_process_planning_agent",)),
@@ -42,8 +61,8 @@ KEYWORD_ROLE_MAP: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("视角", ("postprocessing_agent",)),
     ("quicklink", ("quicklink",)),
     ("导出", ("quicklink", "report_collation_agent")),
-    ("材料", ("material_agent", "materials")),
-    ("material", ("material_agent", "materials")),
+    ("材料", ("material_agent",)),
+    ("material", ("material_agent",)),
     ("工艺", ("demand_process_planning_agent", "process_setting_agent")),
     ("路线", ("demand_process_planning_agent", "process_setting_agent")),
     ("脚本", ("process_setting_agent",)),
@@ -109,12 +128,23 @@ def _select_role_ids(prompt: str, requested_roles: tuple[str, ...]) -> tuple[str
         _append_unique(selected, role_id)
 
     normalized_prompt = prompt.lower()
+    if _is_geometry_dimension_update(prompt):
+        _append_unique(selected, "geometry_data_agent")
+        return tuple(selected)
     for keyword, role_ids in KEYWORD_ROLE_MAP:
-        if keyword.lower() in normalized_prompt:
+        if keyword.lower() in normalized_prompt and prompt_affirms_any(prompt, (keyword,)):
             for role_id in role_ids:
                 _append_unique(selected, role_id)
 
     return tuple(selected)
+
+
+def _is_geometry_dimension_update(prompt: str) -> bool:
+    text = str(prompt or "")
+    has_dimension_triplet = bool(re.search(r"\d+(?:\.\d+)?\s*(?:x|\*|×)\s*\d+(?:\.\d+)?\s*(?:x|\*|×)\s*\d+(?:\.\d+)?", text))
+    if not has_dimension_triplet:
+        return False
+    return prompt_affirms_any(text, ("修改", "调整", "改成", "改为", "变更", "重定义", "设置", "设为", "更新", "modify", "change", "resize", "set"))
 
 
 def _append_unique(items: list[str], value: str) -> None:

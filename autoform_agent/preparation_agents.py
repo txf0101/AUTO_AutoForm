@@ -20,6 +20,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SOURCE_REGISTRY = ROOT / "source_registry.csv"
 DEFAULT_SCRIPT_REGISTRY = ROOT / "script_registry.yaml"
+DEFAULT_AUTOFORM_MATERIALS_DIR = Path(r"C:\ProgramData\AutoForm\AFplus\R13F\materials")
 DEFAULT_R11_TASK_ID = "task_r11_prepare_demo"
 DEFAULT_EVIDENCE_BUNDLE_ID = "evidence_rag_minimal_autoform_prepare"
 R11_PART_ID = "part_r11_demo"
@@ -61,15 +62,17 @@ def triage_request(user_input: str, *, task_id: str = DEFAULT_R11_TASK_ID) -> di
 
     prompt = user_input.strip()
     lower_prompt = prompt.lower()
+    plate_dimensions = _extract_plate_dimensions(prompt)
+    material_hint = _extract_material(prompt)
     missing: list[dict[str, Any]] = []
-    if not _contains_any(prompt, ("板厚", "厚度", "thickness")):
+    if not plate_dimensions and not _contains_any(prompt, ("板厚", "厚度", "thickness")):
         missing.append(_missing_item("blank_thickness_mm", "板厚缺失", "geometry_data_agent"))
-    if not _contains_any(prompt, ("材料", "dc04", "dp", "al", "material")):
+    if not material_hint and not _contains_any(prompt, ("材料", "铝合金", "dc04", "dp", "al", "material")):
         missing.append(_missing_item("material_grade", "材料牌号缺失", "material_agent"))
     if not _contains_any(prompt, ("工序", "d-20", "拉延", "draw", "operation")):
         missing.append(_missing_item("operation_route", "成形工序缺失", "process_planning_agent"))
     task_type = "simulation_preparation"
-    if _contains_any(lower_prompt, ("材料", "material")):
+    if _contains_any(lower_prompt, ("材料", "铝合金", "6061", "material")):
         task_type = "material_check"
     if _contains_any(lower_prompt, ("工艺", "process", "路线")):
         task_type = "process_planning"
@@ -109,25 +112,41 @@ def build_part_data_check(
 ) -> dict[str, Any]:
     """Build the R6 PartCard, DataChecklist and low-risk CandidateValue rows."""
 
-    thickness = _extract_number_near(user_input, ("mm", "毫米", "板厚", "厚度")) or 1.0
+    plate_dimensions = _extract_plate_dimensions(user_input)
+    thickness = (
+        plate_dimensions.get("thickness_mm")
+        if plate_dimensions
+        else _extract_number_near(user_input, ("mm", "毫米", "板厚", "厚度"))
+    ) or 1.0
     material = _extract_material(user_input) or "DC04"
+    part_id = _candidate_id("part", task_id, R11_PART_ID)
     part_card = {
         "object_type": "PartCard",
-        "part_id": R11_PART_ID,
+        "part_id": part_id,
         "task_id": task_id,
-        "name": "low_risk_demo_part",
+        "name": "low_risk_demo_part" if task_id == DEFAULT_R11_TASK_ID else part_id,
         "blank_thickness_mm": thickness,
         "material_grade_hint": material,
         "geometry_ref": "user_prompt_only",
         "status": STATUS_CANDIDATE,
         "source_refs": [R11_FIXTURE_REF],
     }
+    if plate_dimensions:
+        part_card["blank_dimensions_mm"] = plate_dimensions
     checklist_items = [
         _check_item("geometry_ref", "warning", "当前只有用户文本描述，未接入 CAD 或 QuickLink 文件。"),
         _check_item("blank_thickness_mm", "pass", f"候选板厚为 {thickness:g} mm。"),
         _check_item("material_grade_hint", "pass", f"候选材料为 {material}。"),
         _check_item("operation_hint", "warning", "工序路线仍需工艺规划 Agent 生成候选。"),
     ]
+    if plate_dimensions:
+        checklist_items.append(
+            _check_item(
+                "blank_dimensions_mm",
+                "pass",
+                "已从用户输入识别薄板长宽厚尺寸，单位按 mm 作为候选。",
+            )
+        )
     candidate_values = [
         {
             "object_type": "CandidateValue",
@@ -150,20 +169,45 @@ def build_part_data_check(
             "review_status": STATUS_NEEDS_HUMAN_CONFIRMATION,
         },
     ]
+    if plate_dimensions:
+        candidate_values.extend(
+            [
+                {
+                    "object_type": "CandidateValue",
+                    "candidate_id": "candidate_blank_length_mm",
+                    "field": "blank_length_mm",
+                    "value": plate_dimensions["length_mm"],
+                    "unit": "mm",
+                    "confidence": "medium",
+                    "evidence_refs": [DEFAULT_EVIDENCE_BUNDLE_ID],
+                    "review_status": STATUS_NEEDS_HUMAN_CONFIRMATION,
+                },
+                {
+                    "object_type": "CandidateValue",
+                    "candidate_id": "candidate_blank_width_mm",
+                    "field": "blank_width_mm",
+                    "value": plate_dimensions["width_mm"],
+                    "unit": "mm",
+                    "confidence": "medium",
+                    "evidence_refs": [DEFAULT_EVIDENCE_BUNDLE_ID],
+                    "review_status": STATUS_NEEDS_HUMAN_CONFIRMATION,
+                },
+            ]
+        )
     return {
         "object_type": "GeometryDataAgentResult",
         "task_id": task_id,
         "part_card": part_card,
         "data_checklist": {
             "object_type": "DataChecklist",
-            "checklist_id": "data_r11_prepare_demo",
+            "checklist_id": _candidate_id("data_checklist", task_id, "data_r11_prepare_demo"),
             "items": checklist_items,
             "status": STATUS_CANDIDATE,
         },
         "candidate_values": candidate_values,
         "context_patches": [
             make_context_patch(
-                patch_id="patch_r6_part_candidate",
+                patch_id=_candidate_id("patch_part_candidate", task_id, "patch_r6_part_candidate"),
                 task_id=task_id,
                 proposer_agent="geometry_data_agent",
                 target_path=f"/tasks/{task_id}/part_card",
@@ -237,36 +281,50 @@ def build_material_review(
     evidence_bundle: dict[str, Any],
     *,
     task_id: str = DEFAULT_R11_TASK_ID,
+    materials_root: str | Path | None = None,
 ) -> dict[str, Any]:
     """Build the R8 material card, gaps, patch and review request."""
 
     grade = str(part_card.get("material_grade_hint") or "DC04")
+    search_script_run = run_material_database_query_script(
+        grade,
+        task_id=task_id,
+        materials_root=materials_root,
+    )
+    local_candidates = search_script_run.get("material_candidates")
+    if not isinstance(local_candidates, list):
+        local_candidates = []
     missing = []
     for field_name, label in (
         ("flow_curve_ref", "流动曲线来源"),
         ("r_value_ref", "r 值来源"),
         ("n_value_ref", "n 值来源"),
         ("fld_ref", "FLD 来源"),
+        ("material_temper", "材料状态"),
+        ("elastic_modulus_mpa", "杨氏模量"),
+        ("poisson_ratio", "泊松比"),
     ):
         missing.append(
             {
                 "field": field_name,
                 "label": label,
                 "severity": "warning",
-                "reason": "当前只有材料牌号候选，缺少可审查材料曲线或标准来源。",
+                "reason": "当前只有材料牌号候选，缺少可审查材料参数或标准来源。",
             }
         )
+    material_id = _candidate_id("material", task_id, R11_MATERIAL_ID)
     material_card = {
         "object_type": "MaterialCard",
-        "material_id": R11_MATERIAL_ID,
+        "material_id": material_id,
         "task_id": task_id,
         "grade": grade,
-        "source_level": "candidate_from_user_prompt",
+        "source_level": "local_autoform_material_library_candidate" if local_candidates else "candidate_from_user_prompt",
         "confirmation_status": STATUS_NEEDS_HUMAN_CONFIRMATION,
         "evidence_bundle_id": evidence_bundle["evidence_bundle_id"],
+        "local_autoform_material_candidates": local_candidates,
     }
     material_patch = make_context_patch(
-        patch_id="patch_r8_material_candidate",
+        patch_id=_candidate_id("patch_material_candidate", task_id, "patch_r8_material_candidate"),
         task_id=task_id,
         proposer_agent="material_agent",
         target_path=f"/tasks/{task_id}/material_card",
@@ -280,23 +338,220 @@ def build_material_review(
         "material_card": material_card,
         "material_gap_list": {
             "object_type": "MaterialGapList",
-            "gap_list_id": "material_gaps_r11_demo",
+            "gap_list_id": _candidate_id("material_gaps", task_id, "material_gaps_r11_demo"),
             "items": missing,
             "status": STATUS_NEEDS_HUMAN_CONFIRMATION,
         },
         "material_patch": {
             "object_type": "MaterialPatch",
-            "patch_id": "material_patch_r11_demo",
+            "patch_id": _candidate_id("material_patch", task_id, "material_patch_r11_demo"),
             "context_patch": material_patch,
             "conflict_table": [],
         },
+        "material_search_script_run": search_script_run,
         "review_request": {
             "object_type": "ReviewRequest",
-            "request_id": "review_material_r11_demo",
+            "request_id": _candidate_id("review_material", task_id, "review_material_r11_demo"),
             "owner": "human_reviewer",
             "reason": "材料牌号和曲线来源尚未确认，不能进入正式工艺字段。",
             "required_decision": "confirm_or_replace_material_source",
         },
+    }
+
+
+def build_material_user_input_request(material_result: dict[str, Any]) -> dict[str, Any]:
+    """Convert material gaps into center-agent questions for the user."""
+
+    task_id = str(material_result.get("task_id") or DEFAULT_R11_TASK_ID)
+    material_card = material_result.get("material_card") if isinstance(material_result.get("material_card"), dict) else {}
+    gap_list = material_result.get("material_gap_list") if isinstance(material_result.get("material_gap_list"), dict) else {}
+    gaps = gap_list.get("items") if isinstance(gap_list.get("items"), list) else []
+    gap_fields = {str(item.get("field")) for item in gaps if isinstance(item, dict) and item.get("field")}
+    grade = str(material_card.get("grade") or "未知材料")
+    local_candidates = material_card.get("local_autoform_material_candidates")
+    candidate_names = [
+        str(item.get("name") or item.get("path"))
+        for item in local_candidates
+        if isinstance(item, dict) and (item.get("name") or item.get("path"))
+    ] if isinstance(local_candidates, list) else []
+
+    questions: list[dict[str, Any]] = []
+    if "material_temper" in gap_fields:
+        questions.append(
+            _user_question(
+                task_id=task_id,
+                field_group="material_temper",
+                target_fields=["material_temper"],
+                text=(
+                    f"请确认 {grade} 的材料状态或材料库文件，例如 O、T4、T61；"
+                    "如果采用本机 AutoForm 材料库候选，请直接给出文件名或路径。"
+                ),
+                candidate_options=candidate_names[:6],
+            )
+        )
+    curve_fields = [field for field in ("flow_curve_ref", "r_value_ref", "n_value_ref", "fld_ref") if field in gap_fields]
+    if curve_fields:
+        questions.append(
+            _user_question(
+                task_id=task_id,
+                field_group="material_curve_source",
+                target_fields=curve_fields,
+                text=(
+                    "请确认材料曲线来源：使用本机 AutoForm `.mtb` 候选，"
+                    "或由你提供流动曲线、r 值、n 值和 FLD 来源。"
+                ),
+                candidate_options=candidate_names[:6],
+            )
+        )
+    elastic_fields = [field for field in ("elastic_modulus_mpa", "poisson_ratio") if field in gap_fields]
+    if elastic_fields:
+        questions.append(
+            _user_question(
+                task_id=task_id,
+                field_group="elastic_constants",
+                target_fields=elastic_fields,
+                text="如果后续需要回弹或弹性相关设置，请提供杨氏模量 MPa 和泊松比；暂不确认时会保持候选状态。",
+                candidate_options=[],
+                required=False,
+            )
+        )
+
+    return {
+        "object_type": "UserInputRequestSet",
+        "request_id": _candidate_id("user_input_material", task_id, "user_input_material_r11_demo"),
+        "task_id": task_id,
+        "source_agent": "material_agent",
+        "target_agent": "center_agent",
+        "status": "needs_user_input" if questions else "complete",
+        "reason": "材料 Agent 缺少进入正式工程字段所需的可审查材料参数。",
+        "questions": questions,
+        "created_at": utc_now(),
+    }
+
+
+def build_material_user_response_review(
+    user_input: str,
+    *,
+    task_id: str = DEFAULT_R11_TASK_ID,
+    materials_root: str | Path | None = None,
+    prior_material_card: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Parse a user material answer as a material-agent candidate update."""
+
+    prompt = str(user_input or "").strip()
+    prior_material_card = prior_material_card if isinstance(prior_material_card, dict) else {}
+    grade = _extract_material(prompt) or str(prior_material_card.get("grade") or "unknown_material")
+    material_temper = _extract_material_temper(prompt)
+    material_file_ref = _extract_material_file_ref(prompt)
+    elastic_modulus_mpa = _extract_elastic_modulus_mpa(prompt)
+    poisson_ratio = _extract_poisson_ratio(prompt)
+    search_script_run = run_material_database_query_script(
+        grade,
+        task_id=task_id,
+        materials_root=materials_root,
+        fallback_candidates=prior_material_card.get("local_autoform_material_candidates"),
+    )
+    local_candidates = search_script_run.get("material_candidates")
+    if not isinstance(local_candidates, list):
+        local_candidates = []
+    selected_material_source = _select_material_source(material_file_ref, local_candidates)
+    if selected_material_source is None and _prompt_accepts_local_default_material(prompt):
+        selected_material_source = _select_default_material_source(local_candidates, prior_material_card)
+    if material_temper is None and selected_material_source:
+        material_temper = _extract_material_temper(str(selected_material_source.get("name") or selected_material_source.get("path") or ""))
+    curve_source_ref = _extract_curve_source_ref(prompt, selected_material_source)
+
+    missing_fields: list[dict[str, Any]] = []
+    if not material_temper:
+        missing_fields.append(_missing_item("material_temper", "用户补充中未识别到材料状态。", "material_agent"))
+    if not curve_source_ref:
+        missing_fields.append(_missing_item("material_curve_source", "用户补充中未识别到材料库文件或曲线来源。", "material_agent"))
+    if elastic_modulus_mpa is None and poisson_ratio is not None:
+        missing_fields.append(_missing_item("elastic_modulus_mpa", "用户只补充了泊松比，缺少杨氏模量。", "material_agent"))
+    if poisson_ratio is None and elastic_modulus_mpa is not None:
+        missing_fields.append(_missing_item("poisson_ratio", "用户只补充了杨氏模量，缺少泊松比。", "material_agent"))
+
+    elastic_constants: dict[str, Any] = {}
+    if elastic_modulus_mpa is not None:
+        elastic_constants["elastic_modulus_mpa"] = elastic_modulus_mpa
+    if poisson_ratio is not None:
+        elastic_constants["poisson_ratio"] = poisson_ratio
+    if elastic_constants:
+        elastic_constants["source"] = "user_supplied_material_answer"
+
+    confirmation_status = "ready_for_center_review" if not missing_fields else STATUS_NEEDS_HUMAN_CONFIRMATION
+    material_card = {
+        "object_type": "MaterialCard",
+        "material_id": _candidate_id("material", task_id, R11_MATERIAL_ID),
+        "task_id": task_id,
+        "grade": grade,
+        "material_temper": material_temper,
+        "source_level": "user_supplied_material_parameters",
+        "confirmation_status": confirmation_status,
+        "selected_material_source": selected_material_source,
+        "curve_source_ref": curve_source_ref,
+        "elastic_constants": elastic_constants,
+        "local_autoform_material_candidates": local_candidates,
+    }
+    candidate_value = {
+        "object_type": "MaterialUserResponseCandidate",
+        "task_id": task_id,
+        "material_card": material_card,
+        "missing_fields": missing_fields,
+        "user_input_excerpt": prompt[:240],
+    }
+    material_context_patch = make_context_patch(
+        patch_id=_candidate_id("patch_material_user_response", task_id, "patch_r11_material_user_response"),
+        task_id=task_id,
+        proposer_agent="material_agent",
+        target_path=f"/tasks/{task_id}/material_card",
+        candidate_value=candidate_value,
+        evidence_refs=["user_supplied_material_answer", DEFAULT_SCRIPT_REGISTRY.as_posix()],
+        review_status=STATUS_NEEDS_HUMAN_CONFIRMATION,
+    )
+
+    script_run = None
+    material_source_script_run = None
+    if selected_material_source and selected_material_source.get("path"):
+        material_source_script_run = run_low_risk_script(
+            "skill_material_source_candidate_set",
+            {
+                "task_id": task_id,
+                "material_grade": grade,
+                "material_source_path": str(selected_material_source["path"]),
+            },
+        )
+    if elastic_modulus_mpa is not None and poisson_ratio is not None:
+        script_run = run_low_risk_script(
+            "skill_material_elastic_constants_candidate_set",
+            {
+                "task_id": task_id,
+                "material_grade": grade,
+                "elastic_modulus_mpa": elastic_modulus_mpa,
+                "poisson_ratio": poisson_ratio,
+            },
+        )
+
+    return {
+        "object_type": "MaterialUserResponseReview",
+        "task_id": task_id,
+        "source_agent": "center_agent",
+        "target_agent": "material_agent",
+        "status": confirmation_status,
+        "material_card": material_card,
+        "material_context_patch": material_context_patch,
+        "missing_fields": missing_fields,
+        "material_search_script_run": search_script_run,
+        "material_source_script_run": material_source_script_run,
+        "script_run": script_run,
+        "review_request": {
+            "object_type": "ReviewRequest",
+            "request_id": _candidate_id("review_material_user_response", task_id, "review_material_user_response_r11"),
+            "owner": "center_agent",
+            "reason": "材料 Agent 已把用户补充转成候选材料字段，仍需中心 Agent 审查后写入正式上下文。",
+            "required_decision": "review_material_context_patch",
+        },
+        "created_at": utc_now(),
     }
 
 
@@ -333,7 +588,7 @@ def build_process_plan(
     ]
     simulation_plan = {
         "object_type": "SimulationPlan",
-        "simulation_plan_id": "simulation_plan_r11_demo",
+        "simulation_plan_id": _candidate_id("simulation_plan", task_id, "simulation_plan_r11_demo"),
         "mode": "dry_run_only",
         "will_submit_solver": False,
         "required_approvals": ["human_reviewer"],
@@ -341,7 +596,7 @@ def build_process_plan(
     }
     process_plan_card = {
         "object_type": "ProcessPlanCard",
-        "process_plan_id": R11_PROCESS_PLAN_ID,
+        "process_plan_id": _candidate_id("process_plan", task_id, R11_PROCESS_PLAN_ID),
         "task_id": task_id,
         "part_id": part_card.get("part_id"),
         "material_id": material_card.get("material_id"),
@@ -356,7 +611,7 @@ def build_process_plan(
         "task_id": task_id,
         "process_plan_card": process_plan_card,
         "process_context_patch": make_context_patch(
-            patch_id="patch_r9_process_plan_candidate",
+            patch_id=_candidate_id("patch_process_plan_candidate", task_id, "patch_r9_process_plan_candidate"),
             task_id=task_id,
             proposer_agent="process_planning_agent",
             target_path=f"/tasks/{task_id}/process_plan",
@@ -439,6 +694,68 @@ def run_low_risk_script(
         "failure_summary": None,
         "created_at": utc_now(),
     }
+
+
+def run_material_database_query_script(
+    material_grade: str,
+    *,
+    task_id: str = DEFAULT_R11_TASK_ID,
+    materials_root: str | Path | None = None,
+    fallback_candidates: Any = None,
+    limit: int = 8,
+    registry_path: str | Path = DEFAULT_SCRIPT_REGISTRY,
+) -> dict[str, Any]:
+    """Run the material-agent local library query as a registered low-risk script."""
+
+    grade = str(material_grade or "").strip() or "unknown_material"
+    root = Path(materials_root) if materials_root is not None else DEFAULT_AUTOFORM_MATERIALS_DIR
+    params: dict[str, Any] = {
+        "task_id": task_id,
+        "material_grade": grade,
+    }
+    if materials_root is not None:
+        params["materials_root"] = str(root)
+    script_run = run_low_risk_script(
+        "skill_material_database_query",
+        params,
+        registry_path=registry_path,
+    )
+    candidates = find_local_autoform_material_candidates(grade, materials_root=root, limit=limit)
+    if not candidates and isinstance(fallback_candidates, list):
+        candidates = [
+            _normalize_material_candidate(item)
+            for item in fallback_candidates[:limit]
+            if isinstance(item, dict)
+        ]
+    query_status = "completed"
+    if not root.exists():
+        query_status = "materials_root_missing"
+    elif not candidates:
+        query_status = "no_candidate_found"
+
+    script_run["caller_agent"] = "material_agent"
+    script_run["material_candidates"] = candidates
+    script_run["result_summary"] = {
+        "object_type": "MaterialDatabaseQuerySummary",
+        "task_id": task_id,
+        "material_grade": grade,
+        "materials_root": str(root),
+        "candidate_count": len(candidates),
+        "query_status": query_status,
+        "limit": limit,
+    }
+    console_lines = script_run.get("console_lines") if isinstance(script_run.get("console_lines"), list) else []
+    console_lines.append(
+        {
+            "object_type": "ConsoleLine",
+            "line_id": f"console_material_database_query_{_slug(task_id)}_{_slug(grade)}",
+            "level": "info" if query_status == "completed" else "warning",
+            "text": f"MATERIAL_DATABASE_QUERY grade={grade} candidates={len(candidates)} root={root}",
+            "artifact_refs": [str(item.get("path")) for item in candidates[:5] if isinstance(item, dict) and item.get("path")],
+        }
+    )
+    script_run["console_lines"] = console_lines
+    return script_run
 
 
 def build_r11_low_risk_replay(user_input: str, *, run_id: str = "run_r11_prepare_demo") -> dict[str, Any]:
@@ -622,13 +939,223 @@ def _extract_number_near(text: str, markers: tuple[str, ...]) -> float | None:
     return None
 
 
+def _extract_plate_dimensions(text: str) -> dict[str, float] | None:
+    match = re.search(
+        r"(\d+(?:\.\d+)?)\s*(?:x|\*|×)\s*(\d+(?:\.\d+)?)\s*(?:x|\*|×)\s*(\d+(?:\.\d+)?)",
+        text,
+        flags=re.IGNORECASE,
+    )
+    if not match:
+        return None
+    length, width, thickness = (float(value) for value in match.groups())
+    return {
+        "length_mm": length,
+        "width_mm": width,
+        "thickness_mm": thickness,
+        "unit": "mm",
+        "source": "user_prompt_dimension_triplet",
+    }
+
+
 def _extract_material(text: str) -> str | None:
     match = re.search(r"\b(DC\d+|DP\d+|AA\d+|AL\d+)\b", text, flags=re.IGNORECASE)
     if match:
         return match.group(1).upper()
+    aluminum_match = re.search(r"(?:AA|AL)?\s*(6061)\s*(?:铝合金|aluminum|aluminium)?", text, flags=re.IGNORECASE)
+    if aluminum_match and ("铝" in text or "al" in text.lower() or "6061" in text):
+        return f"AA{aluminum_match.group(1)}"
     if "钢" in text:
         return "steel_candidate"
     return None
+
+
+def _extract_material_temper(text: str) -> str | None:
+    direct = re.search(r"(?:AA|AL)?\s*\d{4}\s*[-_\s]?(O|T\d{1,3})\b", text, flags=re.IGNORECASE)
+    if direct:
+        return direct.group(1).upper()
+    labeled = re.search(r"(?:材料状态|状态|temper)\s*(?:为|是|=|:|：)?\s*(O|T\d{1,3})\b", text, flags=re.IGNORECASE)
+    if labeled:
+        return labeled.group(1).upper()
+    standalone = re.search(r"\b(O|T4|T6|T61|T651|T6511)\b", text, flags=re.IGNORECASE)
+    if standalone:
+        return standalone.group(1).upper()
+    return None
+
+
+def _extract_material_file_ref(text: str) -> str | None:
+    match = re.search(r"([A-Za-z]:[^\s，。；;\"']+\.(?:mtb|mat))", text, flags=re.IGNORECASE)
+    if match:
+        return match.group(1)
+    match = re.search(r"([^\s，。；;\"']+\.(?:mtb|mat))", text, flags=re.IGNORECASE)
+    if match:
+        return match.group(1)
+    return None
+
+
+def _extract_elastic_modulus_mpa(text: str) -> float | None:
+    match = re.search(
+        r"(?:杨氏模量|弹性模量|\bE\b)\s*(?:为|是|=|:|：)?\s*(\d+(?:\.\d+)?)\s*(gpa|mpa|吉帕|兆帕)?",
+        text,
+        flags=re.IGNORECASE,
+    )
+    if not match:
+        return None
+    value = float(match.group(1))
+    unit = str(match.group(2) or "").casefold()
+    if unit in {"gpa", "吉帕"}:
+        return value * 1000.0
+    if unit in {"mpa", "兆帕"}:
+        return value
+    if value < 1000.0:
+        return value * 1000.0
+    return value
+
+
+def _extract_poisson_ratio(text: str) -> float | None:
+    match = re.search(
+        r"(?:泊松比|poisson|ν|nu)\s*(?:为|是|=|:|：)?\s*(0(?:\.\d+)?)",
+        text,
+        flags=re.IGNORECASE,
+    )
+    if not match:
+        return None
+    return float(match.group(1))
+
+
+def _extract_curve_source_ref(text: str, selected_material_source: dict[str, Any] | None) -> str | None:
+    if selected_material_source and selected_material_source.get("path"):
+        return str(selected_material_source["path"])
+    if _contains_any(text, ("流动曲线", "成形极限图", "FLD", "r值", "r 值", "n值", "n 值", "flow curve")):
+        return "user_supplied_material_curve_source"
+    return None
+
+
+def _select_material_source(material_file_ref: str | None, candidates: list[dict[str, Any]]) -> dict[str, Any] | None:
+    if not material_file_ref:
+        return None
+    needle = material_file_ref.casefold()
+    for candidate in candidates:
+        if not isinstance(candidate, dict):
+            continue
+        name = str(candidate.get("name") or "").casefold()
+        path = str(candidate.get("path") or "").casefold()
+        if needle in {name, path} or needle in path or name in needle:
+            return candidate
+    path = Path(material_file_ref)
+    return {
+        "name": path.name,
+        "path": material_file_ref,
+        "extension": path.suffix.lower(),
+        "source_type": "user_supplied_material_file_ref",
+    }
+
+
+def _select_default_material_source(
+    candidates: list[dict[str, Any]],
+    prior_material_card: dict[str, Any],
+) -> dict[str, Any] | None:
+    selected = prior_material_card.get("selected_material_source")
+    if isinstance(selected, dict) and selected.get("path"):
+        return _normalize_material_candidate(selected)
+    for candidate in candidates:
+        if isinstance(candidate, dict) and candidate.get("path"):
+            return _normalize_material_candidate(candidate)
+    return None
+
+
+def _prompt_accepts_local_default_material(text: str) -> bool:
+    return _contains_any(
+        text,
+        (
+            "默认配置",
+            "本机配置",
+            "本机的配置",
+            "全部使用本机",
+            "全都使用本机",
+            "使用本机",
+            "local default",
+            "default config",
+            "default material",
+            "use local",
+        ),
+    )
+
+
+def find_local_autoform_material_candidates(
+    grade: str,
+    *,
+    materials_root: str | Path | None = None,
+    limit: int = 8,
+) -> list[dict[str, Any]]:
+    root = Path(materials_root) if materials_root is not None else DEFAULT_AUTOFORM_MATERIALS_DIR
+    if not root.exists():
+        return []
+    terms = _material_search_terms(grade)
+    if not terms:
+        return []
+    candidates: list[dict[str, Any]] = []
+    for path in root.rglob("*"):
+        if not path.is_file() or path.suffix.lower() not in {".mtb", ".mat"}:
+            continue
+        searchable = path.stem.casefold()
+        if not any(term in searchable for term in terms):
+            continue
+        candidates.append(_material_candidate_from_path(path))
+        if len(candidates) >= limit:
+            break
+    return candidates
+
+
+def _material_candidate_from_path(path: Path) -> dict[str, Any]:
+    stat = path.stat()
+    candidate = {
+        "name": path.name,
+        "path": str(path),
+        "extension": path.suffix.lower(),
+        "source_type": "local_autoform_material_library",
+        "file_size_bytes": stat.st_size,
+        "last_modified": datetime.fromtimestamp(stat.st_mtime, timezone.utc).isoformat(),
+    }
+    if path.suffix.lower() == ".mtb":
+        candidate["content_hint"] = "AutoForm material card; current script exposes file identity and can be extended with format-specific parsing."
+    if _path_looks_binary(path):
+        candidate["encoding_hint"] = "binary_or_mixed_material_card"
+    return candidate
+
+
+def _normalize_material_candidate(candidate: dict[str, Any]) -> dict[str, Any]:
+    path_text = str(candidate.get("path") or "")
+    path = Path(path_text) if path_text else None
+    normalized = {
+        "name": str(candidate.get("name") or (path.name if path else "")),
+        "path": path_text,
+        "extension": str(candidate.get("extension") or (path.suffix.lower() if path else "")),
+        "source_type": str(candidate.get("source_type") or "local_autoform_material_library"),
+    }
+    for key in ("file_size_bytes", "last_modified", "content_hint", "encoding_hint"):
+        if key in candidate:
+            normalized[key] = candidate[key]
+    return normalized
+
+
+def _path_looks_binary(path: Path) -> bool:
+    try:
+        sample = path.read_bytes()[:512]
+    except OSError:
+        return False
+    return b"\x00" in sample
+
+
+def _material_search_terms(grade: str) -> tuple[str, ...]:
+    normalized = re.sub(r"[^a-zA-Z0-9]+", "", str(grade or "")).casefold()
+    if not normalized:
+        return ()
+    terms = {normalized}
+    if normalized.startswith(("aa", "al")) and normalized[2:]:
+        terms.add(normalized[2:])
+    if normalized == "6061":
+        terms.add("aa6061")
+    return tuple(sorted(terms))
 
 
 def _contains_any(text: str, tokens: tuple[str, ...]) -> bool:
@@ -649,6 +1176,36 @@ def _yaml_value(value: str) -> Any:
     return value.strip().strip('"')
 
 
+def _user_question(
+    *,
+    task_id: str,
+    field_group: str,
+    target_fields: list[str],
+    text: str,
+    candidate_options: list[str],
+    required: bool = True,
+) -> dict[str, Any]:
+    return {
+        "object_type": "UserQuestion",
+        "question_id": _candidate_id(f"question_{field_group}", task_id, f"question_r11_{field_group}"),
+        "task_id": task_id,
+        "owner_agent": "material_agent",
+        "field_group": field_group,
+        "target_fields": target_fields,
+        "text": text,
+        "required": required,
+        "response_format": "natural_language_or_candidate_path",
+        "candidate_options": candidate_options,
+        "status": "open",
+    }
+
+
+def _candidate_id(prefix: str, task_id: str, r11_default: str) -> str:
+    if task_id == DEFAULT_R11_TASK_ID:
+        return r11_default
+    return f"{prefix}_{_slug(task_id)}"
+
+
 def _slug(value: str) -> str:
     slug = re.sub(r"[^a-zA-Z0-9_]+", "_", str(value).lower()).strip("_")
     return slug or "item"
@@ -656,12 +1213,16 @@ def _slug(value: str) -> str:
 
 __all__ = [
     "build_material_review",
+    "build_material_user_input_request",
+    "build_material_user_response_review",
     "build_part_data_check",
     "build_process_plan",
+    "find_local_autoform_material_candidates",
     "build_r11_low_risk_replay",
     "load_script_registry",
     "load_source_registry",
     "retrieve_evidence_bundle",
+    "run_material_database_query_script",
     "run_low_risk_script",
     "triage_request",
 ]

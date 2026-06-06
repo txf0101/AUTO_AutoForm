@@ -1,0 +1,180 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - heading "AutoForm P0 Workbench" [level=1] [ref=e5]
+      - paragraph [ref=e6]: R3 static replay surface
+    - generic [ref=e7]: loaded 11 events
+  - region "用户输入和回放控制" [ref=e8]:
+    - generic [ref=e9]:
+      - generic [ref=e10]: "1"
+      - heading "用户输入" [level=2] [ref=e11]
+    - generic [ref=e12]:
+      - generic [ref=e13]: Prompt
+      - textbox "Prompt" [ref=e14]:
+        - /placeholder: 准备一个低风险 AutoForm 仿真前检查流程。
+      - generic [ref=e15]:
+        - generic [ref=e16]:
+          - generic [ref=e17]: Provider
+          - combobox "Provider" [ref=e18]:
+            - option "DeepSeek" [selected]
+            - option "Chat completions compatible"
+        - generic [ref=e19]:
+          - generic [ref=e20]: Model
+          - textbox "Model" [ref=e21]: deepseek-v4-flash
+        - generic [ref=e22]:
+          - generic [ref=e23]: Base URL
+          - textbox "Base URL" [ref=e24]: https://api.deepseek.com
+        - generic [ref=e25]:
+          - generic [ref=e26]: API Mode
+          - combobox "API Mode" [ref=e27]:
+            - option "auto"
+            - option "chat_completions" [selected]
+        - generic [ref=e28]:
+          - generic [ref=e29]: API Key
+          - textbox "API Key" [ref=e30]:
+            - /placeholder: 留空则使用本机 DeepSeek_V4_API
+        - generic [ref=e31]:
+          - button "使用预设" [ref=e32] [cursor=pointer]
+          - button "测试连接" [ref=e33] [cursor=pointer]
+          - button "清空 key" [ref=e34] [cursor=pointer]
+      - generic [ref=e35]:
+        - generic [ref=e36]:
+          - checkbox "允许本机 MCP 工具控制" [ref=e37]
+          - generic [ref=e38]: 允许本机 MCP 工具控制
+        - generic [ref=e39]:
+          - generic [ref=e40]: 示例工程提示
+          - combobox "示例工程提示" [ref=e41]:
+            - option "Solver_R13" [selected]
+            - option "AutoComp_R13"
+            - option "Sigma_R13"
+            - option "Trim_R13"
+            - option "Thermo_R13"
+            - option "Triboform_R13"
+            - option "PhaseChange_R13"
+      - generic [ref=e42]:
+        - button "示例" [ref=e43] [cursor=pointer]
+        - button "单步" [ref=e44] [cursor=pointer]
+        - button "跑完" [ref=e45] [cursor=pointer]
+        - button "重置" [ref=e46] [cursor=pointer]
+        - button "发送" [ref=e47] [cursor=pointer]
+  - region "状态总结" [ref=e48]:
+    - generic [ref=e49]:
+      - generic [ref=e50]: "2"
+      - heading "状态总结" [level=2] [ref=e51]
+    - generic [ref=e52]:
+      - generic [ref=e53]:
+        - term [ref=e54]: Run
+        - definition [ref=e55]: run_p0_prepare_demo
+      - generic [ref=e56]:
+        - term [ref=e57]: Task
+        - definition [ref=e58]: 未创建
+      - generic [ref=e59]:
+        - term [ref=e60]: 阶段
+        - definition [ref=e61]: P0
+      - generic [ref=e62]:
+        - term [ref=e63]: 路由
+        - definition [ref=e64]: 待定
+      - generic [ref=e65]:
+        - term [ref=e66]: 证据
+        - definition [ref=e67]: "0"
+      - generic [ref=e68]:
+        - term [ref=e69]: 补丁
+        - definition [ref=e70]: "0"
+      - generic [ref=e71]:
+        - term [ref=e72]: Key
+        - definition [ref=e73]: 未输入
+      - generic [ref=e74]:
+        - term [ref=e75]: Token
+        - definition [ref=e76]: "0"
+  - region "Agent 图谱" [ref=e77]:
+    - generic [ref=e78]:
+      - generic [ref=e79]: "3"
+      - heading "Agent 图谱" [level=2] [ref=e80]
+    - generic [ref=e81]:
+      - generic [ref=e82]:
+        - strong [ref=e83]: 中心Agent
+        - generic [ref=e84]: 待命
+      - generic [ref=e85]:
+        - strong [ref=e86]: 需求与工艺规划Agent
+        - generic [ref=e87]: 待命
+      - generic [ref=e88]:
+        - strong [ref=e89]: 几何与数据Agent
+        - generic [ref=e90]: 待命
+      - generic [ref=e91]:
+        - strong [ref=e92]: 材料Agent
+        - generic [ref=e93]: 待命
+      - generic [ref=e94]:
+        - strong [ref=e95]: 工艺设置Agent
+        - generic [ref=e96]: 待命
+      - generic [ref=e97]:
+        - strong [ref=e98]: 求解执行Agent
+        - generic [ref=e99]: 待命
+      - generic [ref=e100]:
+        - strong [ref=e101]: 后处理Agent
+        - generic [ref=e102]: 待命
+      - generic [ref=e103]:
+        - strong [ref=e104]: 诊断与优化Agent
+        - generic [ref=e105]: 待命
+      - generic [ref=e106]:
+        - strong [ref=e107]: 报告整理Agent
+        - generic [ref=e108]: 待命
+    - generic [ref=e110]: no transfer
+  - region "Agent 协作消息" [ref=e111]:
+    - generic [ref=e112]:
+      - generic [ref=e113]: "4"
+      - heading "Agent 协作消息" [level=2] [ref=e114]
+    - generic [ref=e116]:
+      - generic [ref=e117]: 中心Agent
+      - generic [ref=e118]: 等待中心Agent接收任务。
+  - region "凭据边界" [ref=e119]:
+    - generic [ref=e120]:
+      - generic [ref=e121]: "5"
+      - heading "凭据边界" [level=2] [ref=e122]
+    - generic [ref=e123]:
+      - generic [ref=e124]:
+        - generic [ref=e125]: Endpoint
+        - code [ref=e126]: http://127.0.0.1:4317/api/agent
+      - generic [ref=e127]:
+        - generic [ref=e128]: Key Source
+        - code [ref=e129]: none
+      - generic [ref=e130]:
+        - generic [ref=e131]: Key Fingerprint
+        - code [ref=e132]: none
+      - generic [ref=e133]:
+        - generic [ref=e134]: API Runtime
+        - code [ref=e135]: 待检查
+      - generic [ref=e136]:
+        - generic [ref=e137]: API Call
+        - code [ref=e138]: "false"
+      - generic [ref=e139]:
+        - generic [ref=e140]: API Key
+        - code [ref=e141]: 未输入
+      - generic [ref=e142]:
+        - generic [ref=e143]: Base URL
+        - code [ref=e144]: https://api.deepseek.com
+    - generic [ref=e145]:
+      - generic [ref=e146]: Request payload
+      - generic [ref=e147]: "{}"
+  - region "Token 用量" [ref=e148]:
+    - generic [ref=e149]:
+      - generic [ref=e150]: "6"
+      - heading "Token 用量" [level=2] [ref=e151]
+    - generic [ref=e152]:
+      - generic [ref=e153]:
+        - generic [ref=e154]: Input
+        - strong [ref=e155]: "0"
+      - generic [ref=e156]:
+        - generic [ref=e157]: Output
+        - strong [ref=e158]: "0"
+      - generic [ref=e159]:
+        - generic [ref=e160]: Cached
+        - strong [ref=e161]: "0"
+      - generic [ref=e162]:
+        - generic [ref=e163]: Total
+        - strong [ref=e164]: "0"
+    - generic [ref=e165]:
+      - generic [ref=e166]: Runtime response
+      - generic [ref=e167]: "{}"
+    - generic [ref=e168]:
+      - generic [ref=e169]: 命令输出
+      - generic [ref=e170]: "AutoForm P0 Workbench ready. Replay fixture: built-in demo Local bridge: http://127.0.0.1:4317/api/agent [14:51:50] FIXTURE loaded 11 events from ../fixtures/run_events_demo.jsonl"

@@ -119,7 +119,8 @@ const appState = {
   localExecution: {
     enabled: false,
     scope: "mcp_gateway",
-    exampleName: "Solver_R13",
+    projectOperation: "new_project",
+    exampleName: "",
   },
   summary: {
     run: "未加载",
@@ -149,6 +150,9 @@ const appState = {
     cached_tokens: 0,
     total_tokens: 0,
   },
+  agentMessages: [],
+  currentTurnMessageKeys: new Set(),
+  conversationContext: {},
 };
 
 class AgentRuntimeBridge {
@@ -169,18 +173,24 @@ class AgentRuntimeBridge {
         localExecution,
       },
     };
+    const conversationContext = buildConversationContextForRequest();
+    if (conversationContext) {
+      payload.conversationContext = conversationContext;
+    }
     if (localExecution.approved) {
       payload.agentToolExecutionApproved = true;
     }
 
     this.state.lastPayload = redactPayloadForDisplay(payload);
+    this.state.currentTurnMessageKeys = new Set();
+    appendUserMessage(prompt);
     renderApiPanel();
     appendTerminal(`USER> ${prompt}`);
     appendTerminal(
       `CONFIG provider=${runtimeConfig.provider} model=${runtimeConfig.model || "(provider default)"} api_mode=${runtimeConfig.apiMode} key=${runtimeConfig.apiKey ? "request" : "env-or-missing"}`,
     );
     appendTerminal(
-      `LOCAL execution=${localExecution.approved ? "approved" : "disabled"} mcp_control=${localExecution.approved ? "approved" : "blocked"} scope=${localExecution.scope} example_hint=${localExecution.exampleName} mode=${localExecution.mode}`,
+      `LOCAL execution=${localExecution.approved ? "approved" : "disabled"} mcp_control=${localExecution.approved ? "approved" : "blocked"} scope=${localExecution.scope} project_operation=${localExecution.projectOperation} example_hint=${localExecution.exampleName || "none"} mode=${localExecution.mode}`,
     );
     appendTerminal(`POST ${this.state.endpoint}`);
 
@@ -199,6 +209,7 @@ class AgentRuntimeBridge {
     const reply = await response.json();
     this.state.lastResponse = redactPayloadForDisplay(reply);
     applyRuntimeReply(reply, elapsedMs);
+    updateConversationContextFromReply(reply);
     return reply;
   }
 }
@@ -219,6 +230,7 @@ const elements = {
   resetReplayButton: document.querySelector("[data-reset-replay]"),
   sendButton: document.querySelector("[data-send-button]"),
   terminalOutput: document.querySelector("[data-terminal-output]"),
+  agentDialog: document.querySelector("[data-agent-dialog]"),
   summaryRun: document.querySelector("[data-summary-run]"),
   summaryTask: document.querySelector("[data-summary-task]"),
   summaryStage: document.querySelector("[data-summary-stage]"),
@@ -307,6 +319,8 @@ function resetReplayState(writeLog = true) {
     cached_tokens: 0,
     total_tokens: 0,
   };
+  appState.agentMessages = [];
+  appState.currentTurnMessageKeys = new Set();
   appState.lastResponse = {};
   if (writeLog) {
     appendTerminal("REPLAY reset");
@@ -334,7 +348,7 @@ function runReplayToEnd() {
   }
 }
 
-function applyRunEvent(event) {
+function applyRunEvent(event, options = {}) {
   const payload = event.payload || {};
 
   appState.summary.run = event.run_id;
@@ -449,6 +463,20 @@ function applyRunEvent(event) {
       break;
     case "patch_reviewed":
       appendTerminal(`REVIEW ${reviewLabel(payload)} allowed=${payload.allowed_to_merge}`);
+      break;
+    case "agent_message":
+      if (options.renderDialogMessages !== false) {
+        appendAgentMessage(payload);
+      }
+      markAgent(payload.agent_id || event.source_agent, "running");
+      appendTerminal(`AGENT ${payload.speaker || agentLabel(payload.agent_id || event.source_agent)}: ${payload.text || ""}`.trim());
+      break;
+    case "user_input_requested":
+      if (options.renderDialogMessages !== false) {
+        appendUserInputRequest(payload);
+      }
+      markAgent(payload.target_agent || "center_agent", "waiting_for_human");
+      appendTerminal(`USER_INPUT_REQUEST ${payload.request_id || ""} questions=${Array.isArray(payload.questions) ? payload.questions.length : 0}`.trim());
       break;
     case "command_line":
       appendTerminal(scriptConsoleLabel(payload));
@@ -583,6 +611,7 @@ function applyUsage(payload) {
 function applyRuntimeReply(reply, elapsedMs) {
   const runtime = reply.runtime || {};
   const metrics = reply.metrics || {};
+  const priorMessageCount = appState.agentMessages.length;
 
   appState.summary.run = metrics.runId || appState.summary.run;
   appState.summary.route = metrics.tools || "runtime response";
@@ -605,17 +634,280 @@ function applyRuntimeReply(reply, elapsedMs) {
   }
   if (Array.isArray(reply.events) && reply.events.length) {
     for (const event of reply.events) {
-      applyRunEvent(event);
+      applyRunEvent(event, { renderDialogMessages: false });
     }
   } else {
     for (const step of reply.timeline || []) {
       appendTerminal(`STEP ${step.state}: ${step.title} - ${step.detail}`);
     }
   }
+  if (appState.agentMessages.length === priorMessageCount) {
+    appendAgentMessage(buildDialogTurnMessage(reply));
+  }
   appendToolRunDetails(reply.toolRuns);
   appendTerminal(`AGENT> ${reply.text || "(empty response)"}`);
 
   renderAll();
+}
+
+function buildDialogTurnMessage(reply) {
+  return {
+    agent_id: "center_agent",
+    speaker: "中心Agent",
+    text: dialogSummaryText(reply),
+    details: buildDialogDetails(reply),
+  };
+}
+
+function dialogSummaryText(reply) {
+  const runtime = reply?.runtime && typeof reply.runtime === "object" ? reply.runtime : {};
+  const explicit = firstNonEmptyString(reply?.dialogSummary, reply?.dialog_summary, runtime.dialogSummary, runtime.dialog_summary);
+  if (explicit) {
+    return compactDialogText(explicit, 520);
+  }
+  const agentText = lastUserFacingAgentText(reply?.agentMessages);
+  if (agentText) {
+    return compactDialogText(agentText, 520);
+  }
+  const toolSummary = toolRunDialogSummary(reply?.toolRuns);
+  if (toolSummary) {
+    return toolSummary;
+  }
+  const cleanText = cleanRuntimeDialogText(reply?.text);
+  if (cleanText) {
+    return compactDialogText(cleanText, 520);
+  }
+  return "后端已返回运行结果，但本轮没有提供可直接展示的工程摘要；详细执行记录已保留在下方命令输出。";
+}
+
+function lastUserFacingAgentText(agentMessages) {
+  if (!Array.isArray(agentMessages)) {
+    return "";
+  }
+  for (const message of agentMessages.slice().reverse()) {
+    const text = String(message?.text || message?.message || "").trim();
+    if (!text || !isDialogSummaryCandidate(text)) {
+      continue;
+    }
+    const agentId = String(message?.agent_id || message?.agentId || "");
+    const speaker = String(message?.speaker || "");
+    if (agentId === "center_agent" || speaker.includes("用户")) {
+      return text;
+    }
+  }
+  const fallback = agentMessages
+    .map((message) => String(message?.text || message?.message || "").trim())
+    .filter(isDialogSummaryCandidate)
+    .pop();
+  return fallback || "";
+}
+
+function isDialogSummaryCandidate(text) {
+  const normalized = String(text || "").trim();
+  if (!normalized) {
+    return false;
+  }
+  if (normalized.includes("详细命令输出保留") || normalized.includes("本轮工具摘要")) {
+    return false;
+  }
+  return !looksLikeRuntimeLog(normalized);
+}
+
+function toolRunDialogSummary(toolRuns) {
+  if (!Array.isArray(toolRuns) || !toolRuns.length) {
+    return "";
+  }
+  const geometryImport = [...toolRuns].reverse().find((run) => run?.tool === "autoform_import_geometry_to_new_project");
+  if (geometryImport) {
+    const result = geometryImport.result && typeof geometryImport.result === "object" ? geometryImport.result : {};
+    const project = result.output_afd_path || result.run_dir || result.source_geometry_path;
+    const evidence = result.evidence_dir ? ` evidence_dir=${compactDialogText(result.evidence_dir, 180)}.` : "";
+    const status = result.status || geometryImport.status || "unknown";
+    return project
+      ? `geometry import returned ${status}. current_project=${compactDialogText(project, 180)}.${evidence}`
+      : `geometry import returned ${status} without an output project path.`;
+  }
+  const projectRun = [...toolRuns].reverse().find((run) => run?.tool === "autoform_project_run");
+  if (projectRun) {
+    const result = projectRun.result && typeof projectRun.result === "object" ? projectRun.result : {};
+    const args = projectRun.arguments && typeof projectRun.arguments === "object" ? projectRun.arguments : {};
+    const project = result.working_project || result.run_dir || args.afd_path || args.example_name;
+    const status = projectRun.status || result.status || "unknown";
+    return project
+      ? `工程工具已返回 ${status}。当前工程：${compactDialogText(project, 180)}。`
+      : `工程工具已返回 ${status}，本轮没有返回工程路径。`;
+  }
+  const startUi = [...toolRuns].reverse().find((run) => run?.tool === "autoform_start_ui");
+  if (startUi) {
+    return `AutoForm 主界面启动请求已返回 ${startUi.status || "unknown"}；新建工程向导参数仍需在 GUI 内确认。`;
+  }
+  const blocked = toolRuns.find((run) => String(run?.status || "").includes("blocked"));
+  if (blocked) {
+    return `${toolLabel(blocked)} 需要本机工具控制批准或补充参数后才能继续。`;
+  }
+  return `本轮已处理 ${toolRuns.length} 个工具结果；可展开查看 Agent 明细，完整命令日志保留在下方。`;
+}
+
+function buildDialogDetails(reply) {
+  const details = [];
+  const currentProject = reply?.runtime?.currentProject;
+  if (currentProject && typeof currentProject === "object") {
+    details.push({
+      type: "current_project",
+      agent_id: "center_agent",
+      speaker: "当前工程上下文",
+      text: currentProjectDetailText(currentProject),
+    });
+  }
+  if (Array.isArray(reply?.agentMessages)) {
+    for (const message of reply.agentMessages) {
+      const text = String(message?.text || message?.message || "").trim();
+      if (!text) {
+        continue;
+      }
+      details.push({
+        type: "agent_message",
+        agent_id: String(message?.agent_id || message?.agentId || ""),
+        speaker: String(message?.speaker || agentLabel(message?.agent_id || message?.agentId)),
+        text,
+      });
+    }
+  }
+  for (const run of compactToolRunsForDisplay(reply?.toolRuns) || []) {
+    details.push({
+      type: "tool_result",
+      agent_id: "project_workflow",
+      speaker: "工具结果",
+      text: compactToolRunDetailText(run),
+    });
+  }
+  const questions = Array.isArray(reply?.pendingUserInput?.questions) ? reply.pendingUserInput.questions : [];
+  for (const question of questions) {
+    const text = String(question?.text || "").trim();
+    if (text) {
+      details.push({
+        type: "user_input_requested",
+        agent_id: String(reply.pendingUserInput.source_agent || "center_agent"),
+        speaker: "待用户确认",
+        text,
+      });
+    }
+  }
+  return details.slice(0, 16);
+}
+
+function currentProjectDetailText(project) {
+  const measurement = project.cad_measurement_result && typeof project.cad_measurement_result === "object"
+    ? project.cad_measurement_result
+    : undefined;
+  const filenameCandidate = project.filename_dimension_candidate && typeof project.filename_dimension_candidate === "object"
+    ? project.filename_dimension_candidate
+    : undefined;
+  const parts = [
+    project.label,
+    project.working_project ? `working_project=${project.working_project}` : "",
+    project.afd_path ? `afd_path=${project.afd_path}` : "",
+    project.output_afd_path ? `output_afd_path=${project.output_afd_path}` : "",
+    project.source_geometry_path ? `source_geometry_path=${project.source_geometry_path}` : "",
+    project.example_name ? `example=${project.example_name}` : "",
+    project.run_dir ? `run_dir=${project.run_dir}` : "",
+    project.evidence_dir ? `evidence_dir=${project.evidence_dir}` : "",
+    measurement ? `cad_measurement=${cadMeasurementSummary(measurement)}` : "",
+    filenameCandidate ? `filename_candidate=${dimensionObjectText(filenameCandidate)}` : "",
+    project.last_tool_status ? `status=${project.last_tool_status}` : "",
+  ].filter(Boolean);
+  return parts.join("；");
+}
+
+function compactToolRunDetailText(run) {
+  return [
+    `${run.tool || "tool"} status=${run.status || "unknown"}`,
+    run.example ? `example=${run.example}` : "",
+    run.working_project ? `working_project=${run.working_project}` : "",
+    run.output_afd_path ? `output_afd_path=${run.output_afd_path}` : "",
+    run.source_geometry_path ? `source_geometry_path=${run.source_geometry_path}` : "",
+    run.cad_measurement ? `cad_measurement=${run.cad_measurement}` : "",
+    run.parser ? `parser=${run.parser}` : "",
+    run.blocked_reason ? `blocked_reason=${run.blocked_reason}` : "",
+    run.filename_candidate ? `filename_candidate=${run.filename_candidate}` : "",
+    run.dimension_candidate ? `dimension_candidate=${run.dimension_candidate}` : "",
+    run.run_dir ? `run_dir=${run.run_dir}` : "",
+    run.evidence_dir ? `evidence_dir=${run.evidence_dir}` : "",
+    run.gui_pid ? `gui_pid=${run.gui_pid}` : "",
+    run.solver_returncode !== undefined ? `solver_returncode=${run.solver_returncode}` : "",
+    run.error ? `error=${run.error}` : "",
+  ]
+    .filter(Boolean)
+    .join("；");
+}
+
+function cadMeasurementSummary(measurement) {
+  const parts = [
+    `status=${measurement.status || "unknown"}`,
+    measurement.parser ? `parser=${measurement.parser}` : "",
+    measurement.status === "completed" ? `measured=${dimensionObjectText(measurement)}` : "",
+    measurement.blocked_reason ? `blocked=${compactDialogText(measurement.blocked_reason, 120)}` : "",
+    measurement.evidence_dir ? `evidence_dir=${measurement.evidence_dir}` : "",
+  ].filter(Boolean);
+  return parts.join(" ");
+}
+
+function dimensionObjectText(value) {
+  if (!value || typeof value !== "object") {
+    return "";
+  }
+  if (value.length !== undefined && value.width !== undefined && value.thickness !== undefined) {
+    return `${value.length}x${value.width}x${value.thickness} ${value.unit || ""}`.trim();
+  }
+  return "";
+}
+
+function firstNonEmptyString(...values) {
+  for (const value of values) {
+    const text = String(value || "").trim();
+    if (text) {
+      return text;
+    }
+  }
+  return "";
+}
+
+function cleanRuntimeDialogText(value) {
+  const text = String(value || "").trim();
+  if (!text || looksLikeRuntimeLog(text)) {
+    return "";
+  }
+  const lines = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line && !looksLikeRuntimeLog(line));
+  if (!lines.length) {
+    return "";
+  }
+  return lines.join(" ");
+}
+
+function looksLikeRuntimeLog(text) {
+  const lines = String(text || "").split(/\r?\n/).filter(Boolean);
+  if (!lines.length) {
+    return false;
+  }
+  const noisy = lines.filter((line) =>
+    /^\[\d{2}:\d{2}:\d{2}\]\s/.test(line) ||
+    /^(NODE|TOOL|INFO|RUNTIME|EVENT|STEP|CONFIG|LOCAL|POST|HTTP|AGENT>|TOOL_RESULT)\b/.test(line.trim()) ||
+    line.includes("Runtime response") ||
+    line.includes("stdout") ||
+    line.includes("stderr"),
+  );
+  return noisy.length >= Math.max(1, Math.ceil(lines.length * 0.5));
+}
+
+function compactDialogText(value, maximum = 520) {
+  const text = String(value || "").replace(/\s+/g, " ").trim();
+  if (text.length <= maximum) {
+    return text;
+  }
+  return `${text.slice(0, maximum - 1).trim()}…`;
 }
 
 function appendToolRunDetails(toolRuns) {
@@ -627,8 +919,16 @@ function appendToolRunDetails(toolRuns) {
     const result = run.result && typeof run.result === "object" ? run.result : {};
     if (result.working_project) {
       appendTerminal(`PROJECT ${result.working_project}`);
+    } else if (result.output_afd_path) {
+      appendTerminal(`PROJECT ${result.output_afd_path}`);
     } else if (result.run_dir) {
       appendTerminal(`RUN_DIR ${result.run_dir}`);
+    }
+    if (result.source_geometry_path) {
+      appendTerminal(`SOURCE_GEOMETRY ${result.source_geometry_path}`);
+    }
+    if (result.evidence_dir) {
+      appendTerminal(`EVIDENCE_DIR ${result.evidence_dir}`);
     }
     const gui = result.gui_observation && typeof result.gui_observation === "object" ? result.gui_observation : {};
     if (Object.keys(gui).length) {
@@ -670,14 +970,289 @@ function buildRuntimeConfigForRequest(options = {}) {
   return runtimeConfig;
 }
 
+function buildConversationContextForRequest() {
+  const context = appState.conversationContext;
+  const history = compactProjectHistoryForContext(appState.agentMessages);
+  if ((!context || typeof context !== "object" || !Object.keys(context).length) && !history.length) {
+    return undefined;
+  }
+  return {
+    schema_version: "autoform.frontend_conversation_context.v1",
+    selected_role_ids: Array.isArray(context?.selected_role_ids) ? context.selected_role_ids.slice(0, 12) : [],
+    material_card: compactMaterialCardForContext(context?.material_card),
+    pending_user_input: context?.pending_user_input,
+    shared_context_policy: context?.shared_context_policy,
+    current_project: compactCurrentProjectForContext(context?.current_project),
+    project_history: history,
+    recent_user_prompts: history.filter((entry) => entry.source === "user").slice(-6),
+    last_turn: context?.last_turn,
+  };
+}
+
+function updateConversationContextFromReply(reply) {
+  if (!reply || typeof reply !== "object") {
+    return;
+  }
+  const centerPlan = reply.centerPlan || {};
+  const contextView = centerPlan.context_view || {};
+  const runtime = reply.runtime || {};
+  const previous = appState.conversationContext || {};
+  const materialCard = mergeMaterialContext(previous.material_card, extractMaterialCardFromReply(reply));
+  const pendingUserInput = compactPendingUserInputForDisplay(reply.pendingUserInput) || previous.pending_user_input;
+  const currentProject = extractCurrentProjectFromReply(reply) || compactCurrentProjectForContext(previous.current_project);
+  const selectedRoleIds = Array.isArray(contextView.selected_role_ids)
+    ? contextView.selected_role_ids.slice(0, 12)
+    : Array.isArray(previous.selected_role_ids)
+      ? previous.selected_role_ids.slice(0, 12)
+      : [];
+
+  appState.conversationContext = {
+    schema_version: "autoform.frontend_conversation_context.v1",
+    selected_role_ids: selectedRoleIds,
+    material_card: materialCard,
+    pending_user_input: pendingUserInput,
+    shared_context_policy: compactSharedContextPolicy(contextView.shared_context_policy),
+    current_project: currentProject,
+    last_turn: {
+      task_id: centerPlan.task_card?.task_id || previous.last_turn?.task_id,
+      task_type: centerPlan.task_card?.task_type || previous.last_turn?.task_type,
+      selected_role_ids: selectedRoleIds,
+      pending_user_input: pendingUserInput,
+      material_card: materialCard,
+      current_project: currentProject,
+      project_history: compactProjectHistoryForContext(appState.agentMessages),
+      runtime_flags: {
+        multiAgentPreparation: Boolean(runtime.multiAgentPreparation),
+        multiAgentMaterialLookup: Boolean(runtime.multiAgentMaterialLookup),
+        multiAgentMaterialResume: Boolean(runtime.multiAgentMaterialResume),
+      },
+    },
+  };
+}
+
+function extractCurrentProjectFromReply(reply) {
+  const runtimeProject = compactCurrentProjectForContext(reply?.runtime?.currentProject);
+  if (runtimeProject) {
+    return runtimeProject;
+  }
+  const toolProject = extractCurrentProjectFromToolRuns(reply?.toolRuns);
+  if (toolProject) {
+    return toolProject;
+  }
+  const runtime = reply?.runtime && typeof reply.runtime === "object" ? reply.runtime : {};
+  if (runtime.existingProjectPathRequired) {
+    return undefined;
+  }
+  const localExecution = appState.localExecution || {};
+  if (localExecution.projectOperation === "new_project" && reply?.toolRuns?.some((run) => run?.tool === "autoform_start_ui")) {
+    return compactCurrentProjectForContext({
+      kind: "new_project",
+      label: "新建工程入口",
+      last_tool: "autoform_start_ui",
+      last_tool_status: reply.toolRuns.find((run) => run?.tool === "autoform_start_ui")?.status,
+      source: "frontend_project_operation",
+    });
+  }
+  if (localExecution.projectOperation === "example_project" && localExecution.exampleName) {
+    return compactCurrentProjectForContext({
+      kind: "example_project",
+      label: localExecution.exampleName,
+      example_name: localExecution.exampleName,
+      source: "frontend_project_operation",
+    });
+  }
+  return undefined;
+}
+
+function extractCurrentProjectFromToolRuns(toolRuns) {
+  if (!Array.isArray(toolRuns)) {
+    return undefined;
+  }
+  for (const run of toolRuns.slice().reverse()) {
+    const result = run?.result && typeof run.result === "object" ? run.result : {};
+    const args = run?.arguments && typeof run.arguments === "object" ? run.arguments : {};
+    const gui = result.gui_observation && typeof result.gui_observation === "object" ? result.gui_observation : {};
+    if (run.tool === "autoform_import_geometry_to_new_project") {
+      if (result.status && result.status !== "completed") {
+        continue;
+      }
+      return compactCurrentProjectForContext({
+        kind: "new_project_import",
+        label: result.output_afd_path || result.source_geometry_path || result.run_dir || args.source_geometry_path || "geometry import",
+        afd_path: result.output_afd_path || "",
+        output_afd_path: result.output_afd_path || "",
+        source_geometry_path: result.source_geometry_path || args.source_geometry_path || "",
+        run_dir: result.run_dir || "",
+        evidence_dir: result.evidence_dir || "",
+        last_tool: run.tool || "",
+        last_tool_status: result.status || run.status || "",
+        gui_pid: result.gui_pid,
+        source: "tool_result",
+      });
+    }
+    const project = {
+      kind: "",
+      label: "",
+      example_name: args.example_name || result.project?.name || "",
+      afd_path: args.afd_path || result.project?.path || result.path || "",
+      working_project: result.working_project || "",
+      run_dir: result.run_dir || "",
+      last_tool: run.tool || "",
+      last_tool_status: run.status || result.status || "",
+      gui_pid: gui.pid || result.gui_pid,
+      source: "tool_result",
+    };
+    if (project.working_project || project.afd_path) {
+      project.kind = project.example_name ? "example_project" : "afd_project";
+      project.label = project.working_project || project.afd_path;
+      return compactCurrentProjectForContext(project);
+    }
+    if (project.example_name && run.tool === "autoform_project_run") {
+      project.kind = "example_project";
+      project.label = project.example_name;
+      return compactCurrentProjectForContext(project);
+    }
+    if (run.tool === "autoform_start_ui" && !String(run.status || "").includes("blocked")) {
+      return compactCurrentProjectForContext({
+        kind: "new_project",
+        label: "新建工程入口",
+        last_tool: run.tool,
+        last_tool_status: run.status,
+        source: "tool_result",
+      });
+    }
+  }
+  return undefined;
+}
+
+function compactCurrentProjectForContext(project) {
+  if (!project || typeof project !== "object") {
+    return undefined;
+  }
+  const kind = String(project.kind || "").trim();
+  const workingProject = String(project.working_project || "").trim();
+  const afdPath = String(project.afd_path || "").trim();
+  const exampleName = String(project.example_name || "").trim();
+  const runDir = String(project.run_dir || "").trim();
+  const sourceGeometryPath = String(project.source_geometry_path || "").trim();
+  const outputAfdPath = String(project.output_afd_path || "").trim();
+  const evidenceDir = String(project.evidence_dir || "").trim();
+  const cadMeasurementResult = project.cad_measurement_result && typeof project.cad_measurement_result === "object"
+    ? project.cad_measurement_result
+    : undefined;
+  const filenameDimensionCandidate = project.filename_dimension_candidate && typeof project.filename_dimension_candidate === "object"
+    ? project.filename_dimension_candidate
+    : undefined;
+  const label = String(project.label || workingProject || outputAfdPath || afdPath || exampleName || runDir || sourceGeometryPath || "").trim();
+  if (!kind && !label && !workingProject && !afdPath && !exampleName && !runDir && !sourceGeometryPath && !outputAfdPath && !evidenceDir && !cadMeasurementResult) {
+    return undefined;
+  }
+  return {
+    schema_version: "autoform.current_project.v1",
+    kind: kind || (workingProject || afdPath || outputAfdPath ? "afd_project" : exampleName ? "example_project" : "project_reference"),
+    label,
+    example_name: exampleName,
+    afd_path: afdPath || outputAfdPath,
+    working_project: workingProject,
+    run_dir: runDir,
+    source_geometry_path: sourceGeometryPath,
+    output_afd_path: outputAfdPath,
+    evidence_dir: evidenceDir,
+    cad_measurement_result: cadMeasurementResult,
+    filename_dimension_candidate: filenameDimensionCandidate,
+    last_tool: String(project.last_tool || "").trim(),
+    last_tool_status: String(project.last_tool_status || "").trim(),
+    gui_pid: project.gui_pid === undefined || project.gui_pid === null ? undefined : project.gui_pid,
+    source: String(project.source || "frontend").trim(),
+    updated_at: String(project.updated_at || new Date().toISOString()),
+  };
+}
+
+function extractMaterialCardFromReply(reply) {
+  const runtime = reply.runtime || {};
+  const queryCard = runtime.materialDatabaseQuery?.material_card;
+  if (queryCard && typeof queryCard === "object") {
+    return queryCard;
+  }
+  const materialResponse = runtime.materialUserResponse;
+  if (materialResponse && typeof materialResponse === "object") {
+    return {
+      object_type: "MaterialCard",
+      grade: materialResponse.material_grade,
+      material_temper: materialResponse.material_temper,
+      selected_material_source: materialResponse.selected_material_source,
+      confirmation_status: materialResponse.status,
+    };
+  }
+  const prepCard = runtime.preparationArtifacts?.materialCard;
+  return prepCard && typeof prepCard === "object" ? prepCard : {};
+}
+
+function mergeMaterialContext(previous, current) {
+  const base = previous && typeof previous === "object" ? previous : {};
+  const next = current && typeof current === "object" ? current : {};
+  const merged = { ...base, ...next };
+  const previousCandidates = Array.isArray(base.local_autoform_material_candidates) ? base.local_autoform_material_candidates : [];
+  const nextCandidates = Array.isArray(next.local_autoform_material_candidates) ? next.local_autoform_material_candidates : [];
+  const candidates = nextCandidates.length ? nextCandidates : previousCandidates;
+  if (candidates.length) {
+    merged.local_autoform_material_candidates = candidates.slice(0, 8);
+  }
+  return compactMaterialCardForContext(merged);
+}
+
+function compactMaterialCardForContext(materialCard) {
+  if (!materialCard || typeof materialCard !== "object") {
+    return {};
+  }
+  const candidates = Array.isArray(materialCard.local_autoform_material_candidates)
+    ? materialCard.local_autoform_material_candidates
+    : [];
+  return Object.fromEntries(
+    Object.entries({
+      object_type: materialCard.object_type,
+      task_id: materialCard.task_id,
+      material_id: materialCard.material_id,
+      grade: materialCard.grade,
+      material_temper: materialCard.material_temper,
+      confirmation_status: materialCard.confirmation_status,
+      selected_material_source: materialCard.selected_material_source,
+      curve_source_ref: materialCard.curve_source_ref,
+      local_autoform_material_candidates: candidates.slice(0, 8).map((candidate) => ({
+        name: candidate.name,
+        path: candidate.path,
+        extension: candidate.extension,
+        source_type: candidate.source_type,
+        file_size_bytes: candidate.file_size_bytes,
+        last_modified: candidate.last_modified,
+      })),
+    }).filter(([, value]) => value !== undefined && value !== null && value !== "" && !(Array.isArray(value) && !value.length)),
+  );
+}
+
+function compactSharedContextPolicy(policy) {
+  if (!policy || typeof policy !== "object") {
+    return undefined;
+  }
+  return {
+    object_type: policy.object_type,
+    policy_id: policy.policy_id,
+    active_view_level: policy.active_view_level,
+    compression_strategy: policy.compression_strategy,
+    write_policy: policy.write_policy,
+  };
+}
+
 function buildLocalExecutionContext() {
   syncLocalExecutionFromDom();
   const enabled = Boolean(appState.localExecution.enabled);
+  const projectOperation = normalizeProjectOperation(appState.localExecution.projectOperation);
   return {
     enabled,
     approved: enabled,
     scope: "mcp_gateway",
-    exampleName: appState.localExecution.exampleName || "Solver_R13",
+    projectOperation,
+    exampleName: projectOperation === "example_project" ? appState.localExecution.exampleName : "",
     mode: "kinematic",
   };
 }
@@ -693,11 +1268,25 @@ function syncApiConfigFromDom() {
 }
 
 function syncLocalExecutionFromDom() {
+  const selected = String(elements.demoExample?.value || "new_project");
+  const projectOperation = normalizeProjectOperation(selected);
   appState.localExecution = {
     enabled: Boolean(elements.localExecution?.checked),
     scope: "mcp_gateway",
-    exampleName: elements.demoExample?.value || "Solver_R13",
+    projectOperation,
+    exampleName: projectOperation === "example_project" ? selected : "",
   };
+}
+
+function normalizeProjectOperation(value) {
+  const raw = String(value || "").trim();
+  if (raw === "new_project") {
+    return "new_project";
+  }
+  if (raw === "existing_project") {
+    return "existing_project";
+  }
+  return "example_project";
 }
 
 function applyProviderPreset(force = false) {
@@ -730,6 +1319,114 @@ function appendTerminal(line) {
     appState.terminalLines = appState.terminalLines.slice(-220);
   }
   renderTerminal();
+}
+
+function appendUserMessage(prompt) {
+  const text = String(prompt || "").trim();
+  if (!text) {
+    return;
+  }
+  const message = {
+    source: "user",
+    agent_id: "user",
+    speaker: "用户输入",
+    text,
+    created_at: new Date().toISOString(),
+  };
+  const key = dialogMessageKey(message);
+  if (appState.currentTurnMessageKeys.has(key)) {
+    return;
+  }
+  appState.currentTurnMessageKeys.add(key);
+  appState.agentMessages.push(message);
+  trimProjectDialogHistory();
+  renderAgentDialog();
+}
+
+function appendAgentMessage(message) {
+  const agentId = String(message?.agent_id || message?.agentId || "center_agent");
+  const text = String(message?.text || message?.message || "").trim();
+  if (!text) {
+    return;
+  }
+  const nextMessage = {
+    source: "agent",
+    agent_id: agentId,
+    speaker: String(message?.speaker || agentLabel(agentId)),
+    text,
+    created_at: String(message?.created_at || new Date().toISOString()),
+    details: normalizeDialogDetails(message?.details),
+  };
+  const key = dialogMessageKey(nextMessage);
+  if (appState.currentTurnMessageKeys.has(key)) {
+    return;
+  }
+  appState.currentTurnMessageKeys.add(key);
+  appState.agentMessages.push(nextMessage);
+  trimProjectDialogHistory();
+  renderAgentDialog();
+}
+
+function dialogMessageKey(message) {
+  return [
+    String(message?.source || "agent"),
+    String(message?.agent_id || ""),
+    String(message?.speaker || ""),
+    String(message?.text || "").replace(/\s+/g, " ").trim(),
+  ].join("|");
+}
+
+function normalizeDialogDetails(details) {
+  if (!Array.isArray(details)) {
+    return [];
+  }
+  return details
+    .map((detail) => ({
+      type: String(detail?.type || "detail"),
+      agent_id: String(detail?.agent_id || detail?.agentId || ""),
+      speaker: String(detail?.speaker || agentLabel(detail?.agent_id || detail?.agentId || "")),
+      text: String(detail?.text || detail?.message || "").trim(),
+    }))
+    .filter((detail) => detail.text)
+    .slice(0, 16);
+}
+
+function trimProjectDialogHistory() {
+  if (appState.agentMessages.length > 160) {
+    appState.agentMessages = appState.agentMessages.slice(-160);
+  }
+}
+
+function compactProjectHistoryForContext(messages) {
+  if (!Array.isArray(messages)) {
+    return [];
+  }
+  return messages.slice(-24).map((message, index) => ({
+    index,
+    source: message.source === "user" ? "user" : "agent",
+    agent_id: String(message.agent_id || ""),
+    speaker: String(message.speaker || ""),
+    text: String(message.text || "").slice(0, 500),
+    created_at: String(message.created_at || ""),
+  }));
+}
+
+function appendUserInputRequest(payload) {
+  const questions = Array.isArray(payload?.questions) ? payload.questions : [];
+  if (!questions.length) {
+    return;
+  }
+  for (const question of questions) {
+    const text = String(question?.text || "").trim();
+    if (!text) {
+      continue;
+    }
+    appendAgentMessage({
+      agent_id: "center_agent",
+      speaker: "中心Agent",
+      text: `请用户补充：${text}`,
+    });
+  }
 }
 
 function renderSummary() {
@@ -783,6 +1480,57 @@ function renderTerminal() {
   output.scrollTop = shouldFollowTail ? output.scrollHeight : previousScrollTop;
 }
 
+function renderAgentDialog() {
+  if (!elements.agentDialog) {
+    return;
+  }
+  const messages = appState.agentMessages.length
+    ? appState.agentMessages
+    : [
+        {
+          speaker: "中心Agent",
+          text: "等待中心Agent接收任务。",
+        },
+      ];
+  const previousScrollTop = elements.agentDialog.scrollTop;
+  const previousBottomGap = elements.agentDialog.scrollHeight - elements.agentDialog.clientHeight - previousScrollTop;
+  const shouldFollowTail = previousBottomGap <= 24;
+  elements.agentDialog.replaceChildren(
+    ...messages.map((message) => {
+      const item = document.createElement("div");
+      item.className = `agent-message ${message.source === "user" ? "is-user" : "is-agent"}`;
+      const speaker = document.createElement("div");
+      speaker.className = "agent-speaker";
+      speaker.textContent = message.speaker || agentLabel(message.agent_id);
+      const text = document.createElement("div");
+      text.className = "agent-message-text";
+      text.textContent = message.text;
+      item.append(speaker, text);
+      const details = normalizeDialogDetails(message.details);
+      if (details.length) {
+        const detailBox = document.createElement("details");
+        detailBox.className = "agent-message-details";
+        const summary = document.createElement("summary");
+        summary.textContent = "查看本轮 Agent 明细";
+        detailBox.append(summary);
+        for (const detail of details) {
+          const detailItem = document.createElement("div");
+          detailItem.className = `agent-message-detail-item detail-${detail.type}`;
+          const detailSpeaker = document.createElement("strong");
+          detailSpeaker.textContent = detail.speaker;
+          const detailText = document.createElement("span");
+          detailText.textContent = detail.text;
+          detailItem.append(detailSpeaker, detailText);
+          detailBox.append(detailItem);
+        }
+        item.append(detailBox);
+      }
+      return item;
+    }),
+  );
+  elements.agentDialog.scrollTop = shouldFollowTail ? elements.agentDialog.scrollHeight : previousScrollTop;
+}
+
 function renderApiPanel() {
   elements.apiEndpoint.textContent = appState.endpoint;
   elements.apiRuntime.textContent = appState.api.runtime;
@@ -814,6 +1562,7 @@ function renderAll() {
   renderSummary();
   renderGraph();
   renderTerminal();
+  renderAgentDialog();
   renderApiPanel();
   renderUsage();
 }
@@ -875,7 +1624,7 @@ function bindEvents() {
     input.addEventListener("change", () => {
       syncLocalExecutionFromDom();
       appendTerminal(
-        `LOCAL execution=${appState.localExecution.enabled ? "enabled" : "disabled"} mcp_control=${appState.localExecution.enabled ? "approved" : "blocked"} scope=${appState.localExecution.scope} example_hint=${appState.localExecution.exampleName}`,
+        `LOCAL execution=${appState.localExecution.enabled ? "enabled" : "disabled"} mcp_control=${appState.localExecution.enabled ? "approved" : "blocked"} scope=${appState.localExecution.scope} project_operation=${appState.localExecution.projectOperation} example_hint=${appState.localExecution.exampleName || "none"}`,
       );
       renderAll();
     });
@@ -950,6 +1699,7 @@ function trimRuntimeResponse(reply) {
     metrics: reply.metrics,
     runtime: reply.runtime,
     preview: reply.preview,
+    pendingUserInput: compactPendingUserInputForDisplay(reply.pendingUserInput),
     centerPlan: compactCenterPlanForDisplay(reply.centerPlan),
     toolRuns: compactToolRunsForDisplay(reply.toolRuns),
     connectionTest: reply.connectionTest,
@@ -959,26 +1709,69 @@ function trimRuntimeResponse(reply) {
   };
 }
 
+function compactPendingUserInputForDisplay(pendingUserInput) {
+  if (!pendingUserInput || typeof pendingUserInput !== "object") {
+    return undefined;
+  }
+  const questions = Array.isArray(pendingUserInput.questions) ? pendingUserInput.questions : [];
+  return {
+    request_id: pendingUserInput.request_id,
+    task_id: pendingUserInput.task_id,
+    source_agent: pendingUserInput.source_agent,
+    target_agent: pendingUserInput.target_agent,
+    status: pendingUserInput.status,
+    reason: pendingUserInput.reason,
+    questions: questions.map((question) => ({
+      question_id: question.question_id,
+      field_group: question.field_group,
+      target_fields: question.target_fields,
+      text: question.text,
+      required: question.required,
+      candidate_options: Array.isArray(question.candidate_options) ? question.candidate_options.slice(0, 6) : [],
+    })),
+  };
+}
+
 function compactToolRunsForDisplay(toolRuns) {
   if (!Array.isArray(toolRuns)) {
     return undefined;
   }
   return toolRuns.map((run) => {
     const result = run.result && typeof run.result === "object" ? run.result : {};
+    const scriptPayload = result.result && typeof result.result === "object" ? result.result : {};
+    const measurement = result.skill_id === "cad_measure_geometry_v1"
+      ? scriptPayload
+      : result.cad_measurement_result && typeof result.cad_measurement_result === "object"
+        ? result.cad_measurement_result
+        : {};
     const gui = result.gui_observation && typeof result.gui_observation === "object" ? result.gui_observation : {};
     const solverCase = firstSolverCase(result);
+    const dimension = result.geometry_dimension_candidate && typeof result.geometry_dimension_candidate === "object"
+      ? result.geometry_dimension_candidate
+      : {};
+    const dimensionCandidate = dimension.length !== undefined && dimension.width !== undefined && dimension.thickness !== undefined
+      ? `${dimension.length}x${dimension.width}x${dimension.thickness} ${dimension.unit || ""}`.trim()
+      : "";
     return {
       tool: run.tool,
-      status: run.status,
+      status: result.status || run.status,
       gatewayStatus: run.gatewayStatus,
       example: run.arguments?.example_name,
       working_project: result.working_project,
+      output_afd_path: result.output_afd_path,
+      source_geometry_path: measurement.source_geometry_path || result.source_geometry_path || run.arguments?.source_geometry_path || run.arguments?.params?.source_geometry_path,
+      cad_measurement: measurement.status ? cadMeasurementSummary(measurement) : "",
+      parser: measurement.parser,
+      blocked_reason: measurement.blocked_reason,
+      filename_candidate: measurement.filename_dimension_candidate ? dimensionObjectText(measurement.filename_dimension_candidate) : "",
+      dimension_candidate: dimensionCandidate,
       run_dir: result.run_dir,
+      evidence_dir: measurement.evidence_dir || result.evidence_dir,
       gui_pid: gui.pid,
       gui_launched: gui.launched,
       solver_returncode: solverCase?.returncode,
       simulation_successful: solverCase?.stdout_summary?.simulation_successful,
-      error: run.error,
+      error: run.error || measurement.failure_reason || measurement.blocked_reason || result.failure_reason || result.blocked_reason,
     };
   });
 }

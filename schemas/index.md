@@ -26,6 +26,15 @@
 | `../script_registry.yaml` | `SkillCard` | R10 L0 至 L2 低风险脚本登记 |
 | `../fixtures/r11_low_risk_prepare_events.jsonl` | R11 RunEvent fixture | 从用户输入到 StageSummary 的低风险端到端回放 |
 
+## Flexible Script and CAD Measurement
+
+| File | Object | Purpose |
+| --- | --- | --- |
+| `skill_card_schema.json` | `SkillCard` | Stable flexible script metadata, risk, entrypoint, params, and validation rule. |
+| `script_run_record_schema.json` | `ScriptRunRecord` | Script execution record with params hash, evidence directory, logs, artifacts, validation, and failure summary. |
+| `cad_measurement_result_schema.json` | `CadMeasurementResult` | CAD measurement result. STL can complete through built-in bbox parsing; STEP or IGES returns blocked when no parser is available. |
+| `script_validation_report_schema.json` | `ScriptValidationReport` | Validation checks for sandbox scripts and script outputs. |
+
 ## R13 至 R20 企业数据与执行器资料
 
 | 文件 | 对象 | 用途 |

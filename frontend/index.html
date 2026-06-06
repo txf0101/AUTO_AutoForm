@@ -9,7 +9,8 @@ This page is the local browser entry point for AutoForm Agent. It only lays out 
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>AutoForm P0 Workbench</title>
-    <link rel="stylesheet" href="./styles.css?v=20260604-mcp-control-scope" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%231d4ed8'/%3E%3Cpath d='M15 43 28 13h8l13 30h-8l-3-7H26l-3 7h-8Zm17-23-5 13h10l-5-13Z' fill='white'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="./styles.css?v=20260605-terminal-contrast" />
   </head>
   <body>
     <main class="workbench-shell" data-app-shell>
@@ -83,8 +84,10 @@ This page is the local browser entry point for AutoForm Agent. It only lays out 
               <span>允许本机 MCP 工具控制</span>
             </label>
             <div class="api-field">
-              <label for="demo-example">示例工程提示</label>
+              <label for="demo-example">工程操作</label>
               <select id="demo-example" data-demo-example>
+                <option value="new_project">新建工程</option>
+                <option value="existing_project">已有工程（请在Prompt里面告知项目地址）</option>
                 <option value="Solver_R13">Solver_R13</option>
                 <option value="AutoComp_R13">AutoComp_R13</option>
                 <option value="Sigma_R13">Sigma_R13</option>
@@ -157,14 +160,12 @@ This page is the local browser entry point for AutoForm Agent. It only lays out 
         <div class="edge-list" data-edge-list></div>
       </section>
 
-      <section class="workbench-panel terminal-panel" aria-label="命令输出">
+      <section class="workbench-panel terminal-panel" aria-label="工程会话轨迹">
         <div class="panel-heading">
           <span>4</span>
-          <h2>命令输出</h2>
+          <h2>工程会话轨迹</h2>
         </div>
-        <pre class="terminal-output" data-terminal-output aria-live="polite">AutoForm P0 Workbench ready.
-Replay fixture: built-in demo
-Local bridge: http://127.0.0.1:4317/api/agent</pre>
+        <div class="agent-dialog" data-agent-dialog aria-live="polite"></div>
       </section>
 
       <section class="workbench-panel api-panel" aria-label="凭据边界">
@@ -237,9 +238,15 @@ Local bridge: http://127.0.0.1:4317/api/agent</pre>
           <label>Runtime response</label>
           <pre data-api-response>{}</pre>
         </div>
+        <div class="api-block">
+          <label>命令输出</label>
+          <pre class="terminal-output terminal-output-compact" data-terminal-output aria-live="polite">AutoForm P0 Workbench ready.
+Replay fixture: built-in demo
+Local bridge: http://127.0.0.1:4317/api/agent</pre>
+        </div>
       </section>
     </main>
 
-    <script type="module" src="./app.js?v=20260604-mcp-control-scope"></script>
+    <script type="module" src="./app.js?v=20260605-project-operation"></script>
   </body>
 </html>

@@ -37,6 +37,16 @@ from .diagnostics import (
     environment_snapshot,
 )
 from .extension import internal_extension_boundary
+from .flex_scripts import (
+    script_discover,
+    script_fork,
+    script_new,
+    script_patch,
+    script_promote,
+    script_run,
+    script_validate,
+)
+from .geometry_import_workflow import import_geometry_to_new_project
 from .gui_automation import (
     autoform_window_snapshot,
     capture_desktop_screenshot,
@@ -186,6 +196,46 @@ def main(argv: list[str] | None = None) -> int:
     prepare_replay_parser = subparsers.add_parser("prepare-r11-replay", help="Build the R11 low-risk end-to-end preparation replay.")
     prepare_replay_parser.add_argument("prompt")
     prepare_replay_parser.add_argument("--run-id", default="run_r11_prepare_demo")
+
+    script_list_parser = subparsers.add_parser("script-list", help="List stable flexible scripts and optional legacy rows.")
+    script_list_parser.add_argument("--query")
+    script_list_parser.add_argument("--risk-level")
+    script_list_parser.add_argument("--include-legacy", action="store_true")
+
+    script_run_parser = subparsers.add_parser("script-run", help="Run a stable registered flexible script.")
+    script_run_parser.add_argument("skill_id")
+    script_run_parser.add_argument("--param", action="append", default=[], help="key=value parameter passed to the script.")
+    script_run_parser.add_argument("--caller-agent", default="script_agent")
+    script_run_parser.add_argument("--skill-version")
+
+    script_fork_parser = subparsers.add_parser("script-fork", help="Fork a stable script into the flex sandbox.")
+    script_fork_parser.add_argument("skill_id")
+    script_fork_parser.add_argument("--version")
+    script_fork_parser.add_argument("--objective", default="")
+
+    script_new_parser = subparsers.add_parser("script-new", help="Create a new script draft in the flex sandbox.")
+    script_new_parser.add_argument("skill_id")
+    script_new_parser.add_argument("--title", required=True)
+    script_new_parser.add_argument("--objective", required=True)
+    script_new_parser.add_argument("--risk-level", default="L1")
+
+    script_patch_parser = subparsers.add_parser("script-patch", help="Patch one sandbox file by replacing the first matching text.")
+    script_patch_parser.add_argument("--sandbox-id", required=True)
+    script_patch_parser.add_argument("--relative-path", required=True)
+    script_patch_parser.add_argument("--find", required=True)
+    script_patch_parser.add_argument("--replace", required=True)
+
+    script_validate_parser = subparsers.add_parser("script-validate", help="Validate Python files inside a flex sandbox.")
+    script_validate_parser.add_argument("--sandbox-id", required=True)
+
+    script_promote_parser = subparsers.add_parser("script-promote", help="Promote a sandbox script when center approval evidence exists.")
+    script_promote_parser.add_argument("--sandbox-id", required=True)
+    script_promote_parser.add_argument("--approved-by", default="")
+    script_promote_parser.add_argument("--approval-record", type=Path)
+
+    cad_measure_parser = subparsers.add_parser("cad-measure-geometry", help="Measure CAD geometry through the stable cad_measure_geometry_v1 script.")
+    cad_measure_parser.add_argument("--source-geometry-path", required=True)
+    cad_measure_parser.add_argument("--length-unit", default="mm")
 
     archive_parser = subparsers.add_parser("archive-list", help="List archive members with bsdtar.")
     archive_parser.add_argument("archive", type=Path)
@@ -385,6 +435,19 @@ def main(argv: list[str] | None = None) -> int:
         help="Seconds to wait after opening AutoForm Forming before starting the solver.",
     )
     project_run_parser.add_argument("--workspace", type=Path, default=Path.cwd())
+
+    geometry_import_parser = subparsers.add_parser(
+        "import-geometry-to-new-project",
+        help="Import a CAD geometry file into a new AutoForm project and save an .afd.",
+    )
+    geometry_import_parser.add_argument("--source-geometry-path", required=True)
+    geometry_import_parser.add_argument("--output-dir", type=Path, default=Path("output") / "geometry_import_projects")
+    geometry_import_parser.add_argument("--output-afd-path", type=Path)
+    geometry_import_parser.add_argument("--length-unit", default="mm")
+    geometry_import_parser.add_argument("--geometry-type", default="part")
+    geometry_import_parser.add_argument("--graphics", default="directx11", choices=["directx11", "opengl2"])
+    geometry_import_parser.add_argument("--gui-wait-seconds", type=float, default=10)
+    geometry_import_parser.add_argument("--dry-run", action="store_true")
 
     baseline_parser = subparsers.add_parser("example-baseline", help="Build official example project baseline data.")
     baseline_parser.add_argument("--output", type=Path)
@@ -859,16 +922,74 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "prepare-script-run":
-        params = {}
-        for item in args.param:
-            if "=" in item:
-                key, value = item.split("=", 1)
-                params[key] = value
+        params = _parse_key_value_params(args.param)
         _print_json(run_low_risk_script(args.skill_id, params), ensure_ascii=False)
         return 0
 
     if args.command == "prepare-r11-replay":
         _print_json(build_r11_low_risk_replay(args.prompt, run_id=args.run_id), ensure_ascii=False)
+        return 0
+
+    if args.command == "script-list":
+        _print_json(
+            script_discover(query=args.query, risk_level=args.risk_level, include_legacy=args.include_legacy),
+            ensure_ascii=False,
+        )
+        return 0
+
+    if args.command == "script-run":
+        _print_json(
+            script_run(
+                args.skill_id,
+                _parse_key_value_params(args.param),
+                caller_agent=args.caller_agent,
+                skill_version=args.skill_version,
+            ),
+            ensure_ascii=False,
+        )
+        return 0
+
+    if args.command == "script-fork":
+        _print_json(script_fork(args.skill_id, version=args.version, objective=args.objective), ensure_ascii=False)
+        return 0
+
+    if args.command == "script-new":
+        _print_json(
+            script_new(args.skill_id, title=args.title, objective=args.objective, risk_level=args.risk_level),
+            ensure_ascii=False,
+        )
+        return 0
+
+    if args.command == "script-patch":
+        _print_json(
+            script_patch(args.sandbox_id, relative_path=args.relative_path, find=args.find, replace=args.replace),
+            ensure_ascii=False,
+        )
+        return 0
+
+    if args.command == "script-validate":
+        _print_json(script_validate(args.sandbox_id), ensure_ascii=False)
+        return 0
+
+    if args.command == "script-promote":
+        _print_json(
+            script_promote(args.sandbox_id, approved_by=args.approved_by, approval_record=args.approval_record),
+            ensure_ascii=False,
+        )
+        return 0
+
+    if args.command == "cad-measure-geometry":
+        _print_json(
+            script_run(
+                "cad_measure_geometry_v1",
+                {
+                    "source_geometry_path": args.source_geometry_path,
+                    "length_unit": args.length_unit,
+                },
+                caller_agent="geometry_data_agent",
+            ),
+            ensure_ascii=False,
+        )
         return 0
 
     if args.command == "archive-list":
@@ -1163,6 +1284,22 @@ def main(argv: list[str] | None = None) -> int:
                 open_gui=args.open_gui,
                 gui_wait_seconds=args.gui_wait_seconds,
                 workspace=args.workspace,
+            ),
+            ensure_ascii=False,
+        )
+        return 0
+
+    if args.command == "import-geometry-to-new-project":
+        _print_json(
+            import_geometry_to_new_project(
+                source_geometry_path=args.source_geometry_path,
+                output_dir=args.output_dir,
+                output_afd_path=args.output_afd_path,
+                length_unit=args.length_unit,
+                geometry_type=args.geometry_type,
+                graphics=args.graphics,
+                gui_wait_seconds=args.gui_wait_seconds,
+                dry_run=args.dry_run,
             ),
             ensure_ascii=False,
         )
@@ -1809,6 +1946,19 @@ def _print_json(value, ensure_ascii: bool = False) -> None:
     text = json.dumps(value, ensure_ascii=ensure_ascii, indent=2)
     sys.stdout.buffer.write(text.encode("utf-8", errors="replace"))
     sys.stdout.buffer.write(b"\n")
+
+
+def _parse_key_value_params(items: list[str]) -> dict[str, str]:
+    """Parse repeated `key=value` CLI params."""
+    params: dict[str, str] = {}
+    for item in items:
+        if "=" not in item:
+            raise SystemExit(f"--param must use key=value form: {item}")
+        key, value = item.split("=", 1)
+        if not key:
+            raise SystemExit(f"--param has an empty key: {item}")
+        params[key] = value
+    return params
 
 
 def _parse_env_overrides(items: list[str]) -> dict[str, str]:

@@ -1,6 +1,6 @@
 # AutoForm P0 Workbench Frontend
 
-这是 AutoForm 多 Agent P0 工作台页面。页面覆盖 R3 要求的用户输入、状态总结、Agent 图谱、命令输出、凭据边界和 token 用量面板。页面可以离线读取 `fixtures/run_events_demo.jsonl` 回放一条低风险仿真准备流程，也可以把 prompt、本机执行意图和批准状态发送给本机 HTTP bridge。
+这是 AutoForm 多 Agent P0 工作台页面。页面覆盖 R3 要求的用户输入、状态总结、Agent 图谱、工程会话轨迹、命令输出、凭据边界和 token 用量面板。页面可以离线读取 `fixtures/run_events_demo.jsonl` 回放一条低风险仿真准备流程，也可以把 prompt、本机执行意图和批准状态发送给本机 HTTP bridge。
 
 ## 启动方式
 
@@ -38,7 +38,13 @@ Agent 图谱固定显示 9 个业务 Agent：中心Agent、需求与工艺规划
 http://127.0.0.1:8765/frontend/index.html?bridge=http
 ```
 
-应用运行时链路使用 `python -m autoform_agent.http_bridge --host 127.0.0.1 --port 4317` 接收页面 prompt，再调用 `autoform_agent.agent_runtime`。页面勾选“允许本机 MCP 工具控制”后，前端随请求发送 `uiContext.localExecution`、`scope=mcp_gateway` 和 `agentToolExecutionApproved=true`；后端运行时负责判断用户意图，生成 `autoform_project_run` 或 `autoform_start_ui` 白名单请求，并通过 `AgentToolGateway` 执行。用户输入“新建工程”时，后端优先生成受控的 `autoform_start_ui` 请求；用户输入显式 `.afd` 路径时，后端优先打开该用户工程；示例工程提示只用于没有新建或路径目标的展示工程场景。响应会把 `tool_requested`、`tool_completed`、`tool_blocked`、工程路径、GUI PID 和求解器状态返回同一页面。源码依据见根目录 [README.md](../README.md)、[docs/api_runtime_call_chain.md](../docs/api_runtime_call_chain.md)、[docs/ui_context_boundary.md](../docs/ui_context_boundary.md) 和 [schemas/index.md](../schemas/index.md)。
+应用运行时链路使用 `python -m autoform_agent.http_bridge --host 127.0.0.1 --port 4317` 接收页面 prompt，再调用 `autoform_agent.agent_runtime`。页面勾选“允许本机 MCP 工具控制”后，前端随请求发送 `uiContext.localExecution`、`scope=mcp_gateway` 和 `agentToolExecutionApproved=true`；后端运行时负责判断用户意图。输入区的“工程操作”下拉框会发送 `projectOperation`：`new_project` 用于新建工程或启动主界面，`existing_project` 要求用户在 Prompt 中提供已有 `.afd` 地址，官方示例项才会发送 `exampleName`。明确要求打开示例、复制工程、打开窗口或执行求解时，后端会生成 `autoform_project_run` 白名单请求，并通过 `AgentToolGateway` 执行；明确要求启动或打开 AutoForm 主界面时，后端会生成 `autoform_start_ui` 请求；选择已有工程但缺少 `.afd` 路径时，后端返回中心 Agent 补充路径提示且不执行工具。窗口意图必须来自未被否定的“打开、启动、展示、open、launch、show”等动作词，`GUI`、`window` 或 `窗口` 这类对象词不会单独触发开窗。用户输入“新建一个工程，创建一个20*20*3的6061铝合金薄板”这类建模准备需求时，后端先返回中心 Agent、需求与工艺规划 Agent、几何与数据 Agent 和材料 Agent 的 `agent_message` 与 `pendingUserInput`，材料 Agent 通过 `skill_material_database_query` 检索本机材料库候选，并保持 `willSubmitSolver=false`、`willControlGui=false`。用户输入“修改薄板大小 50*40*3”这类几何尺寸更新需求时，后端进入 `autoform_geometry_candidate_update` 本地分支，返回几何 Agent 的结构化消息、`PartCard` 和候选 `ContextPatch`，同时标记 `willModifyAfd=false`。用户继续输入“材料补充：AA6061-T4，使用 AA6061-T4.mtb，杨氏模量 69 GPa，泊松比 0.33”时，后端会走材料 Agent 续接路径，返回 `materialUserResponse`，并按内容调用 `skill_material_source_candidate_set` 或 `skill_material_elastic_constants_candidate_set` 记录候选材料来源和候选弹性常数，仍不调用 AutoForm 工具。前端会把上一轮 `MaterialCard`、待确认问题、共享上下文策略、本窗口工程会话轨迹和结构化 `current_project` 压缩为 `conversationContext`，用于“全都使用本机默认配置”或“这个工程是做什么的”这类续接。用户输入显式 `.afd` 路径时，后端优先打开该用户工程；官方示例项只用于没有新建或路径目标的展示工程场景。源码依据见根目录 [README.md](../README.md)、[docs/api_runtime_call_chain.md](../docs/api_runtime_call_chain.md)、[docs/ui_context_boundary.md](../docs/ui_context_boundary.md) 和 [schemas/index.md](../schemas/index.md)。
+
+当“工程操作”选择“新建工程”，且 prompt 包含“导入模型、导入几何、CAD、STEP、STL、IGES”或桌面文件名这类意图时，后端优先生成 `autoform_import_geometry_to_new_project`。该工具仍经 `AgentToolGateway` 审批；批准后会把 AutoForm Forming 的启动、窗口恢复和新建工程作为内部步骤处理，用户不需要额外写“打开GUI”。工具会导入 `.step/.stp/.igs/.iges/.stl`，保存 `.afd`，并在 `output/geometry_import_projects/<timestamp>_<stem>/evidence` 保存截图、窗口树和日志。前端会把返回的 `source_geometry_path`、`output_afd_path`、`run_dir`、`evidence_dir` 和 `gui_pid` 写入 `conversationContext.current_project`，所以后续输入“这个工程是做什么的”会继续引用本轮导入工程。
+
+当用户追问“这个薄板长宽厚是多少”时，后端会读取 `conversationContext.current_project.source_geometry_path` 或 prompt 中的 CAD 路径，并调用稳定脚本 `cad_measure_geometry_v1`。页面会在当前工程摘要和紧凑工具结果中展示 `cad_measurement_result.status`、`parser`、bbox、`length/width/thickness`、`blocked_reason`、`evidence_dir` 和 `filename_dimension_candidate`。如果 STEP/IGES 解析器缺失，结果会显示为 `blocked`；文件名中的 `30-40-3` 只作为候选尺寸显示，不能当作实测尺寸写入工程上下文。
+
+示例工程打开不再使用后端默认 `Solver_R13`。用户泛泛输入“打开示例工程”时，后端会返回 `exampleProjectSelectionRequired=true` 和官方示例候选；只有用户在“工程操作”下拉框明确选择某个官方示例，或 prompt 明确写出 `Solver_R13`、`AutoComp_R13` 等示例名时，后端才会生成 `autoform_project_run`。
 
 ## R3 回放
 
@@ -48,7 +54,7 @@ http://127.0.0.1:8765/frontend/index.html?bridge=http
 ../fixtures/run_events_demo.jsonl
 ```
 
-页面会按 `RunEvent` 顺序更新状态总结、9 个业务 Agent 节点、连接传输、命令输出和 `TokenUsageSnapshot`。fixture 回放只覆盖低风险仿真准备闭环，不触发真实 AutoForm 求解、后处理、优化或正式报告生成。用户从输入区发送 prompt 时，页面可以根据“允许本机 MCP 工具控制”开关提交本机受控执行意图；工具选择和受控参数仍由后端运行时与 `AgentToolGateway` 处理，执行结果由 HTTP bridge 返回到同一页面。默认 fixture 由前端自动读取，页面不再显示 fixture 加载入口；普通用户只需要使用“单步”“跑完”和“重置”。
+页面会按 `RunEvent` 顺序更新状态总结、9 个业务 Agent 节点、连接传输、工程会话轨迹、命令输出和 `TokenUsageSnapshot`。fixture 回放仍按事件逐条显示 `agent_message`；live HTTP 回复则生成一条中心 Agent 摘要气泡，气泡内用原生折叠区 `查看本轮 Agent 明细` 展示专业 Agent 消息、当前工程上下文和紧凑工具结果。用户从输入区发送的 prompt 作为右侧“用户输入”消息保留，Agent 摘要靠左显示，并按同一轮 speaker、agent 和文本去重；`user_input_requested` 事件把领域 Agent 的问题转成中心 Agent 面向用户的问题；完整 HTTP、工具、事件和脚本日志保留在 Runtime response 下方的命令输出。后端缺少结构化 `agentMessages` 时，页面会从工具结果或清洗后的回复文本生成摘要，避免把 Runtime response 的长命令输出写入会话轨迹。fixture 回放只覆盖低风险仿真准备闭环，不触发真实 AutoForm 求解、后处理、优化或正式报告生成。用户从输入区发送 prompt 时，页面可以根据“允许本机 MCP 工具控制”开关提交本机受控执行意图；工具选择和受控参数仍由后端运行时与 `AgentToolGateway` 处理，执行结果由 HTTP bridge 返回到同一页面。默认 fixture 由前端自动读取，页面不再显示 fixture 加载入口；普通用户只需要使用“单步”“跑完”和“重置”。
 
 R18、R19 和 R20 的执行器回放可以通过 URL 参数切换 fixture：
 
@@ -82,7 +88,7 @@ Prompt 下方的“测试连接”会显式请求一次 provider 连接测试。
 
 ## 目录说明
 
-- `index.html`：R3 工作台结构，包含用户输入、状态总结、Agent 图谱、命令输出、凭据边界和 token 用量。
+- `index.html`：R3 工作台结构，包含用户输入、状态总结、Agent 图谱、工程会话轨迹、命令输出、凭据边界和 token 用量。
 - `styles.css`：工程工作台样式，采用浅色面板、清晰边框、紧凑图谱和等宽终端输出。
 - `app.js`：交互逻辑，包含 fixture 读取、RunEvent 回放、prompt 发送、连接测试、运行时响应渲染、API payload 展示和 API key 脱敏。
 - `tests/smoke-test.mjs`：无依赖烟雾测试，检查关键 DOM 节点、脚本入口和维护注释是否存在。

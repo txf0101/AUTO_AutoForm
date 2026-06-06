@@ -6,6 +6,8 @@ This test file checks multi-agent contracts, role registration, and center plans
 from __future__ import annotations
 
 import json
+from pathlib import Path
+from zipfile import ZipFile
 
 from autoform_agent.agent_system import (
     build_agent_tool_gateway,
@@ -64,6 +66,22 @@ def test_agent_system_plan_selects_requested_and_keyword_roles() -> None:
     assert data["integration_points"]["mcp_tool_layers"] == "autoform_agent.mcp_tools.register_all_tools"
 
 
+def test_agent_system_plan_ignores_negated_solver_and_gui_keywords() -> None:
+    """Route preview should align with the runtime boundary for rejected actions."""
+
+    plan = plan_agent_system_turn(
+        "材料补充：AA6061-T4，使用 AA6061-T4.mtb，杨氏模量 69 GPa，泊松比 0.33；不要启动 GUI，不打开工程，不执行求解。"
+    )
+    data = plan.as_dict()
+    role_ids = [role["role_id"] for role in data["selected_roles"]]
+
+    assert "manager" in role_ids
+    assert "material_agent" in role_ids
+    assert "solver_execution_agent" not in role_ids
+    assert "process_setting_agent" not in role_ids
+    assert role_ids.count("material_agent") == 1
+
+
 def test_agent_system_plan_reports_unknown_requested_roles() -> None:
     """Unknown role ids should be returned as data for callers to handle."""
 
@@ -93,6 +111,13 @@ def test_center_agent_plan_builds_task_dag_context_view_and_patch_review() -> No
     assert plan["context_view"]["view_level"] == "C0"
     assert plan["context_view"]["context_id"].startswith("c0_task_")
     assert "mcp_gateway" in plan["context_view"]["selected_role_ids"]
+    assert plan["context_view"]["shared_context_policy"]["object_type"] == "SharedContextPolicy"
+    assert plan["context_view"]["shared_context_policy"]["active_view_level"] == "C0"
+    assert "ContextPatch" in plan["context_view"]["shared_context_policy"]["write_policy"]
+    assert any(
+        permission["role_id"] == "mcp_gateway" and permission["edit_permission"] == "propose_context_patch_only"
+        for permission in plan["context_view"]["role_context_permissions"]
+    )
     assert plan["context_patches"][0]["object_type"] == "ContextPatch"
     assert plan["patch_reviews"][0]["review_status"] == "approved_low_risk"
     assert plan["execution_boundary"]["agent_can_call_mcp_same_source_tools"] is True
@@ -115,6 +140,20 @@ def test_agent_tool_gateway_blocks_unapproved_autoform_control() -> None:
     assert "execute" in result["blocked_arguments"]
 
 
+def test_agent_tool_gateway_blocks_unapproved_geometry_import() -> None:
+    gateway = build_agent_tool_gateway()
+    result = gateway.call_tool(
+        "autoform_import_geometry_to_new_project",
+        {"source_geometry_path": r"C:\Users\Tang Xufeng\Desktop\薄板30-40-3.STEP"},
+        agent_id="project_workflow",
+        execution_approved=False,
+    )
+
+    assert result["status"] == "blocked_requires_approval"
+    assert result["approval_required"] is True
+    assert result["policy"]["execution_class"] == "guarded_gui"
+
+
 def test_agent_tool_gateway_allows_canonical_business_agent_aliases() -> None:
     """Canonical business-facing Agent ids should retain access to their mapped MCP owner tools."""
 
@@ -126,6 +165,80 @@ def test_agent_tool_gateway_allows_canonical_business_agent_aliases() -> None:
     )
 
     assert result["status"] == "completed"
+
+
+def test_geometry_dimension_update_routes_only_to_geometry_agent() -> None:
+    """A size edit should keep the center plan focused on geometry."""
+
+    plan = build_center_agent_plan("修改薄板大小 50*40*3", conversation_id="geometry-resize-route")
+    role_ids = plan["context_view"]["selected_role_ids"]
+
+    assert plan["task_card"]["task_type"] == "geometry_check"
+    assert "geometry_data_agent" in role_ids
+    assert "material_agent" not in role_ids
+
+
+def test_geometry_agent_can_read_quicklink_geometry_tools(tmp_path: Path) -> None:
+    """Geometry Agent should see existing QuickLink read-only MCP wrappers through the gateway."""
+
+    archive = tmp_path / "quicklinkExport.zip"
+    quicklink_xml = """<?xml version="1.0" encoding="UTF-8"?>
+<QuickLink xmlns="http://www.autoform.com/AF_QLV100">
+  <Title Program="AFForming R13" ProjectName="Demo" LengthUnit="MM"/>
+  <Blank Guid="blank-1" Name="Blank"/>
+  <ProcessItems>
+    <CoordinateSystems>
+      <CoordinateSystem Name="Part">
+        <File><Name>part_tip.igs</Name></File>
+      </CoordinateSystem>
+    </CoordinateSystems>
+  </ProcessItems>
+</QuickLink>
+"""
+    with ZipFile(archive, "w") as zf:
+        zf.writestr("quicklinkExport_v100.xml", quicklink_xml)
+        zf.writestr("part_tip.igs", "geometry")
+
+    gateway = build_agent_tool_gateway()
+    names = {tool["name"] for tool in gateway.list_tools(agent_id="geometry_data_agent")}
+    blank = gateway.call_tool("autoform_get_blank_info", {"source": str(archive)}, agent_id="geometry_data_agent")
+    geometry = gateway.call_tool("autoform_list_exported_geometry", {"source": str(archive)}, agent_id="geometry_data_agent")
+
+    assert "autoform_get_blank_info" in names
+    assert "autoform_list_exported_geometry" in names
+    assert blank["status"] == "completed"
+    assert blank["result"]["attributes"]["Name"] == "Blank"
+    assert geometry["status"] == "completed"
+    assert geometry["result"] == ["part_tip.igs"]
+
+
+def test_geometry_agent_can_run_low_risk_cad_measurement_script(tmp_path: Path) -> None:
+    source = tmp_path / "plate30-40-3.step"
+    source.write_text("ISO-10303-21;", encoding="utf-8")
+
+    gateway = build_agent_tool_gateway()
+    names = {tool["name"] for tool in gateway.list_tools(agent_id="geometry_data_agent")}
+    catalog = gateway.call_tool("autoform_script_catalog", {"query": "cad"}, agent_id="geometry_data_agent")
+    run = gateway.call_tool(
+        "autoform_script_run",
+        {
+            "skill_id": "cad_measure_geometry_v1",
+            "params": {
+                "source_geometry_path": str(source),
+                "length_unit": "mm",
+                "output_root": str(tmp_path / "measurements"),
+            },
+            "caller_agent": "geometry_data_agent",
+        },
+        agent_id="geometry_data_agent",
+    )
+
+    assert "autoform_script_catalog" in names
+    assert "autoform_script_run" in names
+    assert catalog["status"] == "completed"
+    assert run["status"] == "completed"
+    assert run["result"]["status"] == "blocked"
+    assert run["result"]["result"]["parser"] == "probe_only"
 
 
 def test_agent_tool_gateway_blocks_unapproved_r12_window_demo() -> None:

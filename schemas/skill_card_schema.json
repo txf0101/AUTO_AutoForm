@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autoform-agent.schemas.skill_card.v1",
+  "title": "SkillCard",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "skill_id",
+    "skill_version",
+    "title",
+    "description",
+    "risk_level",
+    "entrypoint"
+  ],
+  "properties": {
+    "schema_version": { "const": "autoform.skill_card.v1" },
+    "skill_id": { "type": "string", "minLength": 1 },
+    "skill_version": { "type": "string", "minLength": 1 },
+    "title": { "type": "string" },
+    "description": { "type": "string" },
+    "risk_level": { "enum": ["L0", "L1", "L2", "L3", "L4"] },
+    "entrypoint": { "type": "string" },
+    "required_params": { "type": "string" },
+    "allowed_params": { "type": "string" },
+    "tags": { "type": "string" },
+    "input_schema": { "type": "string" },
+    "output_schema": { "type": "string" },
+    "validation_rule": { "type": "string" }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,13 @@
+schema_version: autoform.skill_card.v1
+skill_id: cad_measure_geometry_v1
+skill_version: v1
+title: CAD geometry measurement v1
+description: Measure STL geometry with a built-in bounding-box parser and probe STEP or IGES parser availability without inventing dimensions.
+risk_level: L1
+entrypoint: flex_script_library/skills/cad_measure_geometry_v1/versions/v1/cad_measure_geometry.py
+required_params: source_geometry_path
+allowed_params: source_geometry_path;length_unit;output_root
+tags: cad;geometry;measurement;stl;step;iges
+input_schema: schemas/cad_measurement_result_schema.json
+output_schema: schemas/cad_measurement_result_schema.json
+validation_rule: cad_measurement_status_and_evidence

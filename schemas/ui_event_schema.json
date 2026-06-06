@@ -33,6 +33,8 @@
         "evidence_bundle_packed",
         "context_patch_proposed",
         "patch_reviewed",
+        "agent_message",
+        "user_input_requested",
         "command_line",
         "token_usage_snapshot",
         "stage_summary",

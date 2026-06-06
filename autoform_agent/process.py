@@ -29,6 +29,33 @@ def start_forming_ui(
     return command
 
 
+def start_forming_ui_observer(
+    install: AutoFormInstallation | None = None,
+    graphics: str = "directx11",
+    dry_run: bool = False,
+) -> dict:
+    """Start AutoForm Forming and return launch evidence including PID."""
+
+    install = install or get_default_installation()
+    graphics_arg = _graphics_argument(graphics)
+    command = [str(install.splash), "-afformingui", graphics_arg]
+    observation = {
+        "mode": "gui_start_observer",
+        "dry_run": dry_run,
+        "command": command,
+        "cwd": str(install.bin_dir),
+        "launched": False,
+        "pid": None,
+        "evidence": "The command uses AFSplash.exe -afformingui to start AutoForm Forming.",
+    }
+    if dry_run:
+        return observation
+
+    process = subprocess.Popen(command, cwd=str(install.bin_dir))
+    observation.update({"launched": True, "pid": process.pid})
+    return observation
+
+
 def open_afd(
     afd_path: Path,
     install: AutoFormInstallation | None = None,

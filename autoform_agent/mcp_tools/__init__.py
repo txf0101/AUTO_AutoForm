@@ -33,6 +33,8 @@ from .reference import *
 from .reference import register_reference_tools
 from .gui import *
 from .gui import register_gui_tools
+from .scripts import *
+from .scripts import register_script_tools
 
 
 MCP_TOOL_LAYERS: tuple[tuple[str, Callable[[Any], None]], ...] = (
@@ -49,6 +51,7 @@ MCP_TOOL_LAYERS: tuple[tuple[str, Callable[[Any], None]], ...] = (
     ('release', register_release_tools),
     ('reference', register_reference_tools),
     ('gui', register_gui_tools),
+    ('scripts', register_script_tools),
 )
 
 
@@ -69,6 +72,7 @@ ALL_TOOL_FUNCTIONS = (
     autoform_open_afd,
     autoform_resolve_project,
     autoform_project_run,
+    autoform_import_geometry_to_new_project,
     autoform_example_project_baseline,
     autoform_official_sample_run_summary,
     autoform_run_forming_job,
@@ -175,6 +179,8 @@ ALL_TOOL_FUNCTIONS = (
     autoform_result_route_task,
     autoform_result_plan_review,
     autoform_result_readiness,
+    autoform_script_catalog,
+    autoform_script_run,
 )
 
 RESOURCE_FUNCTIONS = (autoform_status_resource,)
@@ -203,5 +209,6 @@ __all__ = [
     "register_release_tools",
     "register_reference_tools",
     "register_gui_tools",
+    "register_script_tools",
     *EXPORTED_FUNCTION_NAMES,
 ]

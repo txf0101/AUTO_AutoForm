@@ -22,6 +22,10 @@ AutoForm Agent 是一个本地辅助工具项目。它把本机 AutoForm Forming
 
 `低风险准备链路` 指 R6 至 R11 的需求分诊、几何数据、RAG 证据、材料候选、工艺候选、低风险脚本和端到端回放。当前入口是 `autoform_agent/preparation_agents.py` 和 CLI 的 `prepare-triage`、`prepare-evidence`、`prepare-script-run`、`prepare-r11-replay`。该链路只生成候选卡片、候选补丁、证据包、脚本运行记录和 `StageSummary`，不会提交真实 AutoForm 求解。
 
+`柔性脚本` 指登记在 `flex_script_library/` 的稳定脚本能力，以及临时放在 `tmp/flex_script_sandbox/` 的 fork、新建和调试脚本。稳定脚本通过 `Script Agent` 和 `Script Executor` 运行，结果统一保存为 `ScriptRunRecord`，证据写入 `output/script_runs/`。当前 MCP 只暴露 `autoform_script_catalog` 和 `autoform_script_run` 两个控制入口；脚本 fork、新建、patch、validate 和 promote 先通过 CLI 或内部 Agent 能力完成。
+
+`CAD 实测` 指 `cad_measure_geometry_v1` 脚本读取 CAD 文件后生成 `cad_measurement_result`。第一阶段内置 STL bounding box 解析；STEP、STP、IGS 和 IGES 会先探测 FreeCAD、FreeCADCmd、OCP/OCC、meshio 等解析器。当前机器缺少解析器时会返回 `status=blocked`、`parser=probe_only`、`blocked_reason` 和 `evidence_dir`。文件名中的 `30-40-3` 只会作为 `filename_dimension_candidate`，不能当作实测长宽厚。
+
 `P0 契约资料` 指 `schemas/`、`fixtures/`、`policy/`、`evals/`、`repo_scaffold.md` 和 `naming_policy.md`。这些文件先固定事件、任务卡、候选补丁、证据包、token 用量和权限边界，后续 UI、后端事件网关和中心 Agent 都应按这些资料联调。
 
 `可选报告规则模板` 指 `schemas/result_review_report_rules_v1_1.schema.json` 和 `fixtures/result_review_report_rules_template_v1_1.json`。当前 V1.1 不要求工程 pass/fail 报告；如果后续需要工程判断报告，应先在模板中填写最小厚度、减薄率、FLD 风险、回弹偏差、最大力和材料流动异常等阈值。
@@ -38,7 +42,7 @@ AutoForm Agent 是一个本地辅助工具项目。它把本机 AutoForm Forming
 
 `gui-control-demo` 指 R12 基础可见窗口控制演示切片。它默认只读取当前 AutoForm 窗口快照，返回来源依据、执行边界、计划阶段和下一步动作；确认目标窗口后再加 `--execute`，可执行恢复、聚焦、截图、按键、点击或拖动中的一个动作。
 
-`r12-project-view-demo` 指 R12 示例工程视角演示。它默认只规划打开官方 `Solver_R13.afd`，再用快捷键 `Z` 切到俯视，最后用快捷键 `E` 回到等轴测；确认本机桌面可以被控制后再加 `--execute`，执行时会锁定目标工程标题和最终可交互窗口进程。
+`r12-project-view-demo` 指 R12 示例工程视角演示。它默认只规划打开官方 `Solver_R13.afd`，再用快捷键 `Z` 切到俯视，然后用快捷键 `E` 回到等轴测；确认本机桌面可以被控制后再加 `--execute`，执行时会锁定目标工程标题和最终可交互窗口进程。
 
 `R13 至 R20 后续规划` 指 R12 之后的企业工艺数据和实时多 Agent 执行路线。R13 至 R17 依次覆盖企业数据接口契约、数据接入与清洗、结构化工艺知识卡、工艺 RAG 检索和证据包、企业证据驱动的工艺规划候选；R18 至 R20 依次覆盖实时执行器骨架、可用实时多 Agent 执行器、企业工艺数据接入后的完整执行器。严格验收标准以 `docs/multi_agent_architecture.md` 为准。
 
@@ -61,7 +65,7 @@ AutoForm Agent 是一个本地辅助工具项目。它把本机 AutoForm Forming
 
 `result-review` 指 V1.1 的 GUI 后处理入口。MCP host 可以调用 `autoform_result_query_capabilities` 查看支持的结果栏目、视角、任务路线和动画证据边界，也可以调用 `autoform_result_gui_evidence` 查看本机 R13 控件证据、V1.1 卡点和 V1.2 延后项，还可以调用 `autoform_result_blockers` 查看当前卡点、对策和需要用户协助的事项。审阅执行前可调用 `autoform_result_plan_review` 从一句用户请求生成审阅计划，并调用 `autoform_result_readiness` 检查最新结果工程、可见窗口、工程窗口匹配和控件证据边界，再调用 `autoform_result_open_latest`、`autoform_result_show_variable`、`autoform_result_set_view`、`autoform_result_view_evidence`、`autoform_result_play_forming_animation` 或 `autoform_result_capture_evidence` 组织结果审阅。涉及真实窗口操作时，需要显式传入 `execute=true`。
 
-`前端` 指 `frontend/` 里的本地网页。它通过本地 HTTP bridge 与 Python 后端运行时通信，默认页面地址是 `http://127.0.0.1:8765/frontend/index.html?bridge=http`。这个页面用于输入 prompt、回放 P0 fixture、显示状态、观察 Agent 图谱和命令输出，并在凭据边界面板配置 DeepSeek 或其他兼容 chat completions 的 endpoint。Agent 图谱固定显示 9 个业务 Agent：中心Agent、需求与工艺规划Agent、几何与数据Agent、材料Agent、工艺设置Agent、求解执行Agent、后处理Agent、诊断与优化Agent、报告整理Agent；内部 role_id 会映射到这些节点，节点工作时显示绿色，结束后回到待命灰白态。
+`前端` 指 `frontend/` 里的本地网页。它通过本地 HTTP bridge 与 Python 后端运行时通信，默认页面地址是 `http://127.0.0.1:8765/frontend/index.html?bridge=http`。这个页面用于输入 prompt、回放 P0 fixture、显示状态、观察 Agent 图谱、查看工程会话轨迹和命令输出，并在凭据边界面板配置 DeepSeek 或其他兼容 chat completions 的 endpoint。输入区左下角的“工程操作”下拉框包含“新建工程”“已有工程（请在Prompt里面告知项目地址）”和官方示例工程名；页面会把该选择整理为 `uiContext.localExecution.projectOperation`，只有选择官方示例时才同时发送 `exampleName`。工程会话轨迹会保留本次前端窗口内的用户 prompt 和 Agent 回复，用户输入靠右显示，live HTTP 回复靠左显示为一条中心 Agent 摘要，`查看本轮 Agent 明细` 折叠区可以查看专业 Agent 消息、当前工程上下文和紧凑工具结果；页面会把压缩后的历史作为 `conversationContext.project_history`、把当前工程对象作为 `conversationContext.current_project` 随下一轮请求传给后端。Agent 图谱固定显示 9 个业务 Agent：中心Agent、需求与工艺规划Agent、几何与数据Agent、材料Agent、工艺设置Agent、求解执行Agent、后处理Agent、诊断与优化Agent、报告整理Agent；内部 role_id 会映射到这些节点，节点工作时显示绿色，结束后回到待命灰白态。
 
 ## 你需要先准备什么
 
@@ -314,11 +318,23 @@ http://127.0.0.1:8765/frontend/index.html?fixture=../fixtures/r11_low_risk_prepa
 
 页面会自动加载该 fixture，用户可直接使用“单步”“跑完”和“重置”查看回放过程。
 
-如果需要从同一个网页窗口打开展示工程，在输入区勾选“允许本机 MCP 工具控制”，示例工程提示选择 `Solver_R13` 或 `AutoComp_R13`，输入“打开一个适合展示的示例工程”并点击“发送”。页面会把 prompt、`uiContext.localExecution`、`scope=mcp_gateway` 和 `agentToolExecutionApproved=true` 发给 HTTP bridge；后端运行时判断示例工程意图，生成 `autoform_project_run` 白名单请求，并通过 `AgentToolGateway` 执行。只说“复制并打开窗口”时，后端会设置 `copy_project=true`、`open_gui=true`、`execute=false`，先复制安全运行副本，再打开 AutoForm 窗口，求解器不执行。只有 prompt 明确包含求解、仿真、计算、solver 或 solve 等执行意图时，后端才会设置 `execute=true`。如果页面日志显示 `LOCAL execution=disabled mcp_control=blocked`，后端仍会用 `autoform_resolve_project` 找到示例工程，但复制、开窗和求解会返回 `blocked_requires_approval`，需要用户重新启用本机执行批准。返回内容包括 `tool_requested`、`tool_completed` 或 `tool_blocked`、工程路径、GUI PID 和求解器状态，页面会把这些内容写入命令输出和 Runtime response。
+如果需要从同一个网页窗口打开展示工程，在输入区勾选“允许本机 MCP 工具控制”，在“工程操作”下拉框选择 `Solver_R13` 或 `AutoComp_R13` 这类官方示例，输入“打开一个适合展示的示例工程”并点击“发送”。页面会把 prompt、`uiContext.localExecution`、`scope=mcp_gateway` 和 `agentToolExecutionApproved=true` 发给 HTTP bridge；后端运行时判断示例工程意图，生成 `autoform_project_run` 白名单请求，并通过 `AgentToolGateway` 执行。只说“打开示例工程”但没有在下拉框或 prompt 中明确示例名时，后端会返回 `exampleProjectSelectionRequired=true` 和候选列表，不会默认打开 `Solver_R13`。只说“复制并打开窗口”时，后端会设置 `copy_project=true`、`open_gui=true`、`execute=false`，先复制安全运行副本，再打开 AutoForm 窗口，求解器不执行。只有 prompt 明确包含求解、仿真、计算、solver 或 solve 等执行意图时，后端才会设置 `execute=true`。如果页面日志显示 `LOCAL execution=disabled mcp_control=blocked`，后端仍会用 `autoform_resolve_project` 找到示例工程，但复制、开窗和求解会返回 `blocked_requires_approval`，需要用户重新启用本机执行批准。返回内容包括 `tool_requested`、`tool_completed` 或 `tool_blocked`、工程路径、GUI PID 和求解器状态；页面会把可读 Agent 摘要写入工程会话轨迹，把专业 Agent 明细折叠在 `查看本轮 Agent 明细`，同时把 `runtime.currentProject` 或工具结果中的工程路径整理为 `conversationContext.current_project`。完整日志继续写入 Runtime response 下方的命令输出。
 
-如果在网页里输入“新建工程”或“创建一个工程”，后端会优先生成 `autoform_start_ui` 请求，前端示例工程提示不会把该请求改写成 `Solver_R13`。该请求同样经过 `AgentToolGateway`：未勾选本机执行批准时返回审批阻断，并提示需要勾选“允许本机 MCP 工具控制”；勾选并批准后启动 AutoForm Forming 主界面。当前项目还没有自动填写 AutoForm 新建工程向导的白名单工具，因此软件启动后的工程类型、材料、几何和工序参数仍需在 AutoForm GUI 内确认，或等待后续新增专门 MCP wrapper。
+如果“工程操作”选择“新建工程”，并且 prompt 写了“打开工程”“新建工程”或“启动 AutoForm 主界面”，后端会生成 `autoform_start_ui` 受控请求。若“工程操作”选择“已有工程（请在Prompt里面告知项目地址）”，prompt 里必须写出完整 `.afd` 路径；缺少路径时，后端只返回中心 Agent 的补充路径提示，不会把请求落到默认示例工程。该设计的依据是前端发送的 `projectOperation` 字段和后端 `AgentToolGateway` 的白名单审批边界。
 
-如果用户输入“打开 `F:\cases\DoorPanel.afd`”或“打开别的项目 `F:\cases\DoorPanel.afd`”这类包含显式 `.afd` 路径的 prompt，后端会优先使用该路径生成 `autoform_project_run` 请求；示例工程提示只在用户没有给出路径或新建目标时参与默认示例选择。用户只说“打开别的项目”但没有提供 `.afd` 路径时，后端不会用默认示例工程替代用户目标，需要用户补充工程路径。
+如果用户只做工作内容咨询，例如“检查当前工程”“当前工程现在是什么状态”“这个工程是做什么的”“这个工程接下来应该做什么”，后端会进入中心 Agent 工程咨询链路。后端优先读取本窗口传回的 `conversationContext.current_project`；如果其中有可访问 `.afd`，会只读提取工程名、特征名、材料、板厚、用途标志和候选字段数；如果当前工程来自官方示例且工程路径不可访问，会读取 `docs/example_project_baselines.json` 中对应示例的摘要。工程会话轨迹显示可读结论，专业 Agent 明细默认折叠；完整命令输出、HTTP 响应和工具日志保留在“命令输出”和 Runtime response 面板。
+
+如果在网页里输入“新建一个工程，创建一个20*20*3的6061铝合金薄板”这类建模准备需求，后端会先走中心 Agent 和专业 Agent 的候选规划链路：中心 Agent 生成 C0 当前任务视图并分发给需求与工艺规划 Agent、几何与数据 Agent 和材料 Agent；几何 Agent 从 `20*20*3` 形成长宽厚候选；材料 Agent 把 `6061铝合金` 规范为 `AA6061`，并调用 `skill_material_database_query` 检索本机 `C:\ProgramData\AutoForm\AFplus\R13F\materials` 下的 AutoForm 材料库候选。该路径只返回 `agent_message`、候选卡片、缺失字段、`pendingUserInput` 和脚本记录，不调用 `autoform_project_run`，不启动 GUI，不执行求解。页面会在工程会话轨迹中显示中心 Agent 转问用户的问题，例如材料状态、`.mtb` 文件或材料曲线来源、杨氏模量和泊松比。
+
+如果在网页里输入“修改薄板大小 50*40*3”这类几何尺寸更新需求，后端会进入中心 Agent 到几何与数据 Agent 的候选更新链路。响应会包含结构化 `agent_message`、`geometryCandidateUpdate`、新的 `PartCard`、候选 `ContextPatch` 和 `willModifyAfd=false`。当前工具目录已经能读取 QuickLink Blank 信息和几何文件引用，也能生成候选几何补丁；真实 AFD 几何实体写回、尺寸编辑和薄板重定义仍需要后续新增经过验证的工具 wrapper、审批边界和测试。
+
+如果用户继续输入“材料补充：AA6061-T4，使用 AA6061-T4.mtb，杨氏模量 69 GPa，泊松比 0.33”，后端会把这轮识别为中心 Agent 收到用户补参并转交材料 Agent 解析。材料 Agent 会形成 `MaterialUserResponseReview` 和候选 `ContextPatch`；当用户选择本机材料卡时，会调用 `skill_material_source_candidate_set` 记录材料来源候选；当杨氏模量和泊松比齐全时，会调用 `skill_material_elastic_constants_candidate_set` 记录候选弹性常数字段，并在工程会话轨迹中说明已经完成候选记录。该续接路径同样保持 `localToolRunCount=0`、`willControlGui=false` 和 `willSubmitSolver=false`。如果 prompt 同时写了“不启动 GUI、不打开工程、不执行求解”，这些否定意图会覆盖前端默认示例提示，不会启动 AutoForm。
+
+如果用户只问“你能在本机中寻找 AutoForm 软件应有的 6061 铝合金材料配置吗”，后端会直接进入材料 Agent 本地检索链路。Agent 协作消息会显示“中心Agent -> 材料Agent”的分发、“材料Agent -> 中心Agent”的脚本结果，以及“材料Agent -> 中心Agent -> 用户”的缺失参数转问。前端会把上一轮材料候选和待确认问题压缩成 `conversationContext`，用户下一轮说“全都使用本机的配置，默认配置”时，后端会继续交给材料 Agent，而不是回到通用环境快照。
+
+如果用户明确输入“启动 AutoForm 主界面并新建工程”或“打开 AutoForm 主界面”这类软件启动需求，后端会生成 `autoform_start_ui` 请求，“工程操作”的官方示例项不会把该请求改写成 `Solver_R13`。该请求同样经过 `AgentToolGateway`：未勾选本机执行批准时返回审批阻断，并提示需要勾选“允许本机 MCP 工具控制”；勾选并批准后启动 AutoForm Forming 主界面。若用户的新建工程请求同时给出桌面 STEP、IGES 或 STL 等几何文件并表达导入意图，后端会改用 `autoform_import_geometry_to_new_project`，工具自行启动或恢复 AutoForm 窗口。当前项目还没有覆盖所有新建工程向导参数的通用白名单工具，因此非几何导入类的工程类型、材料、几何和工序参数仍需在 AutoForm GUI 内确认，或等待后续新增专门 MCP wrapper。
+
+如果用户输入“打开 `F:\cases\DoorPanel.afd`”或“打开别的项目 `F:\cases\DoorPanel.afd`”这类包含显式 `.afd` 路径的 prompt，后端会优先使用该路径生成 `autoform_project_run` 请求；官方示例工程名只在用户没有给出路径或新建目标时参与默认示例选择。用户只说“打开别的项目”但没有提供 `.afd` 路径时，后端不会用默认示例工程替代用户目标，需要用户补充工程路径。
 
 如果用户问“能不能通过项目 MCP 连接”，后端会优先调用只读的 `autoform_status_snapshot`，页面会显示工具完成事件和状态摘要。该检查用于确认网页请求已经进入 MCP 同源工具链。
 
@@ -333,6 +349,46 @@ python -m autoform_agent.cli agent-connection-test --provider deepseek
 ```
 
 该命令不接受 key 参数，只从本机环境或 `.env` 读取 key。输出只包含来源、短指纹、状态和 token 用量。
+
+## 从桌面 CAD 模型新建 AutoForm 工程
+
+如果模型已经放在桌面，例如 `C:\Users\Tang Xufeng\Desktop\薄板30-40-3.STEP`，可以在网页里选择“工程操作：新建工程”，勾选“允许本机 MCP 工具控制”，然后输入类似“新建工程并导入桌面上的 薄板30-40-3.STEP”。后端会调用 `autoform_import_geometry_to_new_project`，支持 `.step`、`.stp`、`.igs`、`.iges` 和 `.stl`。用户不需要先发送“打开GUI”；该工具会判断 AutoForm Forming 是否已运行，必要时启动或恢复窗口，随后走新建工程和导入零件流程，保存 `.afd`，并把截图、窗口树和日志写入 `output/geometry_import_projects/<timestamp>_<模型名>/evidence`。
+
+也可以先用 CLI 预演，不触发 GUI：
+
+```powershell
+python -m autoform_agent import-geometry-to-new-project --source-geometry-path "C:\Users\Tang Xufeng\Desktop\薄板30-40-3.STEP" --output-dir output\geometry_import_projects --dry-run
+```
+
+确认路径和输出目录后，再执行真实 GUI 流程：
+
+```powershell
+python -m autoform_agent import-geometry-to-new-project --source-geometry-path "C:\Users\Tang Xufeng\Desktop\薄板30-40-3.STEP" --output-dir output\geometry_import_projects
+```
+
+返回 JSON 中应检查 `status`、`source_geometry_path`、`output_afd_path`、`gui_pid`、`screenshots`、`logs`、`run_dir`、`evidence_dir`、`geometry_dimension_candidate`、`failure_reason` 和 `blocked_reason`。如果 `status=completed`，`output_afd_path` 指向生成的 `.afd`；如果 `status=blocked` 或 `status=failed`，先打开 `evidence_dir` 查看截图和窗口树。网页只会把成功导入的 `source_geometry_path`、`output_afd_path`、`run_dir` 和 `evidence_dir` 记入 `conversationContext.current_project`，后续问“这个工程是做什么的”时可以继续引用刚才导入的工程。`geometry_dimension_candidate` 来自文件名中的 `30-40-3` 这类模式，可作为长宽厚讨论候选；正式尺寸仍需 CAD 或 AutoForm 几何读取能力复核。
+
+## 用柔性脚本测量 CAD 几何
+
+查看已经登记的脚本：
+
+```powershell
+python -m autoform_agent script-list --query cad
+```
+
+测量桌面上的 STEP 文件：
+
+```powershell
+python -m autoform_agent cad-measure-geometry --source-geometry-path "C:\Users\Tang Xufeng\Desktop\薄板30-40-3.STEP" --length-unit mm
+```
+
+也可以通过通用脚本运行入口调用：
+
+```powershell
+python -m autoform_agent script-run cad_measure_geometry_v1 --param source_geometry_path="C:\Users\Tang Xufeng\Desktop\薄板30-40-3.STEP" --param length_unit=mm
+```
+
+如果本机没有 STEP 解析器，返回 `blocked` 是符合第一阶段设计的结果。此时需要查看 `blocked_reason` 和 `evidence_dir`，并把 `filename_dimension_candidate` 当作文件名候选值处理。对于 `.stl` 文件，当前脚本会用内置顶点解析计算真实 bounding box，并返回 `axis_aligned_bbox`、`length`、`width` 和 `thickness`。
 
 ## 可选 MCP 工具入口
 
@@ -450,7 +506,7 @@ python -m autoform_agent.cli discover
 
 ## 2026-06-02 后端 Agent runtime 补充说明
 
-当前网页或 CLI 发送一次普通 prompt 时，`autoform_agent.agent_runtime` 会先直接调用 DeepSeek 或兼容 `chat/completions` 的 provider，要求模型只返回工具意图 JSON；随后 Python 后端按照白名单执行本地只读或规划工具；最后再把工具结果交给 provider 生成中文回答。普通用户可以从页面上看到工具运行结果、token 用量和 key 来源，但看不到明文 API key。
+当前网页或 CLI 发送一次普通 prompt 时，`autoform_agent.agent_runtime` 会先直接调用 DeepSeek 或兼容 `chat/completions` 的 provider，要求模型只返回工具意图 JSON；随后 Python 后端按照白名单执行本地只读或规划工具；再把工具结果交给 provider 生成中文回答。普通用户可以从页面上看到工具运行结果、token 用量和 key 来源，但看不到明文 API key。
 
 这个说明依据 `autoform_agent/agent_runtime.py` 中的 `TOOL_INTENT_SCHEMA_VERSION`、`_execute_runtime_tool_intents()` 和 `_runtime_tool_registry()`。安全边界依据同一文件中的白名单逻辑：未知工具会被拒绝，工程运行计划不会自动执行，桌面探测默认不截图，AFD 摘要工具只接受 `.afd` 路径。对应测试依据为 `tests/test_agent_runtime.py` 中的两次 direct API 调用、队列工具执行、用量合并和未知工具拒绝测试。
 ## 维护者和开发者延伸阅读

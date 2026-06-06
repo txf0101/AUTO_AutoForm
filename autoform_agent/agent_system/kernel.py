@@ -11,6 +11,7 @@ import re
 from pathlib import Path
 from typing import Any
 
+from ..intent_utils import prompt_affirms_any
 from ..runtime_events import make_run_id
 from .orchestrator import plan_agent_system_turn
 from .registry import AgentRoleRegistry, build_default_agent_registry
@@ -383,12 +384,132 @@ def _build_context_view(
         "missing_roles": route_plan.get("missing_roles", []),
         "dag_node_count": len(task_dag),
         "allowed_gateway_tools": list(unique_tools.values()),
+        "shared_context_policy": _build_shared_context_policy(task_card=task_card, role_ids=role_ids),
+        "role_context_permissions": _build_role_context_permissions(task_card=task_card, role_ids=role_ids),
         "context_rules": [
             "专业 Agent 只能提交候选 ContextPatch。",
             "中心 Agent 负责 ContextPatch 审查和合并判定。",
             "真实 AutoForm 控制动作必须经过 AgentToolGateway approval 边界。",
+            "前端只回传压缩 conversationContext，不回传完整命令输出或未授权长历史。",
         ],
     }
+
+
+def _build_shared_context_policy(*, task_card: dict[str, Any], role_ids: list[str]) -> dict[str, Any]:
+    task_id = str(task_card["task_id"])
+    selected_roles = [str(role_id) for role_id in role_ids]
+    return {
+        "object_type": "SharedContextPolicy",
+        "policy_id": f"policy_{_slug(task_id)}_shared_context",
+        "task_id": task_id,
+        "active_view_level": "C0",
+        "compression_strategy": "prompt_summary + selected role facts + candidate cards + evidence refs + open questions",
+        "read_expansion_policy": "selected specialist may request C3-C5 expansion through center_agent with reason and token budget",
+        "write_policy": "specialist_agent_proposes_ContextPatch; center_agent_reviews; formal_state_merge_requires_validator_or_human",
+        "levels": [
+            {
+                "level": "C0",
+                "name": "当前模型窗口层",
+                "readers": selected_roles,
+                "content": ["prompt_summary", "task_card_slice", "role_specific_state_slice", "open_questions"],
+                "retention": "temporary_view_with_hash",
+            },
+            {
+                "level": "C1",
+                "name": "当前任务卡层",
+                "readers": ["center_agent", *selected_roles],
+                "content": ["task_card", "acceptance", "constraints"],
+                "retention": "archive_after_task",
+            },
+            {
+                "level": "C2",
+                "name": "规范工程状态层",
+                "readers": ["center_agent", *selected_roles],
+                "content": ["project", "part", "geometry", "material", "process", "simulation"],
+                "retention": "versioned_canonical_state",
+            },
+            {
+                "level": "C3-C5",
+                "name": "阶段摘要、证据工件和长期知识层",
+                "readers": ["center_agent", "role_with_matching_scope"],
+                "content": ["stage_summary", "evidence_ref", "artifact_ref", "knowledge_card", "skill_card"],
+                "retention": "reference_first_expand_on_demand",
+            },
+            {
+                "level": "C6",
+                "name": "审计与版本层",
+                "readers": ["center_agent", "validator", "authorized_reviewer"],
+                "content": ["context_patch", "patch_review", "audit_event", "view_hash"],
+                "retention": "append_only",
+            },
+        ],
+    }
+
+
+def _build_role_context_permissions(*, task_card: dict[str, Any], role_ids: list[str]) -> list[dict[str, Any]]:
+    task_id = str(task_card["task_id"])
+    permissions: list[dict[str, Any]] = []
+    for role_id in role_ids:
+        permissions.append(_role_context_permission(task_id=task_id, role_id=str(role_id)))
+    return permissions
+
+
+def _role_context_permission(*, task_id: str, role_id: str) -> dict[str, Any]:
+    default = {
+        "object_type": "RoleContextPermission",
+        "task_id": task_id,
+        "role_id": role_id,
+        "read_levels": ["C0", "C1"],
+        "read_paths": [f"/tasks/{task_id}/task_card", f"/tasks/{task_id}/open_questions"],
+        "write_paths": [f"/tasks/{task_id}/context_patches"],
+        "edit_permission": "propose_context_patch_only",
+        "expand_permission": "request_center_agent_expansion",
+    }
+    by_role: dict[str, dict[str, Any]] = {
+        "manager": {
+            "read_levels": ["C0", "C1", "C2", "C3", "C4", "C5", "C6"],
+            "read_paths": [f"/tasks/{task_id}"],
+            "write_paths": [f"/tasks/{task_id}/route", f"/tasks/{task_id}/context_patches", f"/tasks/{task_id}/stage_summary"],
+            "edit_permission": "review_and_merge_low_risk_context_patch",
+            "expand_permission": "may_expand_selected_context_levels",
+        },
+        "center_agent": {
+            "read_levels": ["C0", "C1", "C2", "C3", "C4", "C5", "C6"],
+            "read_paths": [f"/tasks/{task_id}"],
+            "write_paths": [f"/tasks/{task_id}/route", f"/tasks/{task_id}/context_patches", f"/tasks/{task_id}/stage_summary"],
+            "edit_permission": "review_and_merge_low_risk_context_patch",
+            "expand_permission": "may_expand_selected_context_levels",
+        },
+        "demand_process_planning_agent": {
+            "read_levels": ["C0", "C1", "C2", "C5"],
+            "read_paths": [f"/tasks/{task_id}/task_card", f"/tasks/{task_id}/part", f"/tasks/{task_id}/material", f"/tasks/{task_id}/process"],
+            "write_paths": [f"/tasks/{task_id}/demand_triage", f"/tasks/{task_id}/process_plan_candidate"],
+        },
+        "geometry_data_agent": {
+            "read_levels": ["C0", "C2", "C4"],
+            "read_paths": [f"/tasks/{task_id}/part", f"/tasks/{task_id}/geometry", f"/tasks/{task_id}/artifact_refs"],
+            "write_paths": [f"/tasks/{task_id}/part_card", f"/tasks/{task_id}/geometry_context_patch"],
+            "edit_permission": "write_low_risk_check_or_propose_context_patch",
+        },
+        "material_agent": {
+            "read_levels": ["C0", "C2", "C4", "C5"],
+            "read_paths": [f"/tasks/{task_id}/material", f"/tasks/{task_id}/part", f"/tasks/{task_id}/material_library_refs", f"/knowledge/material"],
+            "write_paths": [f"/tasks/{task_id}/material_card", f"/tasks/{task_id}/material_gap_list", f"/tasks/{task_id}/material_context_patch"],
+            "edit_permission": "propose_material_context_patch_only",
+        },
+        "process_setting_agent": {
+            "read_levels": ["C0", "C2", "C5"],
+            "read_paths": [f"/tasks/{task_id}/part", f"/tasks/{task_id}/material", f"/tasks/{task_id}/process_rules"],
+            "write_paths": [f"/tasks/{task_id}/process_plan", f"/tasks/{task_id}/process_context_patch"],
+        },
+        "script_agent": {
+            "read_levels": ["C0", "C5", "C6"],
+            "read_paths": [f"/tasks/{task_id}/script_requests", "/knowledge/skill_cards"],
+            "write_paths": [f"/tasks/{task_id}/script_run_records", f"/tasks/{task_id}/skill_card_candidates"],
+        },
+    }
+    override = by_role.get(role_id, {})
+    return {**default, **override, "object_type": "RoleContextPermission", "task_id": task_id, "role_id": role_id}
 
 
 def _build_route_context_patch(*, task_id: str, role_ids: tuple[str, ...], created_at: str) -> dict[str, Any]:
@@ -413,6 +534,10 @@ def _build_route_context_patch(*, task_id: str, role_ids: tuple[str, ...], creat
 
 def _task_type(prompt: str, role_ids: tuple[str, ...]) -> str:
     normalized = prompt.lower()
+    has_dimension_triplet = bool(re.search(r"\d+(?:\.\d+)?\s*(?:x|\*|×)\s*\d+(?:\.\d+)?\s*(?:x|\*|×)\s*\d+(?:\.\d+)?", prompt))
+    has_geometry_update = any(token in prompt for token in ("修改", "调整", "改成", "改为", "变更", "重定义", "尺寸", "大小"))
+    if has_dimension_triplet and has_geometry_update:
+        return "geometry_check"
     if "materials" in role_ids or "material_agent" in role_ids or "材料" in prompt or "material" in normalized:
         return "material_check"
     if "quicklink" in role_ids or "geometry_data_agent" in role_ids or "几何" in prompt or "geometry" in normalized:
@@ -434,11 +559,10 @@ def _task_type(prompt: str, role_ids: tuple[str, ...]) -> str:
 
 def _risk_level(prompt: str) -> str:
     high_tokens = ("删除", "覆盖", "清空", "remove", "delete")
-    medium_tokens = ("执行", "运行", "打开", "点击", "控制", "求解", "gui", "execute", "open_gui")
-    normalized = prompt.lower()
-    if any(token in normalized or token in prompt for token in high_tokens):
+    medium_tokens = ("执行", "运行", "打开", "启动", "展示", "点击", "控制", "求解", "execute", "open", "launch", "show", "open_gui")
+    if prompt_affirms_any(prompt, high_tokens):
         return "high"
-    if any(token in normalized or token in prompt for token in medium_tokens):
+    if prompt_affirms_any(prompt, medium_tokens):
         return "medium"
     return "low"
 

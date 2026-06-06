@@ -55,8 +55,8 @@ def test_build_agent_runtime_reply_matches_frontend_contract(monkeypatch) -> Non
     assert reply["role"] == "assistant"
     assert "conv-test" in reply["text"]
     assert reply["runtime"]["frontendOwnsControl"] is False
-    assert reply["metrics"]["connection"] == "缺少 API key"
-    assert reply["preview"]["activeTool"] == "autoform_agent_runtime"
+    assert reply["metrics"]["connection"] == "中心 Agent 工程咨询链路"
+    assert reply["preview"]["activeTool"] == "autoform_project_consultation"
     assert [item["state"] for item in reply["timeline"]] == ["complete", "ready", "ready"]
 
 

@@ -15,6 +15,7 @@ from ..inventory import (
     list_example_projects,
     list_executables,
 )
+from ..geometry_import_workflow import import_geometry_to_new_project
 from ..paths import discover_installations
 from ..process import collect_forming_job_logs, forming_job_plan, open_afd, run_forming_job, start_forming_ui
 from ..project_workflow import example_project_baseline, official_sample_run_summary, project_run_workflow, resolve_project_input
@@ -72,6 +73,29 @@ def autoform_project_run(
         copy_project=copy_project,
         gui_wait_seconds=gui_wait_seconds,
         workspace=workspace,
+    )
+
+
+def autoform_import_geometry_to_new_project(
+    source_geometry_path: str,
+    output_dir: str = "output/geometry_import_projects",
+    output_afd_path: str | None = None,
+    length_unit: str = "mm",
+    geometry_type: str = "part",
+    graphics: str = "directx11",
+    gui_wait_seconds: float = 10,
+    dry_run: bool = False,
+) -> dict:
+    """Create a new AutoForm project by importing CAD geometry and saving `.afd` evidence."""
+    return import_geometry_to_new_project(
+        source_geometry_path=source_geometry_path,
+        output_dir=output_dir,
+        output_afd_path=output_afd_path,
+        length_unit=length_unit,
+        geometry_type=geometry_type,
+        graphics=graphics,
+        gui_wait_seconds=gui_wait_seconds,
+        dry_run=dry_run,
     )
 
 
@@ -169,6 +193,7 @@ def register_project_tools(mcp: Any) -> None:
     mcp.add_tool(autoform_open_afd)
     mcp.add_tool(autoform_resolve_project)
     mcp.add_tool(autoform_project_run)
+    mcp.add_tool(autoform_import_geometry_to_new_project)
     mcp.add_tool(autoform_example_project_baseline)
     mcp.add_tool(autoform_official_sample_run_summary)
     mcp.add_tool(autoform_run_forming_job)
@@ -181,4 +206,4 @@ def register_project_tools(mcp: Any) -> None:
     mcp.add_tool(autoform_list_executables)
 
 
-__all__ = ['autoform_discover_installation', 'autoform_start_ui', 'autoform_open_afd', 'autoform_resolve_project', 'autoform_project_run', 'autoform_example_project_baseline', 'autoform_official_sample_run_summary', 'autoform_run_forming_job', 'autoform_forming_job_plan', 'autoform_collect_forming_job_logs', 'autoform_list_example_projects', 'autoform_inspect_afd', 'autoform_get_afd_readable_index', 'autoform_get_afd_project_summary', 'autoform_list_executables', 'register_project_tools']
+__all__ = ['autoform_discover_installation', 'autoform_start_ui', 'autoform_open_afd', 'autoform_resolve_project', 'autoform_project_run', 'autoform_import_geometry_to_new_project', 'autoform_example_project_baseline', 'autoform_official_sample_run_summary', 'autoform_run_forming_job', 'autoform_forming_job_plan', 'autoform_collect_forming_job_logs', 'autoform_list_example_projects', 'autoform_inspect_afd', 'autoform_get_afd_readable_index', 'autoform_get_afd_project_summary', 'autoform_list_executables', 'register_project_tools']

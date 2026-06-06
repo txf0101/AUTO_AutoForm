@@ -17,11 +17,12 @@ def test_mcp_server_registers_all_tool_layers() -> None:
 
     tool_names = set(mcp_server.mcp._tool_manager._tools)
 
-    assert len(MCP_TOOL_LAYERS) == 13
-    assert len(ALL_TOOL_FUNCTIONS) == 112
-    assert len(tool_names) == 112
+    assert len(MCP_TOOL_LAYERS) == 14
+    assert len(ALL_TOOL_FUNCTIONS) == 115
+    assert len(tool_names) == 115
     assert "autoform_status_snapshot" in tool_names
     assert "autoform_project_run" in tool_names
+    assert "autoform_import_geometry_to_new_project" in tool_names
     assert "autoform_official_sample_run_summary" in tool_names
     assert "autoform_module_coverage_matrix" in tool_names
     assert "autoform_gui_window_snapshot" in tool_names
@@ -37,6 +38,8 @@ def test_mcp_server_registers_all_tool_layers() -> None:
     assert "autoform_result_route_task" in tool_names
     assert "autoform_result_plan_review" in tool_names
     assert "autoform_result_readiness" in tool_names
+    assert "autoform_script_catalog" in tool_names
+    assert "autoform_script_run" in tool_names
 
 
 def test_mcp_server_keeps_status_resource_and_legacy_exports() -> None:

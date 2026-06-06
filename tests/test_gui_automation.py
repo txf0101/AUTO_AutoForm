@@ -239,6 +239,44 @@ def test_send_autoform_keystroke_sends_modifier_sequence(monkeypatch) -> None:
     ]
 
 
+def test_send_autoform_keystroke_supports_control_and_enter(monkeypatch) -> None:
+    window = {"rect": {"left": 10, "top": 20, "width": 200, "height": 100}, "title": "AutoForm Forming R13"}
+    key_events = []
+
+    monkeypatch.setattr(
+        gui_automation,
+        "focus_autoform_window",
+        lambda restore_window=False, title_contains=None, pid=None: {
+            "focused": True,
+            "restore_window": restore_window,
+            "title_contains": title_contains,
+            "pid": pid,
+            "window": window,
+        },
+    )
+    monkeypatch.setattr(
+        gui_automation.user32,
+        "keybd_event",
+        lambda vk, _scan, flags, _extra: key_events.append((vk, flags)),
+    )
+
+    result = gui_automation.send_autoform_keystroke("control+s", wait_seconds=0)
+    enter = gui_automation.send_autoform_keystroke("enter", wait_seconds=0)
+
+    assert result["sent"] is True
+    assert enter["sent"] is True
+    assert key_events[:4] == [
+        (gui_automation.VK_CONTROL, 0),
+        (ord("S"), 0),
+        (ord("S"), gui_automation.KEYEVENTF_KEYUP),
+        (gui_automation.VK_CONTROL, gui_automation.KEYEVENTF_KEYUP),
+    ]
+    assert key_events[-2:] == [
+        (gui_automation.VK_RETURN, 0),
+        (gui_automation.VK_RETURN, gui_automation.KEYEVENTF_KEYUP),
+    ]
+
+
 def test_visible_window_control_demo_dry_run_only_plans(monkeypatch, tmp_path) -> None:
     ready_snapshot = {
         "window_count": 1,

@@ -6,7 +6,7 @@ This test file checks AutoForm processes, solver commands, and GUI launch comman
 from pathlib import Path
 
 from autoform_agent.paths import AutoFormInstallation
-from autoform_agent.process import collect_forming_job_logs, forming_job_plan, open_afd_observer
+from autoform_agent.process import collect_forming_job_logs, forming_job_plan, open_afd_observer, start_forming_ui_observer
 
 
 def _install(tmp_path: Path) -> AutoFormInstallation:
@@ -51,3 +51,15 @@ def test_open_afd_observer_dry_run_records_visibility_boundary(tmp_path: Path) -
     assert observation["launched"] is False
     assert observation["command"] == [str(install.forming_ui), "-file", str(project.resolve())]
     assert observation["progress_visibility"] == "best_effort"
+
+
+def test_start_forming_ui_observer_dry_run_records_pid_boundary(tmp_path: Path) -> None:
+    install = _install(tmp_path)
+
+    observation = start_forming_ui_observer(install=install, dry_run=True)
+
+    assert observation["mode"] == "gui_start_observer"
+    assert observation["dry_run"] is True
+    assert observation["launched"] is False
+    assert observation["pid"] is None
+    assert observation["command"] == [str(install.splash), "-afformingui", "-directx11"]

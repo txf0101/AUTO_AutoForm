@@ -13,3 +13,23 @@
   description: Build a dry-run preparation summary from candidate cards.
   required_params: task_id
   validation_rule: dry_run_summary_only
+- skill_id: skill_material_aa6061_candidate_check
+  risk_level: L1
+  description: Check the AA6061 material candidate path and record missing material parameters without editing AutoForm projects.
+  required_params: task_id;material_grade
+  validation_rule: material_grade_present_and_dry_run_only
+- skill_id: skill_material_database_query
+  risk_level: L1
+  description: Search the local AutoForm material library for candidate material cards without editing AutoForm projects.
+  required_params: task_id;material_grade
+  validation_rule: material_grade_present_and_dry_run_only
+- skill_id: skill_material_source_candidate_set
+  risk_level: L1
+  description: Record a selected AutoForm material card path as a material source candidate without editing AutoForm projects.
+  required_params: task_id;material_grade;material_source_path
+  validation_rule: material_source_present_and_dry_run_only
+- skill_id: skill_material_elastic_constants_candidate_set
+  risk_level: L1
+  description: Record user supplied elastic constants as material candidate fields without editing AutoForm projects.
+  required_params: task_id;material_grade;elastic_modulus_mpa;poisson_ratio
+  validation_rule: elastic_constants_present_and_dry_run_only

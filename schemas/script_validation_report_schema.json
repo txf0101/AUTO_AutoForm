@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autoform-agent.schemas.script_validation_report.v1",
+  "title": "ScriptValidationReport",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "object_type",
+    "status",
+    "summary",
+    "checks",
+    "created_at"
+  ],
+  "properties": {
+    "schema_version": { "const": "autoform.script_validation_report.v1" },
+    "object_type": { "const": "ScriptValidationReport" },
+    "status": { "enum": ["passed", "failed", "warning"] },
+    "summary": { "type": "string" },
+    "checks": { "type": "array", "items": { "type": "object" } },
+    "created_at": { "type": "string" }
+  },
+  "additionalProperties": true
+}

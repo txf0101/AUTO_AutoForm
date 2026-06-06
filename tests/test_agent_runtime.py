@@ -51,8 +51,8 @@ def _snapshot() -> dict:
     }
 
 
-def test_agent_runtime_returns_backend_owned_fallback_without_key() -> None:
-    """Verify the HTTP-visible runtime contract stays backend-owned offline."""
+def test_agent_runtime_project_consultation_returns_agent_messages_without_key() -> None:
+    """A simple work-related consultation should still produce visible Agent dialogue."""
 
     reply = run_agent_runtime_turn(
         {"conversationId": "conv-test", "prompt": "检查当前工程"},
@@ -61,15 +61,124 @@ def test_agent_runtime_returns_backend_owned_fallback_without_key() -> None:
     )
 
     assert reply["role"] == "assistant"
-    assert "AutoForm Agent 后端运行时已接管请求" in reply["text"]
+    assert "中心Agent已完成工程咨询只读检查" in reply["text"]
     assert reply["runtime"]["frontendOwnsControl"] is False
     assert reply["runtime"]["directApiCalled"] is False
-    assert reply["runtime"]["directApiAvailable"] is True
+    assert reply["runtime"]["projectConsultation"] is True
     assert reply["centerPlan"]["schema_version"] == "autoform.center_agent.r5.v1"
     assert reply["centerPlan"]["task_card"]["phase"] == "P0"
-    assert reply["preview"]["activeTool"] == "autoform_agent_runtime"
-    assert reply["metrics"]["connection"] == "缺少 API key"
+    assert reply["preview"]["activeTool"] == "autoform_project_consultation"
+    assert reply["metrics"]["connection"] == "中心 Agent 工程咨询链路"
     assert reply["runtime"]["apiMode"] == "chat_completions"
+    assert any(message["agent_id"] == "center_agent" for message in reply["agentMessages"])
+    assert any(message["agent_id"] == "project_workflow" for message in reply["agentMessages"])
+    assert any(event["type"] == "agent_message" for event in reply["events"])
+
+
+def test_agent_runtime_project_consultation_uses_current_project_context() -> None:
+    """A follow-up question like 这个工程 should resolve to the current project context."""
+
+    reply = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-current-project-followup",
+            "prompt": "这个工程是做什么的",
+            "conversationContext": {
+                "current_project": {
+                    "schema_version": "autoform.current_project.v1",
+                    "kind": "example_project",
+                    "label": "F:/demo/run/Solver_R13.afd",
+                    "example_name": "Solver_R13",
+                    "working_project": "F:/demo/run/Solver_R13.afd",
+                    "last_tool": "autoform_project_run",
+                    "last_tool_status": "completed",
+                    "source": "test",
+                },
+                "project_history": [
+                    {"source": "user", "text": "打开工程"},
+                    {"source": "agent", "text": "当前工程位置：F:/demo/run/Solver_R13.afd。"},
+                ],
+            },
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    assert reply["runtime"]["projectConsultation"] is True
+    assert reply["runtime"]["directApiCalled"] is False
+    assert "toolRuns" not in reply
+    assert reply["runtime"]["currentProjectUsed"] is True
+    assert reply["runtime"]["currentProject"]["working_project"] == "F:/demo/run/Solver_R13.afd"
+    assert reply["runtime"]["currentProjectSummary"]["source"] == "example_project_baseline"
+    assert "Solver_R13.afd" in reply["text"]
+    assert "AutoForm Forming R13 Solver Test File" in reply["text"]
+    assert any("AutoForm Forming R13 Solver Test File" in message["text"] for message in reply["agentMessages"])
+
+
+def test_agent_runtime_project_consultation_uses_geometry_import_current_project() -> None:
+    reply = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-current-import-followup",
+            "prompt": "这个工程是做什么的",
+            "conversationContext": {
+                "current_project": {
+                    "schema_version": "autoform.current_project.v1",
+                    "kind": "new_project_import",
+                    "label": r"F:\runs\thin_plate.afd",
+                    "source_geometry_path": r"C:\Users\Tang Xufeng\Desktop\薄板30-40-3.STEP",
+                    "output_afd_path": r"F:\runs\thin_plate.afd",
+                    "run_dir": r"F:\runs",
+                    "evidence_dir": r"F:\runs\evidence",
+                    "last_tool": "autoform_import_geometry_to_new_project",
+                    "last_tool_status": "completed",
+                    "source": "test",
+                }
+            },
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    assert reply["runtime"]["projectConsultation"] is True
+    assert reply["runtime"]["currentProjectUsed"] is True
+    assert reply["runtime"]["currentProject"]["source_geometry_path"].endswith("薄板30-40-3.STEP")
+    assert reply["runtime"]["currentProject"]["output_afd_path"] == r"F:\runs\thin_plate.afd"
+    assert reply["runtime"]["currentProjectSummary"]["status"] in {"unavailable", "reference_only"}
+
+
+def test_agent_runtime_current_project_cad_measurement_blocks_without_step_parser(tmp_path: Path) -> None:
+    source = tmp_path / "plate30-40-3.step"
+    source.write_text("ISO-10303-21;", encoding="utf-8")
+
+    reply = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-cad-measurement",
+            "prompt": "这个薄板长宽厚是多少",
+            "conversationContext": {
+                "current_project": {
+                    "schema_version": "autoform.current_project.v1",
+                    "kind": "new_project_import",
+                    "label": str(source),
+                    "source_geometry_path": str(source),
+                    "last_tool": "autoform_import_geometry_to_new_project",
+                    "last_tool_status": "completed",
+                }
+            },
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    measurement = reply["runtime"]["cadMeasurement"]
+
+    assert reply["preview"]["activeTool"] == "cad_measure_geometry_v1"
+    assert reply["runtime"]["directApiCalled"] is False
+    assert reply["runtime"]["localToolRunCount"] == 1
+    assert measurement["status"] == "blocked"
+    assert measurement["parser"] == "probe_only"
+    assert measurement["length"] is None
+    assert measurement["filename_dimension_candidate"]["length"] == 30
+    assert "不是 CAD 实测值" in reply["text"]
+    assert reply["runtime"]["currentProject"]["cad_measurement_result"]["status"] == "blocked"
 
 
 def test_agent_runtime_handles_empty_prompt_before_tool_selection() -> None:
@@ -236,7 +345,7 @@ def test_agent_runtime_direct_api_turn_returns_events_and_usage(monkeypatch: pyt
     )
 
     reply = run_agent_runtime_turn(
-        {"conversationId": "conv-direct", "prompt": "检查当前工程"},
+        {"conversationId": "conv-direct", "prompt": "请确认运行时状态"},
         config=config,
         snapshot=_snapshot(),
     )
@@ -472,7 +581,12 @@ def test_agent_runtime_ui_local_execution_context_builds_project_run_request(
             "prompt": "打开一个适合展示的示例工程",
             "uiContext": {
                 "surface": "p0-run-event-workbench",
-                "localExecution": {"enabled": True, "approved": True, "exampleName": "Solver_R13"},
+                "localExecution": {
+                    "enabled": True,
+                    "approved": True,
+                    "projectOperation": "example_project",
+                    "exampleName": "Solver_R13",
+                },
             },
         },
         config=_offline_config(),
@@ -481,8 +595,44 @@ def test_agent_runtime_ui_local_execution_context_builds_project_run_request(
 
     assert reply["runtime"]["directApiCalled"] is False
     assert reply["runtime"]["localToolCompletedCount"] == 1
+    assert reply["runtime"]["currentProject"]["example_name"] == "Solver_R13"
+    assert reply["runtime"]["currentProject"]["working_project"] == "F:/demo/run/Solver_R13.afd"
     assert reply["toolRuns"][0]["tool"] == "autoform_project_run"
     assert reply["toolRuns"][0]["result"]["working_project"] == "F:/demo/run/Solver_R13.afd"
+
+
+def test_agent_runtime_generic_example_prompt_requires_selection(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A generic example request must not fall back to Solver_R13."""
+
+    class FakeGateway:
+        def list_tools(self, *, agent_id=None, include_guarded=True):
+            return [{"name": "autoform_project_run", "owner_agent": "project_workflow"}]
+
+        def call_tool(self, tool_name, arguments, *, agent_id="manager", execution_approved=False, secret_values=()):
+            raise AssertionError(f"unexpected tool call: {tool_name} {arguments}")
+
+    monkeypatch.setattr("autoform_agent.agent_system.kernel.build_agent_tool_gateway", lambda project_root=None: FakeGateway())
+
+    reply = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-generic-example-selection-required",
+            "prompt": "\u6253\u5f00\u4e00\u4e2a\u9002\u5408\u5c55\u793a\u7684\u793a\u4f8b\u5de5\u7a0b",
+            "uiContext": {
+                "surface": "p0-run-event-workbench",
+                "localExecution": {"enabled": True, "approved": True, "exampleName": "Solver_R13"},
+            },
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    assert "toolRuns" not in reply
+    assert reply["runtime"]["exampleProjectSelectionRequired"] is True
+    assert reply["runtime"]["localToolRunCount"] == 0
+    assert reply["pendingUserInput"]["question_count"] == 1
+    assert "Solver_R13" in reply["runtime"]["availableExampleProjects"]
 
 
 def test_agent_runtime_new_project_prompt_blocks_start_ui_without_approval(
@@ -519,7 +669,7 @@ def test_agent_runtime_new_project_prompt_blocks_start_ui_without_approval(
     reply = run_agent_runtime_turn(
         {
             "conversationId": "conv-new-project-blocked",
-            "prompt": "AutoFrom，打开，并且新建一个项目",
+            "prompt": "启动 AutoForm 主界面，并且新建一个项目",
             "uiContext": {"surface": "p0-run-event-workbench", "localExecution": {"enabled": False, "approved": False}},
         },
         config=_offline_config(),
@@ -534,6 +684,8 @@ def test_agent_runtime_new_project_prompt_blocks_start_ui_without_approval(
     assert reply["toolRuns"][0]["approvalRequired"] is True
     assert "没有携带本机执行批准" in reply["text"]
     assert "允许本机 MCP 工具控制" in reply["text"]
+    assert any(message["agent_id"] == "project_workflow" for message in reply["agentMessages"])
+    assert any("详细命令输出保留" in message["text"] for message in reply["agentMessages"])
 
 
 def test_agent_runtime_new_project_prompt_launches_start_ui_with_approval(
@@ -566,7 +718,7 @@ def test_agent_runtime_new_project_prompt_launches_start_ui_with_approval(
     reply = run_agent_runtime_turn(
         {
             "conversationId": "conv-new-project-approved",
-            "prompt": "你好，新建一个工程",
+            "prompt": "启动 AutoForm 主界面并新建一个工程",
             "uiContext": {
                 "surface": "p0-run-event-workbench",
                 "localExecution": {"enabled": True, "approved": True},
@@ -581,6 +733,226 @@ def test_agent_runtime_new_project_prompt_launches_start_ui_with_approval(
     assert reply["toolRuns"][0]["tool"] == "autoform_start_ui"
     assert reply["toolRuns"][0]["status"] == "completed"
     assert "自动填写新建工程向导仍需要新增专门工具" in reply["text"]
+    assert any(message["agent_id"] == "project_workflow" for message in reply["agentMessages"])
+
+
+def test_agent_runtime_new_project_geometry_import_blocks_without_approval(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[tuple[str, dict, bool]] = []
+
+    class FakeGateway:
+        def list_tools(self, *, agent_id=None, include_guarded=True):
+            return [{"name": "autoform_import_geometry_to_new_project", "owner_agent": "project_workflow"}]
+
+        def call_tool(self, tool_name, arguments, *, agent_id="manager", execution_approved=False, secret_values=()):
+            calls.append((tool_name, arguments, execution_approved))
+            assert tool_name == "autoform_import_geometry_to_new_project"
+            assert agent_id == "project_workflow"
+            assert execution_approved is False
+            assert arguments["source_geometry_path"].endswith("薄板30-40-3.STEP")
+            return {
+                "object_type": "AgentToolGatewayResult",
+                "tool": tool_name,
+                "agent_id": agent_id,
+                "arguments": arguments,
+                "started_at": "2026-06-04T00:00:00+00:00",
+                "finished_at": "2026-06-04T00:00:01+00:00",
+                "status": "blocked_requires_approval",
+                "approval_required": True,
+                "policy": {"requires_approval": True},
+            }
+
+    monkeypatch.setattr("autoform_agent.agent_system.kernel.build_agent_tool_gateway", lambda project_root=None: FakeGateway())
+
+    reply = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-new-project-import-blocked",
+            "prompt": r"新建工程并导入桌面上的 薄板30-40-3.STEP",
+            "uiContext": {
+                "surface": "p0-run-event-workbench",
+                "localExecution": {"enabled": False, "approved": False, "projectOperation": "new_project"},
+            },
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    assert calls and calls[0][0] == "autoform_import_geometry_to_new_project"
+    assert reply["runtime"]["localToolBlockedCount"] == 1
+    assert reply["toolRuns"][0]["tool"] == "autoform_import_geometry_to_new_project"
+    assert reply["toolRuns"][0]["status"] == "blocked_requires_approval"
+
+
+def test_agent_runtime_new_project_geometry_import_with_approval_sets_current_project(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeGateway:
+        def list_tools(self, *, agent_id=None, include_guarded=True):
+            return [{"name": "autoform_import_geometry_to_new_project", "owner_agent": "project_workflow"}]
+
+        def call_tool(self, tool_name, arguments, *, agent_id="manager", execution_approved=False, secret_values=()):
+            assert tool_name == "autoform_import_geometry_to_new_project"
+            assert agent_id == "project_workflow"
+            assert execution_approved is True
+            assert arguments["source_geometry_path"].endswith("薄板30-40-3.STEP")
+            return {
+                "object_type": "AgentToolGatewayResult",
+                "tool": tool_name,
+                "agent_id": agent_id,
+                "arguments": arguments,
+                "started_at": "2026-06-04T00:00:00+00:00",
+                "finished_at": "2026-06-04T00:00:01+00:00",
+                "status": "completed",
+                "result": {
+                    "status": "completed",
+                    "source_geometry_path": arguments["source_geometry_path"],
+                    "output_afd_path": r"F:\runs\thin_plate.afd",
+                    "run_dir": r"F:\runs",
+                    "evidence_dir": r"F:\runs\evidence",
+                    "gui_pid": 2468,
+                    "screenshots": [r"F:\runs\evidence\05_after_save.png"],
+                    "logs": [r"F:\runs\evidence\workflow_log.jsonl"],
+                    "steps": [{"name": "verify_output_afd", "status": "completed"}],
+                },
+            }
+
+    monkeypatch.setattr("autoform_agent.agent_system.kernel.build_agent_tool_gateway", lambda project_root=None: FakeGateway())
+
+    reply = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-new-project-import-approved",
+            "prompt": r"新建工程并导入桌面上的 薄板30-40-3.STEP",
+            "uiContext": {
+                "surface": "p0-run-event-workbench",
+                "localExecution": {"enabled": True, "approved": True, "projectOperation": "new_project"},
+            },
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    assert reply["runtime"]["localToolCompletedCount"] == 1
+    assert reply["toolRuns"][0]["tool"] == "autoform_import_geometry_to_new_project"
+    assert reply["runtime"]["currentProject"]["kind"] == "new_project_import"
+    assert reply["runtime"]["currentProject"]["source_geometry_path"].endswith("薄板30-40-3.STEP")
+    assert reply["runtime"]["currentProject"]["output_afd_path"] == r"F:\runs\thin_plate.afd"
+    assert reply["runtime"]["currentProject"]["evidence_dir"] == r"F:\runs\evidence"
+
+
+def test_agent_runtime_geometry_import_business_failure_does_not_set_current_project(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeGateway:
+        def list_tools(self, *, agent_id=None, include_guarded=True):
+            return [{"name": "autoform_import_geometry_to_new_project", "owner_agent": "project_workflow"}]
+
+        def call_tool(self, tool_name, arguments, *, agent_id="manager", execution_approved=False, secret_values=()):
+            assert tool_name == "autoform_import_geometry_to_new_project"
+            assert agent_id == "project_workflow"
+            assert execution_approved is True
+            assert arguments["source_geometry_path"].endswith("薄板30-40-3.STEP")
+            return {
+                "object_type": "AgentToolGatewayResult",
+                "tool": tool_name,
+                "agent_id": agent_id,
+                "arguments": arguments,
+                "started_at": "2026-06-04T00:00:00+00:00",
+                "finished_at": "2026-06-04T00:00:01+00:00",
+                "status": "completed",
+                "result": {
+                    "status": "failed",
+                    "source_geometry_path": arguments["source_geometry_path"],
+                    "output_afd_path": "",
+                    "run_dir": r"F:\runs\failed_import",
+                    "evidence_dir": r"F:\runs\failed_import\evidence",
+                    "failure_reason": "source_geometry_path does not exist",
+                    "steps": [{"name": "validate_inputs", "status": "failed"}],
+                },
+            }
+
+    monkeypatch.setattr("autoform_agent.agent_system.kernel.build_agent_tool_gateway", lambda project_root=None: FakeGateway())
+
+    reply = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-new-project-import-business-failed",
+            "prompt": "新建工程； 导入一个桌面上的薄板模型“薄板30-40-3.STEP”； 告诉我这个薄板的长宽厚；",
+            "uiContext": {
+                "surface": "p0-run-event-workbench",
+                "localExecution": {"enabled": True, "approved": True, "projectOperation": "new_project"},
+            },
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    assert reply["runtime"]["localToolFailedCount"] == 1
+    assert reply["toolRuns"][0]["gatewayStatus"] == "completed"
+    assert reply["toolRuns"][0]["status"] == "failed"
+    assert reply["toolRuns"][0]["result"]["status"] == "failed"
+    assert reply["runtime"]["currentProject"] is None
+
+
+def test_agent_runtime_geometry_import_prompt_overrides_stale_example_hint(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A stale example hint must not open Solver_R13 when the prompt asks for new CAD import."""
+
+    calls: list[tuple[str, dict]] = []
+
+    class FakeGateway:
+        def list_tools(self, *, agent_id=None, include_guarded=True):
+            return [
+                {"name": "autoform_import_geometry_to_new_project", "owner_agent": "project_workflow"},
+                {"name": "autoform_project_run", "owner_agent": "project_workflow"},
+            ]
+
+        def call_tool(self, tool_name, arguments, *, agent_id="manager", execution_approved=False, secret_values=()):
+            calls.append((tool_name, arguments))
+            assert tool_name == "autoform_import_geometry_to_new_project"
+            assert agent_id == "project_workflow"
+            assert execution_approved is True
+            assert arguments["source_geometry_path"].casefold().endswith(".step")
+            return {
+                "object_type": "AgentToolGatewayResult",
+                "tool": tool_name,
+                "agent_id": agent_id,
+                "arguments": arguments,
+                "started_at": "2026-06-04T00:00:00+00:00",
+                "finished_at": "2026-06-04T00:00:01+00:00",
+                "status": "completed",
+                "result": {
+                    "status": "completed",
+                    "source_geometry_path": arguments["source_geometry_path"],
+                    "output_afd_path": r"F:\runs\thin_plate.afd",
+                    "run_dir": r"F:\runs",
+                    "evidence_dir": r"F:\runs\evidence",
+                    "gui_pid": 1357,
+                    "screenshots": [],
+                    "logs": [],
+                    "steps": [{"name": "verify_output_afd", "status": "completed"}],
+                },
+            }
+
+    monkeypatch.setattr("autoform_agent.agent_system.kernel.build_agent_tool_gateway", lambda project_root=None: FakeGateway())
+
+    reply = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-import-overrides-stale-example",
+            "prompt": "\u6253\u5f00GUI\uff0c\u65b0\u5efa\u5de5\u7a0b\u5e76\u5bfc\u5165\u684c\u9762\u4e0a\u7684 \u8584\u677f30-40-3.STEP",
+            "uiContext": {
+                "surface": "p0-run-event-workbench",
+                "localExecution": {"enabled": True, "approved": True, "exampleName": "Solver_R13"},
+            },
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    assert calls and calls[0][0] == "autoform_import_geometry_to_new_project"
+    assert reply["runtime"]["localToolCompletedCount"] == 1
+    assert reply["toolRuns"][0]["tool"] == "autoform_import_geometry_to_new_project"
+    assert reply["runtime"]["currentProject"]["kind"] == "new_project_import"
 
 
 def test_agent_runtime_new_project_prompt_ignores_frontend_example_hint(
@@ -616,7 +988,7 @@ def test_agent_runtime_new_project_prompt_ignores_frontend_example_hint(
     reply = run_agent_runtime_turn(
         {
             "conversationId": "conv-new-project-approved-with-example-hint",
-            "prompt": "AutoFrom，打开，并且新建一个项目",
+            "prompt": "打开 AutoForm 主界面，并且新建一个项目",
             "uiContext": {
                 "surface": "p0-run-event-workbench",
                 "localExecution": {"enabled": True, "approved": True, "exampleName": "Solver_R13"},
@@ -630,6 +1002,72 @@ def test_agent_runtime_new_project_prompt_ignores_frontend_example_hint(
     assert reply["runtime"]["localToolCompletedCount"] == 1
     assert reply["toolRuns"][0]["tool"] == "autoform_start_ui"
     assert reply["toolRuns"][0]["status"] == "completed"
+
+
+def test_agent_runtime_project_operation_new_project_selection_starts_ui(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The front-end 工程操作 selector may request a new-project UI path."""
+
+    class FakeGateway:
+        def list_tools(self, *, agent_id=None, include_guarded=True):
+            return [{"name": "autoform_start_ui", "owner_agent": "project_workflow"}]
+
+        def call_tool(self, tool_name, arguments, *, agent_id="manager", execution_approved=False, secret_values=()):
+            assert tool_name == "autoform_start_ui"
+            assert agent_id == "project_workflow"
+            assert execution_approved is True
+            return {
+                "object_type": "AgentToolGatewayResult",
+                "tool": tool_name,
+                "agent_id": agent_id,
+                "arguments": arguments,
+                "started_at": "2026-06-05T00:00:00+00:00",
+                "finished_at": "2026-06-05T00:00:01+00:00",
+                "status": "completed",
+                "result": ["AFForming.exe", "-afformingui", "-directx11"],
+            }
+
+    monkeypatch.setattr("autoform_agent.agent_system.kernel.build_agent_tool_gateway", lambda project_root=None: FakeGateway())
+
+    reply = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-project-operation-new",
+            "prompt": "打开工程",
+            "uiContext": {
+                "surface": "p0-run-event-workbench",
+                "localExecution": {"enabled": True, "approved": True, "projectOperation": "new_project"},
+            },
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    assert reply["toolRuns"][0]["tool"] == "autoform_start_ui"
+    assert reply["runtime"]["localToolCompletedCount"] == 1
+    assert any(message["agent_id"] == "project_workflow" for message in reply["agentMessages"])
+
+
+def test_agent_runtime_project_operation_existing_project_requires_prompt_path() -> None:
+    """The front-end 已有工程 option must not fall back to an example project silently."""
+
+    reply = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-project-operation-existing-missing-path",
+            "prompt": "打开工程",
+            "uiContext": {
+                "surface": "p0-run-event-workbench",
+                "localExecution": {"enabled": True, "approved": True, "projectOperation": "existing_project"},
+            },
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    assert "toolRuns" not in reply
+    assert reply["runtime"]["existingProjectPathRequired"] is True
+    assert "currentProject" not in reply["runtime"]
+    assert "请把已有工程的完整 `.afd` 地址写在 Prompt 里" in reply["agentMessages"][-1]["text"]
 
 
 def test_agent_runtime_explicit_afd_path_uses_user_project_not_example_hint(
@@ -789,7 +1227,7 @@ def test_agent_runtime_mcp_connection_question_reads_status_snapshot(
                 "started_at": "2026-06-04T00:00:00+00:00",
                 "finished_at": "2026-06-04T00:00:01+00:00",
                 "status": "completed",
-                "result": {"status": "ok", "tool_count": 112},
+                "result": {"status": "ok", "tool_count": 113},
             }
 
     monkeypatch.setattr("autoform_agent.agent_system.kernel.build_agent_tool_gateway", lambda project_root=None: FakeGateway())
@@ -804,6 +1242,353 @@ def test_agent_runtime_mcp_connection_question_reads_status_snapshot(
     assert reply["runtime"]["localToolCompletedCount"] == 1
     assert reply["toolRuns"][0]["tool"] == "autoform_status_snapshot"
     assert reply["toolRuns"][0]["status"] == "completed"
+
+
+def test_agent_runtime_negated_mcp_status_check_does_not_run_project(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Negated GUI and solver words must not become project-run approval."""
+
+    calls: list[str] = []
+
+    class FakeGateway:
+        def list_tools(self, *, agent_id=None, include_guarded=True):
+            return [
+                {"name": "autoform_status_snapshot", "owner_agent": "installation"},
+                {"name": "autoform_project_run", "owner_agent": "project_workflow"},
+            ]
+
+        def call_tool(self, tool_name, arguments, *, agent_id="manager", execution_approved=False, secret_values=()):
+            calls.append(tool_name)
+            assert tool_name == "autoform_status_snapshot"
+            assert agent_id == "mcp_gateway"
+            assert execution_approved is True
+            return {
+                "object_type": "AgentToolGatewayResult",
+                "tool": tool_name,
+                "agent_id": agent_id,
+                "arguments": arguments,
+                "started_at": "2026-06-05T00:00:00+00:00",
+                "finished_at": "2026-06-05T00:00:01+00:00",
+                "status": "completed",
+                "result": {"status": "ok", "tool_count": 113},
+            }
+
+    monkeypatch.setattr("autoform_agent.agent_system.kernel.build_agent_tool_gateway", lambda project_root=None: FakeGateway())
+
+    reply = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-negated-mcp-status",
+            "prompt": "请检查当前项目的 MCP 连接状态，列出后端可用的本机工具证据；只做状态检查，不启动 AutoForm，不打开工程，不执行求解。",
+            "uiContext": {
+                "surface": "p0-run-event-workbench",
+                "localExecution": {"enabled": True, "approved": True, "exampleName": "Solver_R13"},
+            },
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    assert calls == ["autoform_status_snapshot"]
+    assert reply["runtime"]["directApiCalled"] is False
+    assert reply["runtime"]["localToolCompletedCount"] == 1
+    assert [run["tool"] for run in reply["toolRuns"]] == ["autoform_status_snapshot"]
+    assert "autoform_status_snapshot 已返回状态快照" in reply["text"]
+    assert "autoform_project_run 已返回" not in reply["text"]
+
+
+def test_agent_runtime_6061_thin_plate_preparation_returns_agent_messages_without_tool_run() -> None:
+    """A preparation prompt should show multi-agent candidate work without starting AutoForm."""
+
+    reply = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-6061-thin-plate-preparation",
+            "prompt": "新建一个工程，创建一个20*20*3的6061铝合金薄板",
+            "uiContext": {
+                "surface": "p0-run-event-workbench",
+                "localExecution": {"enabled": True, "approved": True, "exampleName": "Solver_R13"},
+            },
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    role_ids = reply["centerPlan"]["context_view"]["selected_role_ids"]
+    assert {"demand_process_planning_agent", "geometry_data_agent", "material_agent"} <= set(role_ids)
+    assert "toolRuns" not in reply
+    assert reply["runtime"]["directApiCalled"] is False
+    assert reply["runtime"]["localToolRunCount"] == 0
+    assert reply["runtime"]["willSubmitSolver"] is False
+    assert reply["runtime"]["willControlGui"] is False
+    assert reply["runtime"]["preparationArtifacts"]["partCard"]["blank_thickness_mm"] == 3.0
+    assert reply["runtime"]["preparationArtifacts"]["materialCard"]["grade"] == "AA6061"
+    task_id = reply["centerPlan"]["task_card"]["task_id"]
+    artifacts = reply["runtime"]["preparationArtifacts"]
+    assert artifacts["partCard"]["task_id"] == task_id
+    assert artifacts["materialCard"]["task_id"] == task_id
+    assert artifacts["processPlanCard"]["task_id"] == task_id
+    assert "demo" not in artifacts["partCard"]["part_id"]
+    assert "demo" not in artifacts["materialCard"]["material_id"]
+    assert "demo" not in artifacts["processPlanCard"]["process_plan_id"]
+    pending = reply["pendingUserInput"]
+    assert pending["object_type"] == "UserInputRequestSet"
+    assert pending["source_agent"] == "material_agent"
+    assert pending["target_agent"] == "center_agent"
+    assert pending["status"] == "needs_user_input"
+    assert {question["field_group"] for question in pending["questions"]} >= {
+        "material_temper",
+        "material_curve_source",
+        "elastic_constants",
+    }
+    assert reply["runtime"]["pendingUserInput"]["question_count"] == len(pending["questions"])
+    assert any(message["agent_id"] == "center_agent" for message in reply["agentMessages"])
+    assert any(message["agent_id"] == "geometry_data_agent" for message in reply["agentMessages"])
+    assert any(message["agent_id"] == "material_agent" for message in reply["agentMessages"])
+    assert any(message["speaker"] == "中心Agent -> 材料Agent" for message in reply["agentMessages"])
+    assert reply["runtime"]["preparationArtifacts"]["scriptSkillId"] == "skill_material_database_query"
+    assert reply["runtime"]["materialDatabaseQuery"]["script_run"]["skill_id"] == "skill_material_database_query"
+    assert any(event["type"] == "agent_message" for event in reply["events"])
+    assert any(event["type"] == "user_input_requested" for event in reply["events"])
+    assert "中心Agent转问用户的问题" in reply["text"]
+
+
+def test_agent_runtime_real_chinese_new_project_preparation_does_not_start_gui() -> None:
+    """A real Chinese preparation prompt should not be hijacked by the new-project selector."""
+
+    reply = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-real-zh-new-project-prep",
+            "prompt": "新建一个工程，创建一个20*20*3的6061铝合金薄板",
+            "uiContext": {
+                "surface": "p0-run-event-workbench",
+                "localExecution": {"enabled": True, "approved": True, "projectOperation": "new_project"},
+            },
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    assert "toolRuns" not in reply
+    assert reply["runtime"]["directApiCalled"] is False
+    assert reply["runtime"]["localToolRunCount"] == 0
+    assert reply["runtime"]["willControlGui"] is False
+    assert reply["runtime"]["willSubmitSolver"] is False
+    assert reply["runtime"]["preparationArtifacts"]["partCard"]["blank_thickness_mm"] == 3.0
+    assert reply["runtime"]["preparationArtifacts"]["materialCard"]["grade"] == "AA6061"
+    assert any(message["agent_id"] == "geometry_data_agent" for message in reply["agentMessages"])
+    assert any(message["agent_id"] == "material_agent" for message in reply["agentMessages"])
+
+
+def test_agent_runtime_geometry_resize_returns_candidate_patch_without_tool_run() -> None:
+    """A blank size edit should become a geometry candidate update, not an unstructured fallback."""
+
+    reply = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-resize-thin-plate",
+            "prompt": "修改薄板大小 50*40*3",
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    assert reply["runtime"]["directApiCalled"] is False
+    assert reply["runtime"]["willModifyAfd"] is False
+    assert reply["runtime"]["willSubmitSolver"] is False
+    assert reply["runtime"]["willControlGui"] is False
+    assert "toolRuns" not in reply
+    assert reply["centerPlan"]["task_card"]["task_type"] == "geometry_check"
+    geometry_update = reply["runtime"]["geometryCandidateUpdate"]
+    assert geometry_update["status"] == "candidate_context_patch_only"
+    assert geometry_update["partCard"]["blank_dimensions_mm"]["length_mm"] == 50.0
+    assert geometry_update["partCard"]["blank_dimensions_mm"]["width_mm"] == 40.0
+    assert geometry_update["partCard"]["blank_thickness_mm"] == 3.0
+    assert geometry_update["contextPatch"]["object_type"] == "ContextPatch"
+    assert any(message["agent_id"] == "geometry_data_agent" for message in reply["agentMessages"])
+    assert any(event["type"] == "agent_message" for event in reply["events"])
+    assert "几何候选更新链路" in reply["text"]
+    assert "AFD 几何实体修改" in reply["text"]
+
+
+def test_agent_runtime_material_database_query_uses_material_agent_script() -> None:
+    """A material lookup prompt should run locally through the material agent."""
+
+    reply = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-material-db-query",
+            "prompt": "你能在本机中寻找AutoForm软件应有的6061铝合金材料配置吗",
+            "uiContext": {
+                "surface": "p0-run-event-workbench",
+                "localExecution": {"enabled": True, "approved": True, "exampleName": "Solver_R13"},
+            },
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    runtime = reply["runtime"]
+    assert "toolRuns" not in reply
+    assert runtime["directApiCalled"] is False
+    assert runtime["multiAgentMaterialLookup"] is True
+    assert runtime["localToolRunCount"] == 0
+    assert runtime["willSubmitSolver"] is False
+    assert runtime["willControlGui"] is False
+    assert runtime["materialDatabaseQuery"]["script_run"]["skill_id"] == "skill_material_database_query"
+    assert "material_agent" in reply["centerPlan"]["context_view"]["selected_role_ids"]
+    assert reply["centerPlan"]["context_view"]["shared_context_policy"]["active_view_level"] == "C0"
+    assert any(message["speaker"] == "中心Agent -> 材料Agent" for message in reply["agentMessages"])
+    assert any("材料Agent -> 中心Agent -> 用户" == message["speaker"] for message in reply["agentMessages"])
+    assert "已进入材料 Agent 本地检索链路" in reply["text"]
+    assert "执行边界：未调用 autoform_project_run" in reply["text"]
+
+
+def test_agent_runtime_default_material_answer_uses_conversation_context() -> None:
+    """A default-material answer should continue from the compressed material context."""
+
+    conversation_context = {
+        "selected_role_ids": ["manager", "material_agent"],
+        "material_card": {
+            "object_type": "MaterialCard",
+            "grade": "AA6061",
+            "confirmation_status": "needs_human_confirmation",
+            "local_autoform_material_candidates": [
+                {
+                    "name": "AA6061-T4.mtb",
+                    "path": r"C:\ProgramData\AutoForm\AFplus\R13F\materials\Aerospace\Aluminum\AA6061-T4.mtb",
+                    "extension": ".mtb",
+                    "source_type": "local_autoform_material_library",
+                }
+            ],
+        },
+        "pending_user_input": {
+            "object_type": "UserInputRequestSet",
+            "source_agent": "material_agent",
+            "target_agent": "center_agent",
+            "status": "needs_user_input",
+        },
+    }
+
+    reply = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-material-default-context",
+            "prompt": "全都使用本机的配置，默认配置",
+            "conversationContext": conversation_context,
+            "uiContext": {
+                "surface": "p0-run-event-workbench",
+                "localExecution": {"enabled": True, "approved": True, "exampleName": "Solver_R13"},
+            },
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    runtime = reply["runtime"]
+    material_response = runtime["materialUserResponse"]
+    assert "toolRuns" not in reply
+    assert runtime["directApiCalled"] is False
+    assert runtime["multiAgentMaterialResume"] is True
+    assert runtime["conversationContextUsed"] is True
+    assert runtime["localToolRunCount"] == 0
+    assert runtime["willSubmitSolver"] is False
+    assert runtime["willControlGui"] is False
+    assert material_response["material_grade"] == "AA6061"
+    assert material_response["selected_material_source"]["path"]
+    assert material_response["material_source_script_run"]["skill_id"] == "skill_material_source_candidate_set"
+    assert any(message["speaker"] == "中心Agent -> 材料Agent" for message in reply["agentMessages"])
+    assert any("skill_material_source_candidate_set" in message["text"] for message in reply["agentMessages"])
+
+
+def test_agent_runtime_material_user_response_continues_through_center_agent() -> None:
+    """A material answer should return to the material agent without opening AutoForm."""
+
+    reply = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-material-user-response",
+            "prompt": "材料补充：AA6061-T4，使用 AA6061-T4.mtb，杨氏模量 69 GPa，泊松比 0.33；不要启动 GUI，不打开工程，不执行求解。",
+            "uiContext": {
+                "surface": "p0-run-event-workbench",
+                "localExecution": {"enabled": True, "approved": True, "exampleName": "Solver_R13"},
+            },
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    runtime = reply["runtime"]
+    material_response = runtime["materialUserResponse"]
+    assert "toolRuns" not in reply
+    assert runtime["directApiCalled"] is False
+    assert runtime["multiAgentMaterialResume"] is True
+    assert runtime["localToolRunCount"] == 0
+    assert runtime["willSubmitSolver"] is False
+    assert runtime["willControlGui"] is False
+    assert runtime["pendingUserInput"]["question_count"] == 0
+    assert material_response["material_grade"] == "AA6061"
+    assert material_response["material_temper"] == "T4"
+    assert material_response["elastic_constants"] == {
+        "elastic_modulus_mpa": 69000.0,
+        "poisson_ratio": 0.33,
+    }
+    assert material_response["script_run"]["skill_id"] == "skill_material_elastic_constants_candidate_set"
+    assert material_response["script_run"]["status"] == "completed"
+    assert "solver_execution_agent" not in reply["centerPlan"]["context_view"]["selected_role_ids"]
+    assert "process_setting_agent" not in reply["centerPlan"]["context_view"]["selected_role_ids"]
+    assert any("材料补参" in message["text"] for message in reply["agentMessages"])
+    assert any("已调用 skill_material_elastic_constants_candidate_set" in message["text"] for message in reply["agentMessages"])
+    assert any(event["type"] == "agent_message" for event in reply["events"])
+    assert not any(event["type"] == "user_input_requested" for event in reply["events"])
+    assert "执行边界：未调用 autoform_project_run" in reply["text"]
+
+
+def test_agent_runtime_real_chinese_material_answer_does_not_run_project() -> None:
+    """A real Chinese material answer should stay in the material-agent resume path."""
+
+    reply = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-real-zh-material-answer",
+            "prompt": "材料补充：AA6061-T4，使用 AA6061-T4.mtb，杨氏模量 69 GPa，泊松比 0.33；不要启动 GUI，不打开工程，不执行求解。",
+            "uiContext": {
+                "surface": "p0-run-event-workbench",
+                "localExecution": {"enabled": True, "approved": True, "exampleName": "Solver_R13"},
+            },
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    assert "toolRuns" not in reply
+    assert reply["runtime"]["directApiCalled"] is False
+    assert reply["runtime"]["multiAgentMaterialResume"] is True
+    assert reply["runtime"]["localToolRunCount"] == 0
+    assert reply["runtime"]["willControlGui"] is False
+    assert reply["runtime"]["willSubmitSolver"] is False
+    assert reply["runtime"]["materialUserResponse"]["elastic_constants"] == {
+        "elastic_modulus_mpa": 69000.0,
+        "poisson_ratio": 0.33,
+    }
+
+
+def test_agent_runtime_material_response_with_ascii_gui_negation_does_not_run_project() -> None:
+    """Object words like GUI should not count as project-run action approval."""
+
+    reply = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-material-user-response-ascii-negation",
+            "prompt": "Material supplement: AA6061-T4, use AA6061-T4.mtb, E=69000 MPa, poisson=0.33; do not launch GUI, do not open project, do not solve.",
+            "uiContext": {
+                "surface": "p0-run-event-workbench",
+                "localExecution": {"enabled": True, "approved": True, "exampleName": "Solver_R13"},
+            },
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    assert "toolRuns" not in reply
+    assert reply["runtime"]["multiAgentMaterialResume"] is True
+    assert reply["runtime"]["localToolRunCount"] == 0
+    assert reply["runtime"]["willControlGui"] is False
+    assert reply["runtime"]["willSubmitSolver"] is False
+    assert reply["runtime"]["materialUserResponse"]["script_run"]["status"] == "completed"
 
 
 def test_agent_runtime_ui_local_execution_approval_does_not_approve_explicit_tool_requests(
@@ -1077,8 +1862,11 @@ def test_agent_runtime_registers_result_review_catalog_entries() -> None:
     assert "autoform_result_review_plan" in names
     assert "autoform_result_readiness" in names
     assert "autoform_center_agent_plan" in names
+    assert "autoform_geometry_candidate_update" in names
     assert "autoform_agent_tool_gateway_catalog" in names
     assert "autoform_agent_mcp_gateway_call" in names
     assert "autoform_list_example_projects" in names
     assert "autoform_example_projects" in names
     assert "autoform_start_ui" in names
+    assert "autoform_get_blank_info" in names
+    assert "autoform_list_exported_geometry" in names

@@ -52,10 +52,10 @@ V1.4 focuses on the local web workbench, Python API runtime, R5 center Agent, an
 - The front-end approval switch is now scoped as local MCP tool control rather than a single demo-example switch.
 - User prompts for "new project" or "create project" map to `autoform_start_ui` before any example hint is considered.
 - Explicit `.afd` paths in prompts map to user project runs through `autoform_project_run(afd_path=...)`.
-- The example dropdown is only an example-project hint when the prompt does not name a new project or a user `.afd` path.
+- The workbench selector is now labeled `工程操作`; `new_project` starts the guarded UI path, `existing_project` requires a `.afd` path in the prompt, and official examples provide `exampleName`.
 - Release readiness expects package version `1.4.0` and includes [V1.4 release notes](docs/v1_4_release_notes.md).
 
-中文说明：V1.4 把网页输入、Python 后端运行时、中心 Agent 和 MCP 同源工具网关串成稳定主链路。前端批准开关表示本机白名单 MCP 工具控制批准；新建工程优先走 `autoform_start_ui`，显式 `.afd` 路径优先走用户工程，示例工程下拉只作为提示。
+中文说明：V1.4 把网页输入、Python 后端运行时、中心 Agent 和 MCP 同源工具网关串成稳定主链路。前端批准开关表示本机白名单 MCP 工具控制批准；“工程操作”下拉框可以选择新建工程、已有工程或官方示例。新建工程如果只要求打开主界面，会走 `autoform_start_ui`；如果包含桌面 CAD 或几何导入意图，会走 `autoform_import_geometry_to_new_project`，该 wrapper 自行启动或定位 AutoForm Forming。已有工程要求在 prompt 中写明 `.afd` 路径，官方示例项只作为示例工程提示。
 
 ## V1.0 Validation History
 
@@ -64,7 +64,7 @@ The V1.0 validation evidence comes from this repository, local command output, a
 - `python -m autoform_agent.cli release-readiness` returns `ready=true`.
 - `python -m autoform_agent.cli public-release-scan` returns `safe_to_publish=true` and `finding_count=0`.
 - Full Python test suite passed with `81 passed in 2.81s`.
-- The MCP stdio server exposes `112` tools and the `autoform://status` resource in the MCP_V1.1 tool layer.
+- The MCP stdio server exposes `115` tools and the `autoform://status` resource in the MCP_V1.1 tool layer.
 - Three official AutoForm example projects were executed through the MCP tool `autoform_project_run` in kinematic mode.
 
 Tested official examples:
@@ -81,6 +81,8 @@ Tested official examples:
 
 - Discover local AutoForm Forming installations, versions, program directories, material libraries, script folders, and official example project folders.
 - Open AutoForm Forming or a selected `.afd` project.
+- Create a new AutoForm project from a supported CAD geometry file (`.step`, `.stp`, `.igs`, `.iges`, `.stl`) through `autoform_import_geometry_to_new_project`, saving the `.afd` and GUI evidence under `output/geometry_import_projects`.
+- Run controlled flexible scripts from `flex_script_library`, including first-stage CAD geometry measurement with ScriptRunRecord evidence under `output/script_runs`.
 - Resolve an official example name or an explicit `.afd` path into a reproducible project workflow.
 - Copy a project into a run directory, execute kinematic or full solver workflows, and write `run_manifest.json`.
 - Register local jobs, read job status, wait for completion, cancel managed jobs, preview logs, and plan archives.
@@ -183,6 +185,25 @@ Normalize a QuickLink export:
 python -m autoform_agent.cli quicklink-schema "<path-to-quicklinkExport.zip>"
 ```
 
+Create a new project from a desktop CAD model:
+
+```powershell
+python -m autoform_agent import-geometry-to-new-project --source-geometry-path "C:\Users\Tang Xufeng\Desktop\薄板30-40-3.STEP" --output-dir output\geometry_import_projects --dry-run
+python -m autoform_agent import-geometry-to-new-project --source-geometry-path "C:\Users\Tang Xufeng\Desktop\薄板30-40-3.STEP" --output-dir output\geometry_import_projects
+```
+
+The real run starts or focuses AutoForm Forming, creates a new project, imports the geometry as a part, saves a non-overwriting `.afd`, and returns `status`, `source_geometry_path`, `output_afd_path`, `gui_pid`, `screenshots`, `logs`, `run_dir`, `evidence_dir`, `geometry_dimension_candidate`, and failure or blocked reasons. `geometry_dimension_candidate` is parsed from common file-name patterns such as `30-40-3`; it is a discussion candidate, not a CAD measurement.
+
+Flexible script catalog and CAD geometry measurement:
+
+```powershell
+python -m autoform_agent script-list --query cad
+python -m autoform_agent script-run cad_measure_geometry_v1 --param source_geometry_path="C:\Users\Tang Xufeng\Desktop\薄板30-40-3.STEP" --param length_unit=mm
+python -m autoform_agent cad-measure-geometry --source-geometry-path "C:\Users\Tang Xufeng\Desktop\薄板30-40-3.STEP" --length-unit mm
+```
+
+`cad_measure_geometry_v1` measures `.stl` files with the built-in ASCII/Binary STL bounding-box parser. For `.step/.stp/.igs/.iges`, the first-stage implementation probes FreeCAD, FreeCADCmd, OCP/OCC, meshio and related readers; when no parser is available it returns `status=blocked`, `parser=probe_only`, `blocked_reason`, `evidence_dir`, and `filename_dimension_candidate`. A filename candidate such as `30-40-3` remains only a candidate value until a real CAD parser or AutoForm geometry reader supplies measured dimensions.
+
 中文说明：最小使用路径是先执行 `discover` 和 `status` 检查环境，再用 `project-run` 预演工程运行，确认许可证和路径可用后添加 `--execute` 执行求解。
 
 ## MCP Usage
@@ -206,6 +227,9 @@ Important MCP tools:
 | `autoform_status_snapshot` | Return the same status snapshot as `python -m autoform_agent.cli status`. |
 | `autoform_resolve_project` | Resolve an official example name or `.afd` path. |
 | `autoform_project_run` | Plan or execute a reproducible AutoForm project run. |
+| `autoform_import_geometry_to_new_project` | Import a supported CAD geometry file into a new AutoForm project and save `.afd` evidence. |
+| `autoform_script_catalog` | List registered flexible scripts and stable SkillCards without exposing every script as an MCP tool. |
+| `autoform_script_run` | Run a registered L0/L1 stable flexible script and return a ScriptRunRecord. |
 | `autoform_example_project_baseline` | Build the official example baseline JSON. |
 | `autoform_quicklink_schema` | Normalize a QuickLink export into the V1.0 schema. |
 | `autoform_result_inventory` | Collect result evidence from a run directory or workspace. |
@@ -239,11 +263,15 @@ http://127.0.0.1:4317/api/agent
 
 The HTTP bridge forwards prompts, runtime configuration, and optional UI execution consent to `autoform_agent.agent_runtime`. The runtime can use OpenAI, DeepSeek, or another OpenAI-compatible endpoint when an API key and `openai-agents` are available. When the workbench user explicitly enables local MCP tool control, the backend runtime maps that UI consent to guarded `AgentToolGateway` requests rather than letting the frontend choose AutoForm tools directly.
 
-When a prompt names an official example such as `AutoComp_R13` and asks to copy, open a window, or run a solver, the center Agent first resolves the project with `autoform_resolve_project`. Controlled actions then go through `autoform_project_run`. With local execution disabled, `copy_project=true`, `open_gui=true`, and `execute=true` return `blocked_requires_approval`; after approval, `open_gui=true` with `execute=false` copies a safe run project and opens the GUI without running the solver.
+The workbench keeps the current browser-window project dialog in the right-side conversation panel. User prompts are rendered as right-aligned `用户输入` messages. Live HTTP replies render one readable center Agent summary with a collapsed `查看本轮 Agent 明细` section for specialist messages and compact tool outcomes, while command logs stay in the terminal panel. The compact `conversationContext.project_history` and structured `conversationContext.current_project` are sent with later turns, so follow-up prompts such as `这个工程是做什么的` can refer to the project opened in the same window. A prompt such as `检查当前工程` now returns structured center Agent and project workflow messages for discussion without consuming provider tokens or running tools. A prompt such as `修改薄板大小 50*40*3` returns a geometry candidate update with `PartCard`, `ContextPatch`, and `willModifyAfd=false`; direct AFD geometry writeback still needs a separately verified tool wrapper.
 
-When the workbench user says "new project" or asks to create a project without naming an `.afd`, the backend maps the prompt to the guarded MCP-sourced tool `autoform_start_ui`. Without local execution approval the tool returns `blocked_requires_approval` and tells the user to enable the workbench control switch; with approval it starts AutoForm Forming through the same `AgentToolGateway` path. Filling the AutoForm new-project wizard still requires a dedicated future tool.
+When a prompt names an official example such as `AutoComp_R13`, or the workbench sends `projectOperation=example_project` with an explicit `exampleName`, and asks to copy, open a window, or run a solver, the center Agent first resolves the project with `autoform_resolve_project`. Controlled actions then go through `autoform_project_run`. A generic prompt such as "open an example project" no longer falls back to `Solver_R13`; the runtime returns `exampleProjectSelectionRequired=true` and asks the user to select one of the official examples. With local execution disabled, `copy_project=true`, `open_gui=true`, and `execute=true` return `blocked_requires_approval`; after approval, `open_gui=true` with `execute=false` copies a safe run project and opens the GUI without running the solver.
 
-中文说明：用户在网页里说“新建工程”但没有给出 `.afd` 时，后端会把请求转成受控的 `autoform_start_ui` 调用。未批准本机执行时返回审批阻断，并提示勾选“允许本机 MCP 工具控制”；批准后通过同一条 `AgentToolGateway` 链路启动 AutoForm Forming。自动填写 AutoForm 新建工程向导需要后续新增专门工具。用户 prompt 中包含显式 `.afd` 路径时，后端优先使用该用户工程路径，前端示例下拉只作为示例工程提示。
+When the workbench user selects `new_project` and only asks to open or start AutoForm, the backend maps the prompt to the guarded MCP-sourced tool `autoform_start_ui`. When the same `new_project` selection is paired with a supported CAD path or desktop file name and an import intent, the runtime calls `autoform_import_geometry_to_new_project` through `AgentToolGateway`. The import wrapper treats GUI availability as an internal precondition: it starts or restores AutoForm Forming before creating the new project and importing geometry. Without local execution approval the tool returns `blocked_requires_approval`; with approval it imports the geometry, saves `.afd`, and stores screenshot and window-tree evidence under `output/geometry_import_projects/<timestamp>_<stem>/evidence`.
+
+When a prompt asks for the length, width, or thickness of the current thin plate, the runtime first reads `conversationContext.current_project.source_geometry_path` or a CAD path in the prompt. It then calls the stable flexible script `cad_measure_geometry_v1`. Completed STL measurements are answered as parser measurements; STEP/IGES results without a local parser are answered as `blocked` with `evidence_dir` and the filename candidate shown separately.
+
+中文说明：用户在网页里说“新建工程”但没有给出 `.afd` 时，后端会根据目标选择工具。只要求打开主界面时生成受控的 `autoform_start_ui` 调用；同时给出桌面 STEP、IGES 或 STL 等几何文件并表达导入意图时，生成 `autoform_import_geometry_to_new_project` 调用，工具会自行启动或恢复 AutoForm Forming。未批准本机执行时返回审批阻断，并提示勾选“允许本机 MCP 工具控制”；批准后通过同一条 `AgentToolGateway` 链路执行。用户选择“已有工程（请在Prompt里面告知项目地址）”时，prompt 必须包含 `.afd` 地址；缺少路径时只返回补充路径提示。用户 prompt 中包含显式 `.afd` 路径时，后端优先使用该用户工程路径，官方示例项只作为示例工程提示。
 
 中文说明：前端页面用于本地演示、输入 prompt 和提交本机执行批准，HTTP bridge 会把请求转给 Python 后端运行时。AutoForm 工具选择和受控执行仍由后端运行时与 `AgentToolGateway` 处理。MCP server 保留为外部 MCP host 的独立入口。
 
@@ -301,10 +329,16 @@ python -m autoform_agent.cli write-safety-plan "$env:ProgramData\AutoForm\AFplus
 
 ```text
 autoform_agent/                 Python package with CLI, MCP, runtime, workflow, solver, results, and release modules
+autoform_agent/flex_scripts/    Controlled Script Agent, Script Executor, registry, sandbox, validation, and CAD measurement modules
 docs/                           User-facing documentation and official example baseline
+flex_script_library/            Stable flexible-script SkillCards, versions, schemas, samples, and promotion targets
 frontend/                       Local browser UI for the HTTP bridge and Agent runtime
+scripts/flex/                   Shared script-side helpers and future flexible-script utilities
 tests/                          Pytest test suite
 tools/                          Document generation scripts
+output/script_runs/             ScriptRunRecord evidence and artifacts
+output/cad_measurements/        CAD measurement results and parser evidence
+tmp/flex_script_sandbox/        Forked, new, patched, and validation-only script workspaces
 environment.yml                 Recommended Conda environment
 codex_mcp_config.autoform-agent.toml  MCP configuration template
 ```

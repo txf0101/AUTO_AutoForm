@@ -18,13 +18,29 @@ from .coverage import MODULE_COVERAGE
 from .credentials import credential_fingerprint, redact_secret_data, redact_secret_text
 from .agent_system import build_agent_tool_gateway, build_center_agent_plan
 from .diagnostics import environment_snapshot
+from .flex_scripts import script_run as run_flex_script
+from .geometry_import_workflow import SUPPORTED_GEOMETRY_SUFFIXES, extract_geometry_path_from_text
 from .gui_automation import computer_use_probe
+from .intent_utils import (
+    prompt_affirms_any as shared_prompt_affirms_any,
+    prompt_match_is_negated as shared_prompt_match_is_negated,
+    text_contains_any as shared_text_contains_any,
+)
 from .inventory import get_afd_project_summary, list_example_projects
 from .paths import discover_installations
+from .preparation_agents import (
+    build_material_review,
+    build_material_user_input_request,
+    build_material_user_response_review,
+    build_part_data_check,
+    build_process_plan,
+    retrieve_evidence_bundle,
+    run_material_database_query_script,
+)
 from .provider_connection import call_provider_chat_completion, check_provider_connection
 from .project_workflow import official_sample_run_summary, project_run_workflow
 from .queue import queue_health_check
-from .quicklink import list_quicklink_exports
+from .quicklink import get_blank_info, list_exported_geometry, list_quicklink_exports
 from .result_viewer import (
     assess_result_review_readiness,
     build_result_review_plan,
@@ -117,6 +133,8 @@ class AgentRuntimeResult:
     connection_test: dict[str, Any] | None = None
     tool_runs: list[dict[str, Any]] | None = None
     center_plan: dict[str, Any] | None = None
+    agent_messages: list[dict[str, Any]] | None = None
+    pending_user_input: dict[str, Any] | None = None
 
     def as_dict(self) -> dict[str, Any]:
         """Return a JSON-serializable response for HTTP and CLI callers."""
@@ -138,6 +156,10 @@ class AgentRuntimeResult:
             result["toolRuns"] = self.tool_runs
         if self.center_plan is not None:
             result["centerPlan"] = self.center_plan
+        if self.agent_messages is not None:
+            result["agentMessages"] = self.agent_messages
+        if self.pending_user_input is not None:
+            result["pendingUserInput"] = self.pending_user_input
         return result
 
 
@@ -203,10 +225,25 @@ def run_agent_runtime_turn(
         execution_approved=_payload_execution_approved(payload),
         project_root=runtime_config.project_root,
     )
+    conversation_context = _payload_conversation_context(payload)
 
     if _center_plan_has_tool_results(center_plan):
         return _finalize_runtime_reply(
             _build_gateway_tool_runtime_result(
+                prompt=prompt,
+                conversation_id=conversation_id,
+                config=runtime_config,
+                snapshot=runtime_snapshot,
+                center_plan=center_plan,
+            ).as_dict(),
+            prompt=prompt,
+            conversation_id=conversation_id,
+            config=runtime_config,
+        )
+
+    if _payload_requests_example_selection(payload, prompt=prompt):
+        return _finalize_runtime_reply(
+            _build_example_project_selection_required_runtime_result(
                 prompt=prompt,
                 conversation_id=conversation_id,
                 config=runtime_config,
@@ -226,6 +263,111 @@ def run_agent_runtime_turn(
                 config=runtime_config,
                 snapshot=runtime_snapshot,
                 center_plan=center_plan,
+            ).as_dict(),
+            prompt=prompt,
+            conversation_id=conversation_id,
+            config=runtime_config,
+        )
+
+    if _center_plan_requests_material_user_response(center_plan, prompt=prompt, conversation_context=conversation_context):
+        return _finalize_runtime_reply(
+            _build_material_user_response_runtime_result(
+                prompt=prompt,
+                conversation_id=conversation_id,
+                config=runtime_config,
+                snapshot=runtime_snapshot,
+                center_plan=center_plan,
+                conversation_context=conversation_context,
+            ).as_dict(),
+            prompt=prompt,
+            conversation_id=conversation_id,
+            config=runtime_config,
+        )
+
+    if _center_plan_requests_material_database_query(center_plan, prompt=prompt):
+        return _finalize_runtime_reply(
+            _build_material_database_query_runtime_result(
+                prompt=prompt,
+                conversation_id=conversation_id,
+                config=runtime_config,
+                snapshot=runtime_snapshot,
+                center_plan=center_plan,
+                conversation_context=conversation_context,
+            ).as_dict(),
+            prompt=prompt,
+            conversation_id=conversation_id,
+            config=runtime_config,
+        )
+
+    if _prompt_requests_cad_measurement(prompt):
+        source_path = _cad_measurement_source_path(prompt, conversation_context=conversation_context)
+        if source_path:
+            return _finalize_runtime_reply(
+                _build_cad_measurement_runtime_result(
+                    prompt=prompt,
+                    conversation_id=conversation_id,
+                    config=runtime_config,
+                    snapshot=runtime_snapshot,
+                    center_plan=center_plan,
+                    conversation_context=conversation_context,
+                    source_geometry_path=source_path,
+                ).as_dict(),
+                prompt=prompt,
+                conversation_id=conversation_id,
+                config=runtime_config,
+            )
+
+    if _center_plan_requests_geometry_candidate_update(center_plan, prompt=prompt):
+        return _finalize_runtime_reply(
+            _build_geometry_candidate_update_runtime_result(
+                prompt=prompt,
+                conversation_id=conversation_id,
+                config=runtime_config,
+                snapshot=runtime_snapshot,
+                center_plan=center_plan,
+            ).as_dict(),
+            prompt=prompt,
+            conversation_id=conversation_id,
+            config=runtime_config,
+        )
+
+    if _center_plan_requests_local_preparation(center_plan, prompt=prompt):
+        return _finalize_runtime_reply(
+            _build_multi_agent_preparation_runtime_result(
+                prompt=prompt,
+                conversation_id=conversation_id,
+                config=runtime_config,
+                snapshot=runtime_snapshot,
+                center_plan=center_plan,
+            ).as_dict(),
+            prompt=prompt,
+            conversation_id=conversation_id,
+            config=runtime_config,
+        )
+
+    if _payload_selects_existing_project_without_path(payload, prompt=prompt):
+        return _finalize_runtime_reply(
+            _build_existing_project_path_required_runtime_result(
+                prompt=prompt,
+                conversation_id=conversation_id,
+                config=runtime_config,
+                snapshot=runtime_snapshot,
+                center_plan=center_plan,
+            ).as_dict(),
+            prompt=prompt,
+            conversation_id=conversation_id,
+            config=runtime_config,
+        )
+
+    if _prompt_requests_project_consultation(prompt):
+        return _finalize_runtime_reply(
+            _build_project_consultation_runtime_result(
+                prompt=prompt,
+                conversation_id=conversation_id,
+                config=runtime_config,
+                snapshot=runtime_snapshot,
+                center_plan=center_plan,
+                conversation_context=conversation_context,
             ).as_dict(),
             prompt=prompt,
             conversation_id=conversation_id,
@@ -402,7 +544,12 @@ def build_runtime_tool_catalog(project_root: Path | None = None) -> list[dict[st
     root = project_root or _find_project_root()
     gateway_tool_count = len(build_agent_tool_gateway(project_root=root).list_tools())
     return [
+        {"name": "autoform_import_geometry_to_new_project", "domain": "project", "purpose": "Create a new AutoForm project from STEP/IGES/STL geometry and save .afd evidence through AgentToolGateway."},
+        {"name": "autoform_script_catalog", "domain": "script_agent", "purpose": "List stable flexible scripts and optional legacy registry rows."},
+        {"name": "autoform_script_run", "domain": "script_agent", "purpose": "Run one stable registered low-risk flexible script and return a ScriptRunRecord."},
+        {"name": "cad_measure_geometry_v1", "domain": "geometry", "purpose": "Measure STL geometry with a built-in bbox parser and return blocked evidence for STEP or IGES when no parser is available."},
         {"name": "autoform_center_agent_plan", "domain": "orchestration", "purpose": "返回 R5 中心 Agent 任务卡、DAG、上下文视图和审计计划"},
+        {"name": "autoform_geometry_candidate_update", "domain": "geometry", "purpose": "按用户输入生成薄板长宽厚候选、PartCard 和 ContextPatch；不直接改写 AFD 几何实体"},
         {"name": "autoform_agent_tool_gateway_catalog", "domain": "mcp_gateway", "purpose": f"列出 R5 Agent 可调用的 MCP 同源工具白名单，共 {gateway_tool_count} 项"},
         {"name": "autoform_agent_mcp_gateway_call", "domain": "mcp_gateway", "purpose": "通过 R5 AgentToolGateway 调用一个 MCP 同源工具，真实控制动作保持批准边界"},
         {"name": "autoform_discover_installation", "domain": "installation", "purpose": "发现本机 AutoForm 安装和关键路径"},
@@ -412,6 +559,8 @@ def build_runtime_tool_catalog(project_root: Path | None = None) -> list[dict[st
         {"name": "autoform_example_projects", "domain": "project", "purpose": "列出本机官方示例工程"},
         {"name": "autoform_command_specs", "domain": "commands", "purpose": "返回已登记的 AutoForm 命令入口"},
         {"name": "autoform_quicklink_exports", "domain": "quicklink", "purpose": "读取 QuickLink 导出包"},
+        {"name": "autoform_get_blank_info", "domain": "quicklink", "purpose": "从 QuickLink 导出读取 Blank 只读信息"},
+        {"name": "autoform_list_exported_geometry", "domain": "quicklink", "purpose": "从 QuickLink 导出读取几何文件引用"},
         {"name": "autoform_afd_summary", "domain": "project", "purpose": "解析单个 AFD 工程摘要"},
         {"name": "autoform_kinematic_plan", "domain": "solver", "purpose": "规划低风险 kinematic 检查命令"},
         {"name": "autoform_project_run_plan", "domain": "project", "purpose": "规划可复现工程运行流程"},
@@ -779,6 +928,10 @@ def _runtime_tool_registry(
             requested_roles=tuple(args.get("requested_roles") if isinstance(args.get("requested_roles"), list) else ()),
             project_root=root,
         ),
+        "autoform_geometry_candidate_update": lambda args: _geometry_candidate_update_payload(
+            str(args.get("prompt") or prompt),
+            task_id=str(args.get("task_id") or make_run_id("geometry_candidate_update")),
+        ),
         "autoform_agent_tool_gateway_catalog": lambda args: gateway.list_tools(
             agent_id=str(args.get("agent_id") or "") or None,
             include_guarded=_bool_arg(args.get("include_guarded"), default=True),
@@ -797,7 +950,15 @@ def _runtime_tool_registry(
         "autoform_example_projects": lambda args: list_example_projects(),
         "autoform_command_specs": lambda args: list_command_specs(),
         "autoform_quicklink_exports": lambda args: list_quicklink_exports(root),
+        "autoform_get_blank_info": lambda args: get_blank_info(_resolve_argument_path(args.get("source"), config)),
+        "autoform_list_exported_geometry": lambda args: list_exported_geometry(_resolve_argument_path(args.get("source"), config)),
         "autoform_afd_summary": lambda args: get_afd_project_summary(_afd_path_argument(args, config)),
+        "autoform_material_database_query": lambda args: run_material_database_query_script(
+            str(args.get("material_grade") or args.get("grade") or _extract_material_grade_for_runtime(prompt)),
+            task_id=str(args.get("task_id") or make_run_id("material_query")),
+            materials_root=_optional_path(args.get("materials_root"), config),
+            limit=_positive_int(args.get("limit"), default=8, maximum=100),
+        ),
         "autoform_kinematic_plan": lambda args: forming_solver_kinematic_plan(
             _afd_path_argument(args, config),
             threads=_positive_int(args.get("threads"), default=1, maximum=64),
@@ -928,8 +1089,12 @@ def _has_any_arg(args: dict[str, Any], *keys: str) -> bool:
 def _tool_argument_hints(name: str) -> dict[str, Any]:
     hints: dict[str, dict[str, Any]] = {
         "autoform_center_agent_plan": {"optional": ["prompt", "conversation_id", "requested_roles"]},
+        "autoform_geometry_candidate_update": {"optional": ["prompt", "task_id"]},
         "autoform_agent_tool_gateway_catalog": {"optional": ["agent_id", "include_guarded"]},
         "autoform_agent_mcp_gateway_call": {"required": ["tool"], "optional": ["agent_id", "arguments"]},
+        "autoform_material_database_query": {"required": ["material_grade"], "optional": ["task_id", "materials_root", "limit"]},
+        "autoform_get_blank_info": {"required": ["source"]},
+        "autoform_list_exported_geometry": {"required": ["source"]},
         "autoform_afd_summary": {"required": ["afd_path"]},
         "autoform_kinematic_plan": {"required": ["afd_path"], "optional": ["threads"]},
         "autoform_project_run_plan": {"optional": ["afd_path", "example_name", "mode", "threads", "output_root", "workspace"]},
@@ -1177,6 +1342,81 @@ def _center_plan_has_tool_results(center_plan: dict[str, Any]) -> bool:
     return isinstance(tool_results, list) and bool(tool_results)
 
 
+def _center_plan_requests_local_preparation(center_plan: dict[str, Any], *, prompt: str) -> bool:
+    """Return true when the center plan can be handled by local specialist candidates."""
+
+    task_card = center_plan.get("task_card") if isinstance(center_plan.get("task_card"), dict) else {}
+    task_type = str(task_card.get("task_type") or "")
+    if task_type not in {"simulation_preparation", "material_check", "geometry_check", "process_planning"}:
+        return False
+    if _prompt_is_status_or_inspection_only(prompt):
+        return False
+    if _prompt_requests_project_copy(prompt) or _prompt_requests_window_open(prompt) or _prompt_requests_solver_execution(prompt):
+        return False
+    context_view = center_plan.get("context_view") if isinstance(center_plan.get("context_view"), dict) else {}
+    selected_roles = context_view.get("selected_role_ids") if isinstance(context_view.get("selected_role_ids"), list) else []
+    specialist_roles = {
+        "demand_process_planning_agent",
+        "geometry_data_agent",
+        "material_agent",
+        "process_setting_agent",
+        "process_planning_agent",
+        "script_agent",
+    }
+    has_specialist = any(str(role_id) in specialist_roles for role_id in selected_roles)
+    return has_specialist and _prompt_has_preparation_intent(prompt)
+
+
+def _center_plan_requests_material_user_response(
+    center_plan: dict[str, Any],
+    *,
+    prompt: str,
+    conversation_context: dict[str, Any] | None = None,
+) -> bool:
+    """Return true when the turn looks like user material parameters for the material agent."""
+
+    if _prompt_is_status_or_inspection_only(prompt):
+        return False
+    if _prompt_requests_project_copy(prompt) or _prompt_requests_window_open(prompt) or _prompt_requests_solver_execution(prompt):
+        return False
+    has_material_agent = _center_plan_or_conversation_has_role(
+        center_plan,
+        conversation_context or {},
+        "material_agent",
+    )
+    if not has_material_agent:
+        return False
+    if _prompt_has_material_user_answer_fields(prompt):
+        return True
+    return _prompt_accepts_local_default_material_config(prompt) and _conversation_context_has_material_pending(
+        conversation_context or {}
+    )
+
+
+def _center_plan_requests_material_database_query(center_plan: dict[str, Any], *, prompt: str) -> bool:
+    """Return true for local material-library lookup handled by the material agent."""
+
+    if _prompt_is_status_or_inspection_only(prompt):
+        return False
+    if _prompt_requests_project_copy(prompt) or _prompt_requests_window_open(prompt) or _prompt_requests_solver_execution(prompt):
+        return False
+    if not _center_plan_or_conversation_has_role(center_plan, {}, "material_agent"):
+        return False
+    return _prompt_has_material_database_query_intent(prompt)
+
+
+def _center_plan_requests_geometry_candidate_update(center_plan: dict[str, Any], *, prompt: str) -> bool:
+    """Return true when a dimension edit should become a geometry ContextPatch candidate."""
+
+    if _prompt_is_status_or_inspection_only(prompt):
+        return False
+    if _prompt_requests_project_copy(prompt) or _prompt_requests_window_open(prompt) or _prompt_requests_solver_execution(prompt):
+        return False
+    if not _prompt_has_geometry_candidate_update_intent(prompt):
+        return False
+    return _center_plan_or_conversation_has_role(center_plan, {}, "geometry_data_agent")
+
+
 def _build_gateway_tool_runtime_result(
     *,
     prompt: str,
@@ -1242,9 +1482,17 @@ def _build_gateway_tool_runtime_result(
             "localToolFailedCount": failed_count,
             "centerAgentStatus": center_plan.get("status"),
             "centerAgentSchema": center_plan.get("schema_version"),
+            "currentProject": _current_project_from_tool_runs(tool_runs),
         },
         tool_runs=tool_runs,
         center_plan=center_plan,
+        agent_messages=_gateway_tool_agent_messages(
+            prompt=prompt,
+            tool_runs=tool_runs,
+            completed_count=completed_count,
+            blocked_count=blocked_count,
+            failed_count=failed_count,
+        ),
     )
 
 
@@ -1259,8 +1507,9 @@ def _gateway_tool_runs_from_center_plan(
         if not isinstance(item, dict):
             continue
         gateway_status = str(item.get("status") or "unknown")
+        tool_name = str(item.get("tool") or "")
         run: dict[str, Any] = {
-            "tool": str(item.get("tool") or ""),
+            "tool": tool_name,
             "arguments": redact_secret_data(item.get("arguments") if isinstance(item.get("arguments"), dict) else {}, (config.api_key,)),
             "reason": "frontend_agent_tool_request",
             "started_at": str(item.get("started_at") or _utc_now()),
@@ -1273,7 +1522,9 @@ def _gateway_tool_runs_from_center_plan(
         if item.get("blocked_arguments"):
             run["blockedArguments"] = item.get("blocked_arguments")
         if gateway_status == "completed" and "result" in item:
-            run["result"] = _sanitize_tool_payload(item.get("result"), config)
+            result = _sanitize_tool_payload(item.get("result"), config)
+            run["result"] = result
+            run["status"] = _tool_run_status_from_result(tool_name, gateway_status, result)
         elif "error" in item:
             run["error"] = str(item.get("error") or "")[:900]
         elif gateway_status != "completed":
@@ -1288,6 +1539,15 @@ def _tool_run_status_from_gateway(gateway_status: str) -> str:
     if gateway_status in {"failed", "timeout"}:
         return "failed"
     return gateway_status or "unknown"
+
+
+def _tool_run_status_from_result(tool_name: str, gateway_status: str, result: Any) -> str:
+    status = _tool_run_status_from_gateway(gateway_status)
+    if tool_name == "autoform_import_geometry_to_new_project" and isinstance(result, dict):
+        result_status = str(result.get("status") or "").strip()
+        if result_status in {"completed", "failed", "blocked", "planned"}:
+            return result_status
+    return status
 
 
 def _tool_run_is_blocked(run: dict[str, Any]) -> bool:
@@ -1310,18 +1570,25 @@ def _gateway_tool_response_text(
         f"本轮工具结果：完成 {completed_count} 个，阻断 {blocked_count} 个，失败 {failed_count} 个。",
     ]
     for run in tool_runs:
+        tool_name = str(run.get("tool") or "")
         raw_result = run.get("result")
         result = raw_result if isinstance(raw_result, dict) else {}
-        summary = _project_run_result_summary(result)
+        summary = ""
+        if tool_name == "autoform_project_run":
+            summary = _project_run_result_summary(result)
+        elif tool_name == "autoform_import_geometry_to_new_project":
+            summary = _geometry_import_result_summary(result)
         if summary:
             lines.append(summary)
-        elif run.get("tool") == "autoform_start_ui" and isinstance(raw_result, list):
+        elif tool_name == "autoform_status_snapshot":
+            lines.append(_status_snapshot_result_summary(result))
+        elif tool_name == "autoform_start_ui" and isinstance(raw_result, list):
             command = " ".join(str(part) for part in raw_result)
             lines.append(
                 "autoform_start_ui 已返回 AutoForm Forming 启动命令："
                 f"`{command}`。当前白名单负责受控启动软件；自动填写新建工程向导仍需要新增专门工具。"
             )
-        elif run.get("tool") == "autoform_start_ui" and run.get("status") == "blocked_requires_approval":
+        elif tool_name == "autoform_start_ui" and run.get("status") == "blocked_requires_approval":
             lines.append(
                 "autoform_start_ui 已进入 MCP 网关，但本轮请求没有携带本机执行批准。"
                 "请在前端勾选“允许本机 MCP 工具控制”后重新发送；"
@@ -1332,6 +1599,1333 @@ def _gateway_tool_response_text(
         else:
             lines.append(f"{run.get('tool')} 状态为 {run.get('status')}。")
     return " ".join(lines)
+
+
+def _current_project_from_tool_runs(tool_runs: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """Extract the current project reference produced by gateway tools."""
+
+    for run in reversed(tool_runs):
+        tool_name = str(run.get("tool") or "")
+        status = str(run.get("status") or "")
+        if _tool_run_is_blocked(run):
+            continue
+        raw_result = run.get("result")
+        result = raw_result if isinstance(raw_result, dict) else {}
+        arguments = run.get("arguments") if isinstance(run.get("arguments"), dict) else {}
+        gui = result.get("gui_observation") if isinstance(result.get("gui_observation"), dict) else {}
+        project = result.get("project") if isinstance(result.get("project"), dict) else {}
+        if tool_name == "autoform_import_geometry_to_new_project":
+            if str(result.get("status") or status).strip() != "completed":
+                continue
+            output_afd_path = str(result.get("output_afd_path") or "").strip()
+            source_geometry_path = str(result.get("source_geometry_path") or arguments.get("source_geometry_path") or "").strip()
+            run_dir = str(result.get("run_dir") or "").strip()
+            evidence_dir = str(result.get("evidence_dir") or "").strip()
+            if output_afd_path or source_geometry_path or run_dir or evidence_dir:
+                return _current_project_payload(
+                    kind="new_project_import",
+                    label=output_afd_path or source_geometry_path or run_dir or "新建工程导入几何",
+                    afd_path=output_afd_path,
+                    output_afd_path=output_afd_path,
+                    source_geometry_path=source_geometry_path,
+                    run_dir=run_dir,
+                    evidence_dir=evidence_dir,
+                    filename_dimension_candidate=result.get("geometry_dimension_candidate")
+                    if isinstance(result.get("geometry_dimension_candidate"), dict)
+                    else None,
+                    last_tool=tool_name,
+                    last_tool_status=str(result.get("status") or status),
+                    gui_pid=result.get("gui_pid"),
+                    source="gateway_tool_result",
+                )
+        if tool_name == "autoform_start_ui":
+            return _current_project_payload(
+                kind="new_project",
+                label="新建工程入口",
+                last_tool=tool_name,
+                last_tool_status=status,
+                gui_pid=gui.get("pid"),
+                source="gateway_tool_result",
+            )
+        working_project = str(result.get("working_project") or "").strip()
+        run_dir = str(result.get("run_dir") or "").strip()
+        afd_path = str(arguments.get("afd_path") or project.get("path") or result.get("path") or "").strip()
+        example_name = _normalize_frontend_demo_example(arguments.get("example_name") or project.get("name") or result.get("name"))
+        if working_project or afd_path or run_dir or example_name:
+            label = working_project or afd_path or example_name or run_dir
+            return _current_project_payload(
+                kind="example_project" if example_name else "afd_project",
+                label=label,
+                example_name=example_name,
+                afd_path=afd_path,
+                working_project=working_project,
+                run_dir=run_dir,
+                last_tool=tool_name,
+                last_tool_status=status,
+                gui_pid=gui.get("pid"),
+                source="gateway_tool_result",
+            )
+    return None
+
+
+def _build_cad_measurement_runtime_result(
+    *,
+    prompt: str,
+    conversation_id: str,
+    config: AgentRuntimeConfig,
+    snapshot: dict[str, Any],
+    center_plan: dict[str, Any],
+    conversation_context: dict[str, Any],
+    source_geometry_path: str,
+) -> AgentRuntimeResult:
+    current_project = _conversation_context_current_project(conversation_context or {})
+    existing = _existing_cad_measurement_result(current_project)
+    if existing:
+        script_record: dict[str, Any] | None = None
+        measurement = existing
+    else:
+        script_record = run_flex_script(
+            "cad_measure_geometry_v1",
+            {"source_geometry_path": source_geometry_path, "length_unit": "mm"},
+            caller_agent="geometry_data_agent",
+        )
+        measurement = _cad_measurement_from_script_run(script_record)
+    text = _cad_measurement_text(measurement, source_geometry_path=source_geometry_path)
+    tool_runs = []
+    if script_record is not None:
+        tool_runs.append(
+            {
+                "tool": "autoform_script_run",
+                "status": script_record.get("status"),
+                "gatewayStatus": "completed",
+                "arguments": {
+                    "skill_id": "cad_measure_geometry_v1",
+                    "params": {"source_geometry_path": source_geometry_path, "length_unit": "mm"},
+                },
+                "result": script_record,
+            }
+        )
+    project = current_project or _current_project_payload(
+        kind="geometry_reference",
+        label=source_geometry_path,
+        source_geometry_path=source_geometry_path,
+        source="cad_measurement_runtime",
+    )
+    project = dict(project)
+    project["cad_measurement_result"] = measurement
+    if measurement.get("filename_dimension_candidate"):
+        project["filename_dimension_candidate"] = measurement.get("filename_dimension_candidate")
+    messages = [
+        _agent_message("center_agent", "已识别为 CAD 几何实测问题，分发给几何与数据Agent。"),
+        _agent_directed_message(
+            "geometry_data_agent",
+            "center_agent",
+            f"cad_measure_geometry_v1 返回 status={measurement.get('status') or 'unknown'}，parser={measurement.get('parser') or 'unknown'}。",
+        ),
+    ]
+    return AgentRuntimeResult(
+        role="assistant",
+        text=text,
+        time=_utc_now(),
+        timeline=_runtime_timeline(direct_api_called=False, snapshot=snapshot, config=config, tool_runs=tool_runs),
+        preview=_runtime_preview(
+            active_tool="cad_measure_geometry_v1",
+            phase="CAD Measurement",
+            title="CAD 几何实测",
+            subtitle=f"conversationId={conversation_id}",
+            solver="未触发求解",
+            solver_detail=f"status={measurement.get('status') or 'unknown'} parser={measurement.get('parser') or 'unknown'}",
+        ),
+        metrics={
+            **_runtime_metrics(config=config, snapshot=snapshot, direct_api_called=False),
+            "connection": "本地 CAD 实测脚本",
+            "tools": str(len(tool_runs)),
+        },
+        runtime={
+            "name": "autoform-direct-api-runtime",
+            "provider": config.provider,
+            "providerLabel": _provider_label(config.provider),
+            "model": config.model,
+            "baseUrl": config.base_url,
+            "apiMode": config.api_mode,
+            "directApiCalled": False,
+            "directApiAvailable": config.api_key_configured,
+            "apiKeyConfigured": config.api_key_configured,
+            "apiKeySource": config.api_key_source,
+            "apiKeyFingerprint": credential_fingerprint(config.api_key),
+            "frontendOwnsControl": False,
+            "deterministicLocalAnswer": True,
+            "cadMeasurement": measurement,
+            "scriptRun": script_record,
+            "localToolRunCount": len(tool_runs),
+            "localToolCompletedCount": 1 if script_record and script_record.get("status") == "completed" else 0,
+            "localToolBlockedCount": 1 if script_record and script_record.get("status") == "blocked" else 0,
+            "localToolFailedCount": 1 if script_record and script_record.get("status") in {"failed", "rejected"} else 0,
+            "centerAgentStatus": center_plan.get("status"),
+            "centerAgentSchema": center_plan.get("schema_version"),
+            "currentProjectUsed": bool(current_project),
+            "currentProject": project,
+        },
+        center_plan=center_plan,
+        tool_runs=tool_runs,
+        agent_messages=messages,
+    )
+
+
+def _prompt_requests_cad_measurement(prompt: str) -> bool:
+    text = str(prompt or "").casefold()
+    if not text:
+        return False
+    if _prompt_has_geometry_candidate_update_intent(prompt):
+        return False
+    terms = (
+        "长宽厚",
+        "长 宽 厚",
+        "长度",
+        "宽度",
+        "厚度",
+        "尺寸",
+        "多大",
+        "measure",
+        "measurement",
+        "length",
+        "width",
+        "thickness",
+    )
+    return any(term.casefold() in text for term in terms)
+
+
+def _cad_measurement_source_path(prompt: str, *, conversation_context: dict[str, Any]) -> str:
+    prompt_path = extract_geometry_path_from_text(prompt, base_dir=_find_project_root())
+    if prompt_path:
+        return prompt_path
+    current_project = _conversation_context_current_project(conversation_context or {})
+    if current_project:
+        source = str(current_project.get("source_geometry_path") or "").strip()
+        if source:
+            return source
+    return ""
+
+
+def _existing_cad_measurement_result(current_project: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not current_project:
+        return None
+    measurement = current_project.get("cad_measurement_result")
+    if isinstance(measurement, dict) and measurement.get("status") in {"completed", "blocked"}:
+        return measurement
+    return None
+
+
+def _cad_measurement_from_script_run(script_record: dict[str, Any]) -> dict[str, Any]:
+    result = script_record.get("result") if isinstance(script_record.get("result"), dict) else {}
+    if result:
+        return result
+    return {
+        "status": script_record.get("status") or "failed",
+        "source_geometry_path": "",
+        "parser": "",
+        "unit": "mm",
+        "axis_aligned_bbox": None,
+        "oriented_bbox": None,
+        "length": None,
+        "width": None,
+        "thickness": None,
+        "measurement_method": "",
+        "confidence": "none",
+        "evidence_dir": script_record.get("evidence_dir") or "",
+        "logs": script_record.get("logs") or [],
+        "failure_reason": str(script_record.get("failure_summary") or ""),
+        "blocked_reason": "",
+        "filename_dimension_candidate": None,
+    }
+
+
+def _cad_measurement_text(measurement: dict[str, Any], *, source_geometry_path: str) -> str:
+    status = measurement.get("status") or "unknown"
+    parser = measurement.get("parser") or "unknown"
+    evidence_dir = measurement.get("evidence_dir") or ""
+    if status == "completed":
+        length = measurement.get("length")
+        width = measurement.get("width")
+        thickness = measurement.get("thickness")
+        unit = measurement.get("unit") or "mm"
+        return (
+            f"CAD 实测完成：source_geometry_path={measurement.get('source_geometry_path') or source_geometry_path}，"
+            f"parser={parser}，length={length} {unit}，width={width} {unit}，thickness={thickness} {unit}。"
+            f" 证据目录：{evidence_dir}。"
+        )
+    if status == "blocked":
+        candidate = measurement.get("filename_dimension_candidate") if isinstance(measurement.get("filename_dimension_candidate"), dict) else {}
+        candidate_text = ""
+        if candidate:
+            candidate_text = (
+                f" 文件名候选尺寸为 {candidate.get('length')}x{candidate.get('width')}x{candidate.get('thickness')} "
+                f"{candidate.get('unit') or ''}，仅来自文件名，不是 CAD 实测值。"
+            )
+        return (
+            f"CAD 实测被阻断：source_geometry_path={measurement.get('source_geometry_path') or source_geometry_path}，"
+            f"parser={parser}。原因：{measurement.get('blocked_reason') or '缺少可用解析器'}。"
+            f"证据目录：{evidence_dir}。{candidate_text}"
+        )
+    return (
+        f"CAD 实测失败：source_geometry_path={measurement.get('source_geometry_path') or source_geometry_path}，"
+        f"parser={parser}，原因：{measurement.get('failure_reason') or measurement.get('blocked_reason') or 'unknown'}。"
+        f"证据目录：{evidence_dir}。"
+    )
+
+
+def _current_project_payload(
+    *,
+    kind: str,
+    label: str,
+    example_name: str = "",
+    afd_path: str = "",
+    working_project: str = "",
+    run_dir: str = "",
+    source_geometry_path: str = "",
+    output_afd_path: str = "",
+    evidence_dir: str = "",
+    filename_dimension_candidate: dict[str, Any] | None = None,
+    cad_measurement_result: dict[str, Any] | None = None,
+    last_tool: str = "",
+    last_tool_status: str = "",
+    gui_pid: Any = None,
+    source: str = "runtime",
+    updated_at: str | None = None,
+) -> dict[str, Any]:
+    return {
+        "schema_version": "autoform.current_project.v1",
+        "kind": kind,
+        "label": _compact_dialog_text(label, maximum=240),
+        "example_name": example_name,
+        "afd_path": afd_path,
+        "working_project": working_project,
+        "run_dir": run_dir,
+        "source_geometry_path": source_geometry_path,
+        "output_afd_path": output_afd_path,
+        "evidence_dir": evidence_dir,
+        "filename_dimension_candidate": filename_dimension_candidate,
+        "cad_measurement_result": cad_measurement_result,
+        "last_tool": last_tool,
+        "last_tool_status": last_tool_status,
+        "gui_pid": gui_pid,
+        "source": source,
+        "updated_at": updated_at or _utc_now(),
+    }
+
+
+def _gateway_tool_agent_messages(
+    *,
+    prompt: str,
+    tool_runs: list[dict[str, Any]],
+    completed_count: int,
+    blocked_count: int,
+    failed_count: int,
+) -> list[dict[str, Any]]:
+    """Return concise conversational messages for the workbench dialog panel."""
+
+    messages = [
+        _agent_message(
+            "center_agent",
+            f"已收到工程操作请求：{_compact_dialog_text(prompt, maximum=80)}",
+        ),
+        _agent_directed_message(
+            "center_agent",
+            "project_workflow",
+            "请读取工程目标、工具审批状态和本机执行边界，返回可给用户讨论的简短结论。",
+        ),
+    ]
+    for run in tool_runs:
+        tool_name = str(run.get("tool") or "tool")
+        status = str(run.get("status") or "unknown")
+        result = run.get("result") if isinstance(run.get("result"), dict) else {}
+        if tool_name == "autoform_resolve_project":
+            path = result.get("path") or result.get("afd_path") or result.get("project_path")
+            text = f"已解析工程目标，状态为 {status}。"
+            if path:
+                text += f" 工程路径：{_compact_dialog_text(path, maximum=120)}。"
+        elif tool_name == "autoform_project_run":
+            project = result.get("working_project") or result.get("run_dir")
+            text = f"工程运行工具返回 {status}。"
+            if project:
+                text += f" 当前工程位置：{_compact_dialog_text(project, maximum=120)}。"
+            if _tool_run_is_blocked(run):
+                text += " 该动作需要前端本机 MCP 工具控制批准。"
+        elif tool_name == "autoform_import_geometry_to_new_project":
+            output = result.get("output_afd_path") or result.get("run_dir") or ""
+            source = result.get("source_geometry_path") or ""
+            text = f"几何导入新建工程工具返回 {status}。"
+            if output:
+                text += f" 输出工程：{_compact_dialog_text(output, maximum=120)}。"
+            if source:
+                text += f" 源模型：{_compact_dialog_text(source, maximum=120)}。"
+            if _tool_run_is_blocked(run):
+                text += " 该动作需要前端本机 MCP 工具控制批准。"
+        elif tool_name == "autoform_start_ui":
+            text = f"AutoForm 主界面启动请求返回 {status}。"
+            if _tool_run_is_blocked(run):
+                text += " 需要勾选本机 MCP 工具控制后再发送。"
+        elif tool_name == "autoform_status_snapshot":
+            text = _status_snapshot_result_summary(result)
+        else:
+            text = f"{tool_name} 返回 {status}。"
+        messages.append(_agent_directed_message("project_workflow", "center_agent", _compact_dialog_text(text, maximum=220)))
+    messages.append(
+        _agent_message(
+            "center_agent",
+            f"本轮工具摘要：完成 {completed_count} 个，阻断 {blocked_count} 个，失败 {failed_count} 个。详细命令输出保留在下方日志面板。",
+        )
+    )
+    return messages
+
+
+def _compact_dialog_text(value: Any, *, maximum: int = 240) -> str:
+    text = " ".join(str(value or "").split())
+    if len(text) <= maximum:
+        return text
+    return text[: max(0, maximum - 1)].rstrip() + "…"
+
+
+def _build_geometry_candidate_update_runtime_result(
+    *,
+    prompt: str,
+    conversation_id: str,
+    config: AgentRuntimeConfig,
+    snapshot: dict[str, Any],
+    center_plan: dict[str, Any],
+) -> AgentRuntimeResult:
+    """Build a geometry-only candidate update without claiming AFD writeback."""
+
+    task_id = str(center_plan.get("task_card", {}).get("task_id") or "task_geometry_candidate_update")
+    payload = _geometry_candidate_update_payload(prompt, task_id=task_id)
+    part_card = payload["partCard"]
+    dimension_text = _dimension_text(part_card.get("blank_dimensions_mm", {}), part_card.get("blank_thickness_mm"))
+    agent_messages = _geometry_candidate_update_messages(
+        center_plan=center_plan,
+        geometry_payload=payload,
+        dimension_text=dimension_text,
+    )
+
+    return AgentRuntimeResult(
+        role="assistant",
+        text=_geometry_candidate_update_text(payload, dimension_text=dimension_text),
+        time=_utc_now(),
+        timeline=_runtime_timeline(
+            direct_api_called=False,
+            snapshot=snapshot,
+            config=config,
+            tool_runs=[],
+        ),
+        preview=_runtime_preview(
+            active_tool="autoform_geometry_candidate_update",
+            phase="Geometry Candidate Update",
+            title="几何候选更新",
+            subtitle=f"conversationId={conversation_id}",
+            solver="未进入求解器",
+            solver_detail="仅生成薄板尺寸候选和 ContextPatch。",
+        ),
+        metrics={
+            **_runtime_metrics(config=config, snapshot=snapshot, direct_api_called=False),
+            "connection": "几何候选更新链路",
+            "tools": "0",
+        },
+        runtime={
+            "name": "autoform-direct-api-runtime",
+            "provider": config.provider,
+            "providerLabel": _provider_label(config.provider),
+            "model": config.model,
+            "baseUrl": config.base_url,
+            "apiMode": config.api_mode,
+            "directApiCalled": False,
+            "directApiAvailable": True,
+            "apiKeyConfigured": config.api_key_configured,
+            "apiKeySource": config.api_key_source,
+            "apiKeyFingerprint": credential_fingerprint(config.api_key),
+            "frontendOwnsControl": False,
+            "deterministicLocalAnswer": True,
+            "geometryCandidateUpdate": payload,
+            "localToolRunCount": 0,
+            "localToolCompletedCount": 0,
+            "localToolBlockedCount": 0,
+            "localToolFailedCount": 0,
+            "willModifyAfd": False,
+            "willSubmitSolver": False,
+            "willControlGui": False,
+            "missingToolCapabilities": [
+                "geometry_entity_modify",
+                "blank_size_writeback",
+                "afd_geometry_redefinition",
+            ],
+            "centerAgentStatus": center_plan.get("status"),
+            "centerAgentSchema": center_plan.get("schema_version"),
+        },
+        center_plan=center_plan,
+        agent_messages=agent_messages,
+    )
+
+
+def _geometry_candidate_update_payload(prompt: str, *, task_id: str) -> dict[str, Any]:
+    geometry = build_part_data_check(prompt, task_id=task_id)
+    part_card = geometry.get("part_card") if isinstance(geometry.get("part_card"), dict) else {}
+    context_patches = geometry.get("context_patches") if isinstance(geometry.get("context_patches"), list) else []
+    return {
+        "object_type": "GeometryCandidateUpdate",
+        "task_id": task_id,
+        "status": "candidate_context_patch_only",
+        "partCard": _compact_preparation_artifact(part_card),
+        "dataChecklist": geometry.get("data_checklist") if isinstance(geometry.get("data_checklist"), dict) else {},
+        "candidateValues": [
+            item
+            for item in geometry.get("candidate_values", [])
+            if isinstance(item, dict) and str(item.get("field") or "").startswith("blank_")
+        ],
+        "contextPatch": context_patches[0] if context_patches and isinstance(context_patches[0], dict) else {},
+        "writeBoundary": {
+            "will_modify_afd": False,
+            "will_control_gui": False,
+            "will_submit_solver": False,
+            "reason": "当前仓库只有候选几何卡片和 QuickLink 只读几何查询，尚无经验证的 AFD 几何实体写回工具。",
+        },
+    }
+
+
+def _geometry_candidate_update_messages(
+    *,
+    center_plan: dict[str, Any],
+    geometry_payload: dict[str, Any],
+    dimension_text: str,
+) -> list[dict[str, Any]]:
+    task_id = str(center_plan.get("task_card", {}).get("task_id") or geometry_payload.get("task_id") or "task_geometry")
+    patch_id = str(geometry_payload.get("contextPatch", {}).get("patch_id") or "geometry_context_patch")
+    return [
+        _agent_message("center_agent", f"已接收任务 {task_id}，识别为薄板尺寸候选更新。"),
+        _agent_directed_message("center_agent", "geometry_data_agent", "分发几何任务，要求按用户输入生成新的薄板长宽厚候选和 ContextPatch。"),
+        _agent_directed_message("geometry_data_agent", "center_agent", f"已形成几何候选，尺寸为 {dimension_text}，候选补丁为 {patch_id}。"),
+        _agent_message("center_agent", "当前工具目录可以记录几何候选和读取 QuickLink 几何信息，尚未发现经验证的 AFD 几何实体改写工具。"),
+        _agent_message("center_agent", "本轮没有改写 AFD 文件，没有启动 GUI，没有执行求解。"),
+    ]
+
+
+def _geometry_candidate_update_text(geometry_payload: dict[str, Any], *, dimension_text: str) -> str:
+    patch = geometry_payload.get("contextPatch") if isinstance(geometry_payload.get("contextPatch"), dict) else {}
+    lines = [
+        "已进入几何候选更新链路，本轮生成结构化 Agent 协作消息和候选 ContextPatch。",
+        f"几何候选：{dimension_text}。",
+        f"候选补丁：{patch.get('patch_id') or 'geometry_context_patch'}，目标路径为 {patch.get('target_path') or 'part_card'}。",
+        "工具边界：当前未发现经验证的 AFD 几何实体修改、尺寸写回或薄板重定义工具；本轮只保留候选状态。",
+        "执行边界：未调用 autoform_project_run，未启动 GUI，未提交求解。",
+    ]
+    return "\n".join(lines)
+
+
+def _build_multi_agent_preparation_runtime_result(
+    *,
+    prompt: str,
+    conversation_id: str,
+    config: AgentRuntimeConfig,
+    snapshot: dict[str, Any],
+    center_plan: dict[str, Any],
+) -> AgentRuntimeResult:
+    """Build a deterministic multi-agent preparation reply from local specialist modules."""
+
+    task_id = str(center_plan.get("task_card", {}).get("task_id") or "task_multi_agent_prepare")
+    geometry = build_part_data_check(prompt, task_id=task_id)
+    evidence = retrieve_evidence_bundle(prompt)
+    material = build_material_review(geometry["part_card"], evidence, task_id=task_id)
+    pending_user_input = build_material_user_input_request(material)
+    process_plan = build_process_plan(geometry["part_card"], material["material_card"], evidence, task_id=task_id)
+    script_run = material.get("material_search_script_run") if isinstance(material.get("material_search_script_run"), dict) else {}
+
+    agent_messages = _multi_agent_preparation_messages(
+        center_plan=center_plan,
+        geometry=geometry,
+        material=material,
+        process_plan=process_plan,
+        script_run=script_run,
+        pending_user_input=pending_user_input,
+    )
+    source_refs = _multi_agent_preparation_source_refs(material=material)
+    text = _multi_agent_preparation_text(
+        geometry=geometry,
+        material=material,
+        process_plan=process_plan,
+        script_run=script_run,
+        source_refs=source_refs,
+        pending_user_input=pending_user_input,
+    )
+
+    return AgentRuntimeResult(
+        role="assistant",
+        text=text,
+        time=_utc_now(),
+        timeline=_runtime_timeline(
+            direct_api_called=False,
+            snapshot=snapshot,
+            config=config,
+            tool_runs=[],
+        ),
+        preview=_runtime_preview(
+            active_tool="multi_agent_preparation_plan",
+            phase="Multi Agent Preparation",
+            title="多 Agent 候选准备",
+            subtitle=f"conversationId={conversation_id}",
+            solver="未进入求解器",
+            solver_detail="仅生成需求、几何、材料和工艺候选状态。",
+        ),
+        metrics={
+            **_runtime_metrics(config=config, snapshot=snapshot, direct_api_called=False),
+            "connection": "多 Agent 本地准备链路",
+            "tools": "0",
+        },
+        runtime={
+            "name": "autoform-direct-api-runtime",
+            "provider": config.provider,
+            "providerLabel": _provider_label(config.provider),
+            "model": config.model,
+            "baseUrl": config.base_url,
+            "apiMode": config.api_mode,
+            "directApiCalled": False,
+            "directApiAvailable": True,
+            "apiKeyConfigured": config.api_key_configured,
+            "apiKeySource": config.api_key_source,
+            "apiKeyFingerprint": credential_fingerprint(config.api_key),
+            "frontendOwnsControl": False,
+            "deterministicLocalAnswer": True,
+            "multiAgentPreparation": True,
+            "localToolRunCount": 0,
+            "localToolCompletedCount": 0,
+            "localToolBlockedCount": 0,
+            "localToolFailedCount": 0,
+            "willSubmitSolver": False,
+            "willControlGui": False,
+            "preparationArtifacts": {
+                "partCard": _compact_preparation_artifact(geometry.get("part_card")),
+                "materialCard": _compact_preparation_artifact(material.get("material_card")),
+                "processPlanCard": _compact_preparation_artifact(process_plan.get("process_plan_card")),
+                "scriptRunStatus": script_run.get("status"),
+                "scriptSkillId": script_run.get("skill_card", {}).get("skill_id"),
+            },
+            "materialDatabaseQuery": _compact_material_database_query_result(material, script_run),
+            "pendingUserInput": _compact_pending_user_input(pending_user_input),
+            "centerAgentStatus": center_plan.get("status"),
+            "centerAgentSchema": center_plan.get("schema_version"),
+        },
+        center_plan=center_plan,
+        agent_messages=agent_messages,
+        pending_user_input=pending_user_input,
+    )
+
+
+def _build_material_user_response_runtime_result(
+    *,
+    prompt: str,
+    conversation_id: str,
+    config: AgentRuntimeConfig,
+    snapshot: dict[str, Any],
+    center_plan: dict[str, Any],
+    conversation_context: dict[str, Any] | None = None,
+) -> AgentRuntimeResult:
+    """Build the deterministic continuation when the user answers material questions."""
+
+    task_id = str(center_plan.get("task_card", {}).get("task_id") or "task_material_user_response")
+    prior_material_card = _conversation_context_material_card(conversation_context or {})
+    material_review = build_material_user_response_review(
+        prompt,
+        task_id=task_id,
+        prior_material_card=prior_material_card,
+    )
+    pending_user_input = _material_response_pending_user_input(material_review)
+    agent_messages = _material_user_response_messages(
+        center_plan=center_plan,
+        material_review=material_review,
+        pending_user_input=pending_user_input,
+    )
+    text = _material_user_response_text(
+        material_review=material_review,
+        pending_user_input=pending_user_input,
+    )
+
+    return AgentRuntimeResult(
+        role="assistant",
+        text=text,
+        time=_utc_now(),
+        timeline=_runtime_timeline(
+            direct_api_called=False,
+            snapshot=snapshot,
+            config=config,
+            tool_runs=[],
+        ),
+        preview=_runtime_preview(
+            active_tool="material_agent_user_response_review",
+            phase="Multi Agent Material Resume",
+            title="材料补参续接",
+            subtitle=f"conversationId={conversation_id}",
+            solver="未进入求解器",
+            solver_detail="仅把用户材料补参转成候选字段和中心审查事件。",
+        ),
+        metrics={
+            **_runtime_metrics(config=config, snapshot=snapshot, direct_api_called=False),
+            "connection": "材料 Agent 本地续接链路",
+            "tools": "0",
+        },
+        runtime={
+            "name": "autoform-direct-api-runtime",
+            "provider": config.provider,
+            "providerLabel": _provider_label(config.provider),
+            "model": config.model,
+            "baseUrl": config.base_url,
+            "apiMode": config.api_mode,
+            "directApiCalled": False,
+            "directApiAvailable": True,
+            "apiKeyConfigured": config.api_key_configured,
+            "apiKeySource": config.api_key_source,
+            "apiKeyFingerprint": credential_fingerprint(config.api_key),
+            "frontendOwnsControl": False,
+            "deterministicLocalAnswer": True,
+            "multiAgentMaterialResume": True,
+            "localToolRunCount": 0,
+            "localToolCompletedCount": 0,
+            "localToolBlockedCount": 0,
+            "localToolFailedCount": 0,
+            "willSubmitSolver": False,
+            "willControlGui": False,
+            "materialUserResponse": _compact_material_user_response_review(material_review),
+            "conversationContextUsed": bool(prior_material_card),
+            "pendingUserInput": _compact_pending_user_input(pending_user_input),
+            "centerAgentStatus": center_plan.get("status"),
+            "centerAgentSchema": center_plan.get("schema_version"),
+        },
+        center_plan=center_plan,
+        agent_messages=agent_messages,
+        pending_user_input=pending_user_input if pending_user_input.get("questions") else None,
+    )
+
+
+def _build_material_database_query_runtime_result(
+    *,
+    prompt: str,
+    conversation_id: str,
+    config: AgentRuntimeConfig,
+    snapshot: dict[str, Any],
+    center_plan: dict[str, Any],
+    conversation_context: dict[str, Any] | None = None,
+) -> AgentRuntimeResult:
+    """Build a deterministic material-agent lookup reply from the local material library."""
+
+    task_id = str(center_plan.get("task_card", {}).get("task_id") or "task_material_database_query")
+    geometry = build_part_data_check(prompt, task_id=task_id)
+    prior_material_card = _conversation_context_material_card(conversation_context or {})
+    if geometry.get("part_card", {}).get("material_grade_hint") == "DC04" and prior_material_card.get("grade"):
+        geometry["part_card"]["material_grade_hint"] = prior_material_card["grade"]
+    evidence = retrieve_evidence_bundle(prompt)
+    material = build_material_review(geometry["part_card"], evidence, task_id=task_id)
+    pending_user_input = build_material_user_input_request(material)
+    script_run = material.get("material_search_script_run") if isinstance(material.get("material_search_script_run"), dict) else {}
+    agent_messages = _material_database_query_messages(
+        center_plan=center_plan,
+        material=material,
+        script_run=script_run,
+        pending_user_input=pending_user_input,
+    )
+    text = _material_database_query_text(
+        material=material,
+        script_run=script_run,
+        pending_user_input=pending_user_input,
+    )
+
+    return AgentRuntimeResult(
+        role="assistant",
+        text=text,
+        time=_utc_now(),
+        timeline=_runtime_timeline(
+            direct_api_called=False,
+            snapshot=snapshot,
+            config=config,
+            tool_runs=[],
+        ),
+        preview=_runtime_preview(
+            active_tool="skill_material_database_query",
+            phase="Material Agent Lookup",
+            title="材料库本地检索",
+            subtitle=f"conversationId={conversation_id}",
+            solver="未进入求解器",
+            solver_detail="仅检索本机 AutoForm 材料库并形成候选材料字段。",
+        ),
+        metrics={
+            **_runtime_metrics(config=config, snapshot=snapshot, direct_api_called=False),
+            "connection": "材料 Agent 本地检索链路",
+            "tools": "0",
+        },
+        runtime={
+            "name": "autoform-direct-api-runtime",
+            "provider": config.provider,
+            "providerLabel": _provider_label(config.provider),
+            "model": config.model,
+            "baseUrl": config.base_url,
+            "apiMode": config.api_mode,
+            "directApiCalled": False,
+            "directApiAvailable": True,
+            "apiKeyConfigured": config.api_key_configured,
+            "apiKeySource": config.api_key_source,
+            "apiKeyFingerprint": credential_fingerprint(config.api_key),
+            "frontendOwnsControl": False,
+            "deterministicLocalAnswer": True,
+            "multiAgentMaterialLookup": True,
+            "localToolRunCount": 0,
+            "localToolCompletedCount": 0,
+            "localToolBlockedCount": 0,
+            "localToolFailedCount": 0,
+            "willSubmitSolver": False,
+            "willControlGui": False,
+            "materialDatabaseQuery": _compact_material_database_query_result(material, script_run),
+            "pendingUserInput": _compact_pending_user_input(pending_user_input),
+            "centerAgentStatus": center_plan.get("status"),
+            "centerAgentSchema": center_plan.get("schema_version"),
+        },
+        center_plan=center_plan,
+        agent_messages=agent_messages,
+        pending_user_input=pending_user_input if pending_user_input.get("questions") else None,
+    )
+
+
+def _material_database_query_messages(
+    *,
+    center_plan: dict[str, Any],
+    material: dict[str, Any],
+    script_run: dict[str, Any],
+    pending_user_input: dict[str, Any],
+) -> list[dict[str, Any]]:
+    task_id = str(center_plan.get("task_card", {}).get("task_id") or material.get("task_id") or "task_material_database_query")
+    material_card = material.get("material_card") if isinstance(material.get("material_card"), dict) else {}
+    candidates = material_card.get("local_autoform_material_candidates")
+    candidate_count = len(candidates) if isinstance(candidates, list) else 0
+    grade = str(material_card.get("grade") or "未知材料")
+    skill_id = str(script_run.get("skill_card", {}).get("skill_id") or "skill_material_database_query")
+    script_status = str(script_run.get("status") or "unknown")
+    questions = pending_user_input.get("questions") if isinstance(pending_user_input.get("questions"), list) else []
+    messages = [
+        _agent_message("center_agent", f"已接收任务 {task_id}，建立 C0 当前任务视图，材料相关上下文交给材料Agent读取。"),
+        _agent_directed_message("center_agent", "material_agent", f"查找本机 AutoForm 材料库中的 {grade} 材料配置候选，并返回材料缺失字段。"),
+        _agent_directed_message(
+            "material_agent",
+            "center_agent",
+            f"已调用 {skill_id} 本地材料库检索脚本，脚本状态为 {script_status}，命中 {candidate_count} 个候选材料卡。",
+        ),
+    ]
+    if questions:
+        messages.append(
+            _agent_chain_message(
+                ("material_agent", "center_agent", "user"),
+                "请提供杨氏模量、泊松比、材料状态和材料曲线来源；如果需要使用软件本地默认材料卡，请告知，材料Agent会把候选材料卡路径发回中心Agent，由中心Agent交给你确认后再形成材料参数候选补丁。",
+            )
+        )
+    messages.append(_agent_message("center_agent", "本轮没有启动 GUI，没有打开工程，没有执行求解。"))
+    return messages
+
+
+def _material_database_query_text(
+    *,
+    material: dict[str, Any],
+    script_run: dict[str, Any],
+    pending_user_input: dict[str, Any],
+) -> str:
+    material_card = material.get("material_card") if isinstance(material.get("material_card"), dict) else {}
+    candidates = material_card.get("local_autoform_material_candidates")
+    candidate_paths = [
+        str(item.get("path") or "")
+        for item in candidates
+        if isinstance(item, dict) and item.get("path")
+    ] if isinstance(candidates, list) else []
+    summary = script_run.get("result_summary") if isinstance(script_run.get("result_summary"), dict) else {}
+    lines = [
+        "已进入材料 Agent 本地检索链路。",
+        f"材料候选：{material_card.get('grade') or '未知'}。",
+        f"脚本记录：{script_run.get('skill_card', {}).get('skill_id')}，status={script_run.get('status')}，query_status={summary.get('query_status') or 'unknown'}。",
+    ]
+    if candidate_paths:
+        lines.append("本机 AutoForm 材料库候选：")
+        lines.extend(f"- `{path}`" for path in candidate_paths[:8])
+    else:
+        lines.append("本机材料库脚本本轮未命中候选；下一步可扩展材料库根目录、企业材料库索引或 `.mtb` 格式解析规则。")
+    questions = pending_user_input.get("questions") if isinstance(pending_user_input.get("questions"), list) else []
+    if questions:
+        lines.append("材料Agent返回中心Agent转问用户的问题：")
+        for question in questions[:3]:
+            if isinstance(question, dict):
+                lines.append(f"- {question.get('text')}")
+    lines.append("执行边界：未调用 autoform_project_run，未启动 GUI，未提交求解。")
+    return "\n".join(lines)
+
+
+def _multi_agent_preparation_messages(
+    *,
+    center_plan: dict[str, Any],
+    geometry: dict[str, Any],
+    material: dict[str, Any],
+    process_plan: dict[str, Any],
+    script_run: dict[str, Any],
+    pending_user_input: dict[str, Any],
+) -> list[dict[str, Any]]:
+    task_id = str(center_plan.get("task_card", {}).get("task_id") or "task_multi_agent_prepare")
+    part_card = geometry.get("part_card") if isinstance(geometry.get("part_card"), dict) else {}
+    material_card = material.get("material_card") if isinstance(material.get("material_card"), dict) else {}
+    dimensions = part_card.get("blank_dimensions_mm") if isinstance(part_card.get("blank_dimensions_mm"), dict) else {}
+    dimension_text = _dimension_text(dimensions, part_card.get("blank_thickness_mm"))
+    candidates = material_card.get("local_autoform_material_candidates")
+    candidate_count = len(candidates) if isinstance(candidates, list) else 0
+    skill_id = str(script_run.get("skill_card", {}).get("skill_id") or "unknown_script")
+    script_status = str(script_run.get("status") or "unknown")
+    user_questions = pending_user_input.get("questions") if isinstance(pending_user_input.get("questions"), list) else []
+
+    messages = [
+        _agent_message("center_agent", f"已接收任务 {task_id}，建立 C0 当前任务视图，准备按专业 Agent 分发。"),
+        _agent_directed_message("center_agent", "demand_process_planning_agent", "分发工程准备任务，先识别需求、工艺边界和缺失信息。"),
+        _agent_directed_message("center_agent", "geometry_data_agent", "分发几何任务，按用户输入构建薄板几何候选。"),
+        _agent_directed_message("center_agent", "material_agent", "分发材料任务，查找并设置材料候选。"),
+        _agent_directed_message("demand_process_planning_agent", "center_agent", "已识别为工程准备任务，当前阶段只形成候选卡片和缺失信息清单。"),
+        _agent_directed_message("geometry_data_agent", "center_agent", f"已按照用户输入构建几何候选，尺寸为 {dimension_text}。"),
+        _agent_directed_message("material_agent", "center_agent", f"已识别材料候选为 {material_card.get('grade') or '未知材料'}，本机 AutoForm 材料库命中 {candidate_count} 个候选。"),
+        _agent_directed_message("material_agent", "center_agent", f"已调用 {skill_id} 本地材料库检索脚本，脚本状态为 {script_status}，材料曲线和牌号状态仍需中心Agent向用户确认。"),
+    ]
+    if user_questions:
+        messages.append(_agent_chain_message(("material_agent", "center_agent", "user"), f"已返回 {len(user_questions)} 个缺失参数问题，请用户确认材料状态、材料曲线来源、杨氏模量和泊松比。"))
+    messages.extend(
+        [
+            _agent_message("center_agent", "已收到几何与材料候选，下一步需要用户确认材料状态、材料曲线来源以及是否进入真实 AutoForm 工程创建。"),
+            _agent_message("center_agent", "本轮没有启动 GUI，没有打开工程，没有执行求解。"),
+        ]
+    )
+    return messages
+
+
+def _material_user_response_messages(
+    *,
+    center_plan: dict[str, Any],
+    material_review: dict[str, Any],
+    pending_user_input: dict[str, Any],
+) -> list[dict[str, Any]]:
+    task_id = str(center_plan.get("task_card", {}).get("task_id") or material_review.get("task_id") or "task_material_user_response")
+    material_card = material_review.get("material_card") if isinstance(material_review.get("material_card"), dict) else {}
+    elastic = material_card.get("elastic_constants") if isinstance(material_card.get("elastic_constants"), dict) else {}
+    script_run = material_review.get("script_run") if isinstance(material_review.get("script_run"), dict) else {}
+    script_skill_id = str(script_run.get("skill_card", {}).get("skill_id") or "未调用脚本")
+    script_status = str(script_run.get("status") or "not_called")
+    source_script_run = material_review.get("material_source_script_run") if isinstance(material_review.get("material_source_script_run"), dict) else {}
+    source_script_skill_id = str(source_script_run.get("skill_card", {}).get("skill_id") or "未调用脚本")
+    source_script_status = str(source_script_run.get("status") or "not_called")
+    missing_fields = material_review.get("missing_fields") if isinstance(material_review.get("missing_fields"), list) else []
+    source = material_card.get("selected_material_source") if isinstance(material_card.get("selected_material_source"), dict) else {}
+    source_name = source.get("name") or source.get("path") or material_card.get("curve_source_ref") or "曲线来源待确认"
+
+    messages = [
+        _agent_directed_message("center_agent", "material_agent", f"已收到用户对任务 {task_id} 的材料补充，转交材料Agent解析。"),
+        _agent_directed_message(
+            "material_agent",
+            "center_agent",
+            f"已解析材料为 {material_card.get('grade') or '未知材料'}，状态为 {material_card.get('material_temper') or '待确认'}，材料来源为 {source_name}。",
+        ),
+    ]
+    if source_script_run:
+        messages.append(
+            _agent_directed_message(
+                "material_agent",
+                "center_agent",
+                f"已调用 {source_script_skill_id} 材料来源候选设置脚本，脚本状态为 {source_script_status}，已记录本机材料卡路径候选。",
+            )
+        )
+    if elastic:
+        messages.append(
+            _agent_directed_message(
+                "material_agent",
+                "center_agent",
+                (
+                    f"已调用 {script_skill_id} 材料弹性常数候选设置脚本，脚本状态为 {script_status}，"
+                    f"已完成杨氏模量 {elastic.get('elastic_modulus_mpa')} MPa 和泊松比 {elastic.get('poisson_ratio')} 的候选记录，反馈回中心Agent。"
+                ),
+            )
+        )
+    if missing_fields:
+        fields = "、".join(str(item.get("field")) for item in missing_fields if isinstance(item, dict))
+        messages.append(_agent_chain_message(("material_agent", "center_agent", "user"), f"材料补参仍缺少 {fields}，请继续补充或确认使用本机材料卡默认候选。"))
+    else:
+        messages.append(_agent_directed_message("material_agent", "center_agent", "材料补参已形成 MaterialCard 候选和 ContextPatch，反馈回中心Agent审查。"))
+    questions = pending_user_input.get("questions") if isinstance(pending_user_input.get("questions"), list) else []
+    if questions:
+        messages.append(_agent_chain_message(("center_agent", "user"), f"材料Agent返回后续问题共 {len(questions)} 个，等待用户补充。"))
+    else:
+        messages.append(_agent_message("center_agent", "中心Agent已收到材料 ContextPatch，下一步可继续交给工艺设置Agent生成候选工艺字段。"))
+    messages.append(_agent_message("center_agent", "本轮没有启动 GUI，没有打开工程，没有执行求解。"))
+    return messages
+
+
+def _multi_agent_preparation_text(
+    *,
+    geometry: dict[str, Any],
+    material: dict[str, Any],
+    process_plan: dict[str, Any],
+    script_run: dict[str, Any],
+    source_refs: list[str],
+    pending_user_input: dict[str, Any],
+) -> str:
+    part_card = geometry.get("part_card") if isinstance(geometry.get("part_card"), dict) else {}
+    material_card = material.get("material_card") if isinstance(material.get("material_card"), dict) else {}
+    process_card = process_plan.get("process_plan_card") if isinstance(process_plan.get("process_plan_card"), dict) else {}
+    dimensions = part_card.get("blank_dimensions_mm") if isinstance(part_card.get("blank_dimensions_mm"), dict) else {}
+    gaps = material.get("material_gap_list", {}).get("items") if isinstance(material.get("material_gap_list"), dict) else []
+    candidate_paths = [
+        str(item.get("path") or "")
+        for item in material_card.get("local_autoform_material_candidates", [])
+        if isinstance(item, dict) and item.get("path")
+    ]
+    lines = [
+        "已进入多 Agent 准备链路，本轮只生成候选状态和前端事件。",
+        f"几何候选：{_dimension_text(dimensions, part_card.get('blank_thickness_mm'))}。",
+        f"材料候选：{material_card.get('grade') or '未知'}，确认状态为 {material_card.get('confirmation_status')}。",
+        f"工艺候选：{process_card.get('process_plan_id') or 'process_plan_candidate'}，will_submit_solver=false。",
+        f"脚本记录：{script_run.get('skill_card', {}).get('skill_id')}，status={script_run.get('status')}。",
+    ]
+    if candidate_paths:
+        lines.append("本机 AutoForm 材料库候选：")
+        lines.extend(f"- `{path}`" for path in candidate_paths[:5])
+    if gaps:
+        fields = "、".join(str(item.get("field")) for item in gaps if isinstance(item, dict))
+        lines.append(f"需要中心Agent向用户确认的材料字段：{fields}。")
+    questions = pending_user_input.get("questions") if isinstance(pending_user_input.get("questions"), list) else []
+    if questions:
+        lines.append("中心Agent转问用户的问题：")
+        for question in questions[:3]:
+            if isinstance(question, dict):
+                lines.append(f"- {question.get('text')}")
+    if source_refs:
+        lines.append("依据：" + "；".join(f"`{ref}`" for ref in source_refs[:6]) + "。")
+    lines.append("执行边界：未调用 autoform_project_run，未启动 GUI，未提交求解。")
+    return "\n".join(lines)
+
+
+def _material_user_response_text(
+    *,
+    material_review: dict[str, Any],
+    pending_user_input: dict[str, Any],
+) -> str:
+    material_card = material_review.get("material_card") if isinstance(material_review.get("material_card"), dict) else {}
+    elastic = material_card.get("elastic_constants") if isinstance(material_card.get("elastic_constants"), dict) else {}
+    script_run = material_review.get("script_run") if isinstance(material_review.get("script_run"), dict) else {}
+    source_script_run = material_review.get("material_source_script_run") if isinstance(material_review.get("material_source_script_run"), dict) else {}
+    search_script_run = material_review.get("material_search_script_run") if isinstance(material_review.get("material_search_script_run"), dict) else {}
+    missing_fields = material_review.get("missing_fields") if isinstance(material_review.get("missing_fields"), list) else []
+    lines = [
+        "已进入材料补参续接链路，中心Agent把用户补充交给材料Agent处理。",
+        f"材料候选：{material_card.get('grade') or '未知'}，状态 {material_card.get('material_temper') or '待确认'}，确认状态为 {material_card.get('confirmation_status')}。",
+    ]
+    source = material_card.get("selected_material_source") if isinstance(material_card.get("selected_material_source"), dict) else {}
+    if source:
+        lines.append(f"材料来源候选：`{source.get('path') or source.get('name')}`。")
+    if elastic:
+        lines.append(
+            f"弹性常数候选：杨氏模量 {elastic.get('elastic_modulus_mpa')} MPa，泊松比 {elastic.get('poisson_ratio')}。"
+        )
+    if search_script_run:
+        lines.append(
+            f"材料检索脚本：{search_script_run.get('skill_card', {}).get('skill_id')}，status={search_script_run.get('status')}。"
+        )
+    if source_script_run:
+        lines.append(
+            f"材料来源候选脚本：{source_script_run.get('skill_card', {}).get('skill_id')}，status={source_script_run.get('status')}。"
+        )
+    if script_run:
+        lines.append(
+            f"脚本记录：{script_run.get('skill_card', {}).get('skill_id')}，status={script_run.get('status')}。"
+        )
+    if missing_fields:
+        fields = "、".join(str(item.get("field")) for item in missing_fields if isinstance(item, dict))
+        lines.append(f"仍需中心Agent向用户确认的字段：{fields}。")
+    questions = pending_user_input.get("questions") if isinstance(pending_user_input.get("questions"), list) else []
+    if questions:
+        lines.append("中心Agent转问用户的问题：")
+        for question in questions:
+            if isinstance(question, dict):
+                lines.append(f"- {question.get('text')}")
+    lines.append("执行边界：未调用 autoform_project_run，未启动 GUI，未提交求解。")
+    return "\n".join(lines)
+
+
+def _multi_agent_preparation_source_refs(*, material: dict[str, Any]) -> list[str]:
+    refs = [
+        "autoform_agent/preparation_agents.py",
+        "script_registry.yaml",
+        "docs/multi_agent_architecture.md",
+        "docs/realtime_executor.md",
+    ]
+    material_card = material.get("material_card") if isinstance(material.get("material_card"), dict) else {}
+    for item in material_card.get("local_autoform_material_candidates", []):
+        if isinstance(item, dict) and item.get("path"):
+            refs.append(str(item["path"]))
+    return refs
+
+
+def _compact_preparation_artifact(value: Any) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        return {}
+    return {
+        key: value.get(key)
+        for key in (
+            "object_type",
+            "task_id",
+            "part_id",
+            "material_id",
+            "process_plan_id",
+            "grade",
+            "blank_thickness_mm",
+            "blank_dimensions_mm",
+            "confirmation_status",
+            "status",
+            "material_temper",
+        )
+        if key in value
+    }
+
+
+def _compact_pending_user_input(value: Any) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        return {}
+    questions = value.get("questions") if isinstance(value.get("questions"), list) else []
+    return {
+        "object_type": value.get("object_type"),
+        "request_id": value.get("request_id"),
+        "task_id": value.get("task_id"),
+        "source_agent": value.get("source_agent"),
+        "target_agent": value.get("target_agent"),
+        "status": value.get("status"),
+        "question_count": len(questions),
+        "field_groups": [
+            str(question.get("field_group"))
+            for question in questions
+            if isinstance(question, dict) and question.get("field_group")
+        ],
+    }
+
+
+def _compact_material_database_query_result(material: Any, script_run: Any) -> dict[str, Any]:
+    material_card = material.get("material_card") if isinstance(material, dict) and isinstance(material.get("material_card"), dict) else {}
+    candidates = material_card.get("local_autoform_material_candidates")
+    candidate_items = candidates if isinstance(candidates, list) else []
+    summary = script_run.get("result_summary") if isinstance(script_run, dict) and isinstance(script_run.get("result_summary"), dict) else {}
+    return {
+        "object_type": "MaterialDatabaseQueryResult",
+        "task_id": material.get("task_id") if isinstance(material, dict) else None,
+        "material_card": _compact_material_card_for_context(material_card),
+        "script_run": {
+            "skill_id": script_run.get("skill_card", {}).get("skill_id") if isinstance(script_run, dict) and isinstance(script_run.get("skill_card"), dict) else None,
+            "status": script_run.get("status") if isinstance(script_run, dict) else None,
+            "query_status": summary.get("query_status"),
+            "candidate_count": len(candidate_items),
+        },
+    }
+
+
+def _compact_material_card_for_context(material_card: Any) -> dict[str, Any]:
+    if not isinstance(material_card, dict):
+        return {}
+    candidates = material_card.get("local_autoform_material_candidates")
+    candidate_items = candidates if isinstance(candidates, list) else []
+    return {
+        key: value
+        for key, value in {
+            "object_type": material_card.get("object_type"),
+            "task_id": material_card.get("task_id"),
+            "material_id": material_card.get("material_id"),
+            "grade": material_card.get("grade"),
+            "material_temper": material_card.get("material_temper"),
+            "confirmation_status": material_card.get("confirmation_status"),
+            "selected_material_source": material_card.get("selected_material_source"),
+            "curve_source_ref": material_card.get("curve_source_ref"),
+            "local_autoform_material_candidates": [
+                {
+                    item_key: item.get(item_key)
+                    for item_key in ("name", "path", "extension", "source_type", "file_size_bytes", "last_modified")
+                    if isinstance(item, dict) and item.get(item_key) is not None
+                }
+                for item in candidate_items[:8]
+                if isinstance(item, dict)
+            ],
+        }.items()
+        if value not in (None, "", [])
+    }
+
+
+def _compact_material_user_response_review(value: Any) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        return {}
+    material_card = value.get("material_card") if isinstance(value.get("material_card"), dict) else {}
+    elastic = material_card.get("elastic_constants") if isinstance(material_card.get("elastic_constants"), dict) else {}
+    source = material_card.get("selected_material_source") if isinstance(material_card.get("selected_material_source"), dict) else {}
+    script_run = value.get("script_run") if isinstance(value.get("script_run"), dict) else {}
+    search_script_run = value.get("material_search_script_run") if isinstance(value.get("material_search_script_run"), dict) else {}
+    source_script_run = value.get("material_source_script_run") if isinstance(value.get("material_source_script_run"), dict) else {}
+    missing_fields = value.get("missing_fields") if isinstance(value.get("missing_fields"), list) else []
+    return {
+        "object_type": value.get("object_type"),
+        "task_id": value.get("task_id"),
+        "status": value.get("status"),
+        "material_grade": material_card.get("grade"),
+        "material_temper": material_card.get("material_temper"),
+        "selected_material_source": {
+            key: source.get(key)
+            for key in ("name", "path", "extension", "source_type")
+            if source.get(key)
+        },
+        "elastic_constants": {
+            key: elastic.get(key)
+            for key in ("elastic_modulus_mpa", "poisson_ratio")
+            if key in elastic
+        },
+        "missing_fields": [
+            item.get("field")
+            for item in missing_fields
+            if isinstance(item, dict) and item.get("field")
+        ],
+        "script_run": {
+            "skill_id": script_run.get("skill_card", {}).get("skill_id") if isinstance(script_run.get("skill_card"), dict) else None,
+            "status": script_run.get("status"),
+        } if script_run else None,
+        "material_search_script_run": {
+            "skill_id": search_script_run.get("skill_card", {}).get("skill_id") if isinstance(search_script_run.get("skill_card"), dict) else None,
+            "status": search_script_run.get("status"),
+            "candidate_count": len(search_script_run.get("material_candidates", [])) if isinstance(search_script_run.get("material_candidates"), list) else 0,
+        } if search_script_run else None,
+        "material_source_script_run": {
+            "skill_id": source_script_run.get("skill_card", {}).get("skill_id") if isinstance(source_script_run.get("skill_card"), dict) else None,
+            "status": source_script_run.get("status"),
+        } if source_script_run else None,
+    }
+
+
+def _material_response_pending_user_input(material_review: dict[str, Any]) -> dict[str, Any]:
+    task_id = str(material_review.get("task_id") or "task_material_user_response")
+    missing_fields = material_review.get("missing_fields") if isinstance(material_review.get("missing_fields"), list) else []
+    questions: list[dict[str, Any]] = []
+    field_names = {str(item.get("field")) for item in missing_fields if isinstance(item, dict) and item.get("field")}
+    if "material_temper" in field_names:
+        questions.append(
+            _runtime_user_question(
+                task_id=task_id,
+                field_group="material_temper",
+                target_fields=["material_temper"],
+                text="请补充材料状态，例如 O、T4、T6、T61 或你要使用的 AutoForm 材料文件名。",
+            )
+        )
+    if "material_curve_source" in field_names:
+        questions.append(
+            _runtime_user_question(
+                task_id=task_id,
+                field_group="material_curve_source",
+                target_fields=["material_curve_source"],
+                text="请补充材料曲线来源，例如本机 `.mtb` 文件、流动曲线、r 值、n 值或 FLD 来源。",
+            )
+        )
+    elastic_fields = [field for field in ("elastic_modulus_mpa", "poisson_ratio") if field in field_names]
+    if elastic_fields:
+        questions.append(
+            _runtime_user_question(
+                task_id=task_id,
+                field_group="elastic_constants",
+                target_fields=elastic_fields,
+                text="请同时补充杨氏模量 MPa 和泊松比，材料Agent会把它们作为候选弹性常数字段提交中心Agent审查。",
+                required=False,
+            )
+        )
+    return {
+        "object_type": "UserInputRequestSet",
+        "request_id": f"user_input_material_resume_{_safe_id(task_id)}",
+        "task_id": task_id,
+        "source_agent": "material_agent",
+        "target_agent": "center_agent",
+        "status": "needs_user_input" if questions else "complete",
+        "reason": "材料 Agent 解析用户补参后仍存在缺失字段。" if questions else "用户补参已形成材料候选字段。",
+        "questions": questions,
+        "created_at": _utc_now(),
+    }
+
+
+def _runtime_user_question(
+    *,
+    task_id: str,
+    field_group: str,
+    target_fields: list[str],
+    text: str,
+    required: bool = True,
+) -> dict[str, Any]:
+    return {
+        "object_type": "UserQuestion",
+        "question_id": f"question_{_safe_id(field_group)}_{_safe_id(task_id)}",
+        "task_id": task_id,
+        "owner_agent": "material_agent",
+        "field_group": field_group,
+        "target_fields": target_fields,
+        "text": text,
+        "required": required,
+        "response_format": "natural_language_or_candidate_path",
+        "candidate_options": [],
+        "status": "open",
+    }
+
+
+def _safe_id(value: Any) -> str:
+    safe = re.sub(r"[^a-zA-Z0-9_]+", "_", str(value or "item")).strip("_").lower()
+    return safe or "item"
+
+
+def _agent_message(agent_id: str, text: str) -> dict[str, Any]:
+    return {
+        "object_type": "AgentMessage",
+        "agent_id": agent_id,
+        "speaker": _agent_speaker_label(agent_id),
+        "text": text,
+        "created_at": _utc_now(),
+    }
+
+
+def _agent_directed_message(agent_id: str, target_agent: str, text: str) -> dict[str, Any]:
+    message = _agent_message(agent_id, text)
+    message["target_agent"] = target_agent
+    message["speaker"] = f"{_agent_speaker_label(agent_id)} -> {_agent_speaker_label(target_agent)}"
+    return message
+
+
+def _agent_chain_message(agent_ids: tuple[str, ...], text: str) -> dict[str, Any]:
+    source_agent = agent_ids[0] if agent_ids else "center_agent"
+    message = _agent_message(source_agent, text)
+    message["route"] = list(agent_ids)
+    message["speaker"] = " -> ".join(_agent_speaker_label(agent_id) for agent_id in agent_ids)
+    if len(agent_ids) > 1:
+        message["target_agent"] = agent_ids[-1]
+    return message
+
+
+def _agent_speaker_label(agent_id: Any) -> str:
+    labels = {
+        "manager": "中心Agent",
+        "center_agent": "中心Agent",
+        "user": "用户",
+        "demand_process_planning_agent": "需求与工艺规划Agent",
+        "geometry_data_agent": "几何与数据Agent",
+        "material_agent": "材料Agent",
+        "process_setting_agent": "工艺设置Agent",
+        "process_planning_agent": "需求与工艺规划Agent",
+        "script_agent": "脚本Agent",
+    }
+    return labels.get(str(agent_id), str(agent_id))
+
+
+def _dimension_text(dimensions: dict[str, Any], fallback_thickness: Any) -> str:
+    length = dimensions.get("length_mm")
+    width = dimensions.get("width_mm")
+    thickness = dimensions.get("thickness_mm") or fallback_thickness
+    if length is not None and width is not None and thickness is not None:
+        return f"{float(length):g} mm × {float(width):g} mm × {float(thickness):g} mm"
+    if thickness is not None:
+        return f"板厚 {float(thickness):g} mm"
+    return "尺寸待确认"
 
 
 def _build_example_projects_runtime_result(
@@ -1461,8 +3055,54 @@ def _project_run_result_summary(result: dict[str, Any]) -> str:
     return f"autoform_project_run 已返回：{path_text}；{details}。"
 
 
+def _geometry_import_result_summary(result: dict[str, Any]) -> str:
+    if not result:
+        return ""
+    status = result.get("status") or "unknown"
+    source = result.get("source_geometry_path") or ""
+    output = result.get("output_afd_path") or ""
+    evidence_dir = result.get("evidence_dir") or ""
+    gui_pid = result.get("gui_pid")
+    reason = result.get("blocked_reason") or result.get("failure_reason") or ""
+    dimension = result.get("geometry_dimension_candidate") if isinstance(result.get("geometry_dimension_candidate"), dict) else {}
+    parts = [f"status={status}"]
+    if output:
+        parts.append(f"output_afd_path={output}")
+    if source:
+        parts.append(f"source_geometry_path={source}")
+    if evidence_dir:
+        parts.append(f"evidence_dir={evidence_dir}")
+    if gui_pid:
+        parts.append(f"gui_pid={gui_pid}")
+    if dimension:
+        parts.append(
+            "dimension_candidate="
+            f"{dimension.get('length')}x{dimension.get('width')}x{dimension.get('thickness')} {dimension.get('unit') or ''}"
+            f" ({dimension.get('status')})"
+        )
+    if reason:
+        parts.append(f"reason={reason}")
+    return "autoform_import_geometry_to_new_project 已返回：" + "；".join(parts) + "。"
+
+
+def _status_snapshot_result_summary(result: dict[str, Any]) -> str:
+    if not result:
+        return "autoform_status_snapshot 已返回状态快照。"
+    status = result.get("status") or result.get("object_type") or "unknown"
+    tool_count = result.get("tool_count")
+    install_count = result.get("install_count")
+    bits = [f"status={status}"]
+    if tool_count is not None:
+        bits.append(f"tool_count={tool_count}")
+    if install_count is not None:
+        bits.append(f"install_count={install_count}")
+    return f"autoform_status_snapshot 已返回状态快照：{', '.join(bits)}。"
+
+
 def _gateway_tool_solver_detail(tool_runs: list[dict[str, Any]]) -> str:
     for run in tool_runs:
+        if run.get("tool") != "autoform_project_run":
+            continue
         result = run.get("result") if isinstance(run.get("result"), dict) else {}
         summary = _project_run_result_summary(result)
         if summary:
@@ -1476,6 +3116,504 @@ def _first_solver_case_from_result(result: dict[str, Any]) -> dict[str, Any]:
     if cases and isinstance(cases[0], dict):
         return cases[0]
     return {}
+
+
+def _build_project_consultation_runtime_result(
+    *,
+    prompt: str,
+    conversation_id: str,
+    config: AgentRuntimeConfig,
+    snapshot: dict[str, Any],
+    center_plan: dict[str, Any],
+    conversation_context: dict[str, Any] | None = None,
+) -> AgentRuntimeResult:
+    """Answer workbench consultation turns from local project evidence."""
+
+    project_history = _conversation_context_project_history(conversation_context or {})
+    current_project = _conversation_context_current_project(conversation_context or {})
+    current_project_summary = _current_project_evidence_summary(current_project, project_root=config.project_root)
+    visible_examples = _project_consultation_example_names(config.project_root)
+    agent_messages = _project_consultation_messages(
+        prompt=prompt,
+        snapshot=snapshot,
+        project_history=project_history,
+        current_project=current_project,
+        current_project_summary=current_project_summary,
+        visible_examples=visible_examples,
+    )
+    text = f"conversationId={conversation_id}。 " + _project_consultation_text(
+        snapshot=snapshot,
+        project_history=project_history,
+        current_project=current_project,
+        current_project_summary=current_project_summary,
+        visible_examples=visible_examples,
+    )
+    return AgentRuntimeResult(
+        role="assistant",
+        text=text,
+        time=_utc_now(),
+        timeline=_runtime_timeline(direct_api_called=False, snapshot=snapshot, config=config),
+        preview=_runtime_preview(
+            active_tool="autoform_project_consultation",
+            phase="Project Consultation",
+            title="工程信息咨询",
+            subtitle=f"conversationId={conversation_id}",
+            solver="只读工程状态",
+            solver_detail=snapshot["queue_summary"],
+        ),
+        metrics={
+            **_runtime_metrics(config=config, snapshot=snapshot, direct_api_called=False),
+            "connection": "中心 Agent 工程咨询链路",
+            "tools": "0",
+        },
+        runtime={
+            "name": "autoform-direct-api-runtime",
+            "provider": config.provider,
+            "providerLabel": _provider_label(config.provider),
+            "model": config.model,
+            "baseUrl": config.base_url,
+            "apiMode": config.api_mode,
+            "directApiCalled": False,
+            "directApiAvailable": config.api_key_configured,
+            "apiKeyConfigured": config.api_key_configured,
+            "apiKeySource": config.api_key_source,
+            "apiKeyFingerprint": credential_fingerprint(config.api_key),
+            "frontendOwnsControl": False,
+            "deterministicLocalAnswer": True,
+            "projectConsultation": True,
+            "localToolRunCount": 0,
+            "localToolCompletedCount": 0,
+            "localToolBlockedCount": 0,
+            "localToolFailedCount": 0,
+            "centerAgentStatus": center_plan.get("status"),
+            "centerAgentSchema": center_plan.get("schema_version"),
+            "conversationHistoryUsed": bool(project_history),
+            "currentProjectUsed": bool(current_project),
+            "currentProject": current_project,
+            "currentProjectSummary": current_project_summary,
+            "visibleExampleNames": visible_examples,
+        },
+        center_plan=center_plan,
+        agent_messages=agent_messages,
+    )
+
+
+def _build_existing_project_path_required_runtime_result(
+    *,
+    prompt: str,
+    conversation_id: str,
+    config: AgentRuntimeConfig,
+    snapshot: dict[str, Any],
+    center_plan: dict[str, Any],
+) -> AgentRuntimeResult:
+    text = (
+        "中心Agent已识别为已有工程操作，但本轮 Prompt 未提供 `.afd` 工程地址。"
+        " 请在 Prompt 中补充完整项目路径，例如 `F:\\cases\\DoorPanel.afd`。"
+        " 本轮没有调用 autoform_project_run，没有打开 GUI，没有执行求解。"
+    )
+    messages = [
+        _agent_message("center_agent", "已识别为已有工程操作，需要先确认用户工程路径。"),
+        _agent_directed_message(
+            "center_agent",
+            "project_workflow",
+            "请等待用户在 Prompt 中提供 `.afd` 地址；当前不能使用默认示例工程替代用户工程。",
+        ),
+        _agent_message(
+            "center_agent",
+            "请把已有工程的完整 `.afd` 地址写在 Prompt 里；收到路径后我会先解析工程，再按审批边界决定是否复制、打开窗口或执行求解。",
+        ),
+    ]
+    return AgentRuntimeResult(
+        role="assistant",
+        text=text,
+        time=_utc_now(),
+        timeline=_runtime_timeline(direct_api_called=False, snapshot=snapshot, config=config),
+        preview=_runtime_preview(
+            active_tool="autoform_existing_project_path_required",
+            phase="Project Operation",
+            title="已有工程路径待补充",
+            subtitle=f"conversationId={conversation_id}",
+            solver="未调用工程工具",
+            solver_detail="等待用户提供 .afd 路径。",
+        ),
+        metrics={
+            **_runtime_metrics(config=config, snapshot=snapshot, direct_api_called=False),
+            "connection": "已有工程路径待补充",
+            "tools": "0",
+        },
+        runtime={
+            "name": "autoform-direct-api-runtime",
+            "provider": config.provider,
+            "providerLabel": _provider_label(config.provider),
+            "model": config.model,
+            "baseUrl": config.base_url,
+            "apiMode": config.api_mode,
+            "directApiCalled": False,
+            "directApiAvailable": config.api_key_configured,
+            "apiKeyConfigured": config.api_key_configured,
+            "apiKeySource": config.api_key_source,
+            "apiKeyFingerprint": credential_fingerprint(config.api_key),
+            "frontendOwnsControl": False,
+            "deterministicLocalAnswer": True,
+            "existingProjectPathRequired": True,
+            "localToolRunCount": 0,
+            "localToolCompletedCount": 0,
+            "localToolBlockedCount": 0,
+            "localToolFailedCount": 0,
+            "centerAgentStatus": center_plan.get("status"),
+            "centerAgentSchema": center_plan.get("schema_version"),
+        },
+        center_plan=center_plan,
+        agent_messages=messages,
+    )
+
+
+def _build_example_project_selection_required_runtime_result(
+    *,
+    prompt: str,
+    conversation_id: str,
+    config: AgentRuntimeConfig,
+    snapshot: dict[str, Any],
+    center_plan: dict[str, Any],
+) -> AgentRuntimeResult:
+    examples, error = _safe_call(list_example_projects, fallback=[])
+    available = [
+        str(example.get("name") or example.get("example_name") or "").removesuffix(".afd")
+        for example in examples
+        if isinstance(example, dict) and str(example.get("name") or example.get("example_name") or "").strip()
+    ]
+    if not available:
+        available = sorted(FRONTEND_DEMO_EXAMPLES)
+    options_text = "、".join(available)
+    if error:
+        detail = f"本机示例工程清点失败：{error}。请在前端下拉框中选择一个官方示例项后重试。"
+    else:
+        detail = f"请在“工程操作”下拉框中选择一个官方示例，或在 prompt 中明确写出示例名。可选项：{options_text}。"
+    text = (
+        "中心Agent已识别到示例工程打开请求，但本轮没有明确示例目标。"
+        f" 为避免误打开默认工程，本轮未调用 `autoform_project_run`。{detail}"
+    )
+    messages = [
+        _agent_message("center_agent", text),
+        _agent_directed_message(
+            "center_agent",
+            "project_workflow",
+            f"等待用户选择官方示例工程；候选示例为：{options_text}。",
+        ),
+    ]
+    return AgentRuntimeResult(
+        role="assistant",
+        text=text,
+        time=_utc_now(),
+        timeline=_runtime_timeline(direct_api_called=False, snapshot=snapshot, config=config),
+        preview=_runtime_preview(
+            active_tool="example_project_selection_required",
+            phase="Project Target Resolution",
+            title="需要选择示例工程",
+            subtitle=f"conversationId={conversation_id}",
+            solver="未启动 AutoForm",
+            solver_detail=options_text or snapshot["queue_summary"],
+        ),
+        metrics={
+            **_runtime_metrics(config=config, snapshot=snapshot, direct_api_called=False),
+            "connection": "本地确定性分支",
+            "tools": "0",
+        },
+        runtime={
+            "name": "autoform-direct-api-runtime",
+            "provider": config.provider,
+            "providerLabel": _provider_label(config.provider),
+            "model": config.model,
+            "baseUrl": config.base_url,
+            "apiMode": config.api_mode,
+            "directApiCalled": False,
+            "directApiAvailable": True,
+            "apiKeyConfigured": config.api_key_configured,
+            "apiKeySource": config.api_key_source,
+            "apiKeyFingerprint": credential_fingerprint(config.api_key),
+            "frontendOwnsControl": False,
+            "deterministicLocalAnswer": True,
+            "exampleProjectSelectionRequired": True,
+            "availableExampleProjects": available,
+            "localToolRunCount": 0,
+            "localToolCompletedCount": 0,
+            "localToolBlockedCount": 0,
+            "localToolFailedCount": 0,
+            "centerAgentStatus": center_plan.get("status"),
+            "centerAgentSchema": center_plan.get("schema_version"),
+        },
+        center_plan=center_plan,
+        agent_messages=messages,
+        pending_user_input={
+            "object_type": "PendingUserInput",
+            "question_count": 1,
+            "questions": [
+                {
+                    "id": "example_project_name",
+                    "question": "请选择要打开的官方示例工程。",
+                    "options": available,
+                    "required": True,
+                }
+            ],
+        },
+    )
+
+
+def _project_consultation_messages(
+    *,
+    prompt: str,
+    snapshot: dict[str, Any],
+    project_history: list[dict[str, Any]],
+    current_project: dict[str, Any] | None,
+    current_project_summary: dict[str, Any] | None,
+    visible_examples: list[str],
+) -> list[dict[str, Any]]:
+    examples_text = "、".join(visible_examples[:6]) if visible_examples else "当前快照未列出示例名称"
+    history_text = f"已读取本窗口工程会话历史 {len(project_history)} 条。" if project_history else "当前请求未携带可用的工程会话历史。"
+    project_text = _current_project_dialog_summary(current_project, current_project_summary)
+    return [
+        _agent_message(
+            "center_agent",
+            "已进入工程咨询链路：先读取当前工程上下文、本机状态和本窗口工程历史，再给用户可讨论的结论。",
+        ),
+        _agent_directed_message(
+            "center_agent",
+            "project_workflow",
+            f"请按只读方式整理当前工程证据；用户问题是：{_compact_dialog_text(prompt, maximum=100)}",
+        ),
+        _agent_directed_message(
+            "project_workflow",
+            "center_agent",
+            (
+                f"本机状态摘要：安装记录 {snapshot.get('install_count')} 条，工具入口 {snapshot.get('tool_count')} 个，"
+                f"官方示例工程 {snapshot.get('example_count')} 个，QuickLink 导出 {snapshot.get('quicklink_export_count')} 条；"
+                f"队列状态为：{snapshot.get('queue_summary')}。"
+            ),
+        ),
+        _agent_message(
+            "center_agent",
+            (
+                f"{history_text} {project_text} 当前可见示例包括：{examples_text}。"
+            ),
+        ),
+    ]
+
+
+def _project_consultation_text(
+    *,
+    snapshot: dict[str, Any],
+    project_history: list[dict[str, Any]],
+    current_project: dict[str, Any] | None,
+    current_project_summary: dict[str, Any] | None,
+    visible_examples: list[str],
+) -> str:
+    examples_text = "、".join(visible_examples[:6]) if visible_examples else "未读取到示例名称"
+    history_text = f"已读取本窗口工程会话历史 {len(project_history)} 条。" if project_history else "本轮未携带工程会话历史。"
+    project_text = _current_project_dialog_summary(current_project, current_project_summary)
+    return (
+        "中心Agent已完成工程咨询只读检查。"
+        f" 本机快照显示：安装记录 {snapshot.get('install_count')} 条，工具入口 {snapshot.get('tool_count')} 个，"
+        f"官方示例工程 {snapshot.get('example_count')} 个，QuickLink 导出 {snapshot.get('quicklink_export_count')} 条。"
+        f" {history_text}"
+        f" {project_text}"
+        f" 可见示例：{examples_text}。"
+    )
+
+
+def _conversation_context_project_history(conversation_context: dict[str, Any]) -> list[dict[str, Any]]:
+    history = conversation_context.get("project_history")
+    if not isinstance(history, list):
+        last_turn = conversation_context.get("last_turn") if isinstance(conversation_context.get("last_turn"), dict) else {}
+        history = last_turn.get("project_history")
+    return [item for item in history[-24:] if isinstance(item, dict)] if isinstance(history, list) else []
+
+
+def _conversation_context_current_project(conversation_context: dict[str, Any]) -> dict[str, Any] | None:
+    project = conversation_context.get("current_project")
+    if not isinstance(project, dict):
+        last_turn = conversation_context.get("last_turn") if isinstance(conversation_context.get("last_turn"), dict) else {}
+        project = last_turn.get("current_project")
+    if not isinstance(project, dict):
+        return None
+    example_name = _normalize_frontend_demo_example(project.get("example_name") or project.get("exampleName"))
+    working_project = str(project.get("working_project") or project.get("workingProject") or "").strip()
+    afd_path = str(project.get("afd_path") or project.get("afdPath") or "").strip()
+    run_dir = str(project.get("run_dir") or project.get("runDir") or "").strip()
+    source_geometry_path = str(project.get("source_geometry_path") or project.get("sourceGeometryPath") or "").strip()
+    output_afd_path = str(project.get("output_afd_path") or project.get("outputAfdPath") or "").strip()
+    evidence_dir = str(project.get("evidence_dir") or project.get("evidenceDir") or "").strip()
+    filename_dimension_candidate = project.get("filename_dimension_candidate") or project.get("geometry_dimension_candidate")
+    if not isinstance(filename_dimension_candidate, dict):
+        filename_dimension_candidate = None
+    cad_measurement_result = project.get("cad_measurement_result") or project.get("cadMeasurementResult")
+    if not isinstance(cad_measurement_result, dict):
+        cad_measurement_result = None
+    label = str(project.get("label") or working_project or output_afd_path or afd_path or example_name or run_dir or source_geometry_path or "").strip()
+    kind = str(project.get("kind") or "").strip() or (
+        "example_project" if example_name else "afd_project" if working_project or afd_path or output_afd_path else "project_reference"
+    )
+    if not any((label, example_name, working_project, afd_path, run_dir, source_geometry_path, output_afd_path, evidence_dir)):
+        return None
+    return _current_project_payload(
+        kind=kind,
+        label=label,
+        example_name=example_name,
+        afd_path=afd_path or output_afd_path,
+        working_project=working_project,
+        run_dir=run_dir,
+        source_geometry_path=source_geometry_path,
+        output_afd_path=output_afd_path,
+        evidence_dir=evidence_dir,
+        filename_dimension_candidate=filename_dimension_candidate,
+        cad_measurement_result=cad_measurement_result,
+        last_tool=str(project.get("last_tool") or project.get("lastTool") or ""),
+        last_tool_status=str(project.get("last_tool_status") or project.get("lastToolStatus") or ""),
+        gui_pid=project.get("gui_pid") if "gui_pid" in project else project.get("guiPid"),
+        source=str(project.get("source") or "conversation_context"),
+        updated_at=str(project.get("updated_at") or project.get("updatedAt") or "") or None,
+    )
+
+
+def _current_project_evidence_summary(
+    current_project: dict[str, Any] | None,
+    *,
+    project_root: Path | None,
+) -> dict[str, Any] | None:
+    if not current_project:
+        return None
+    path_text = str(
+        current_project.get("working_project")
+        or current_project.get("output_afd_path")
+        or current_project.get("afd_path")
+        or ""
+    ).strip()
+    example_name = _normalize_frontend_demo_example(current_project.get("example_name"))
+    if path_text:
+        try:
+            path = Path(path_text)
+            if path.exists() and path.is_file() and path.suffix.casefold() == ".afd":
+                return {
+                    "source": "afd_project_summary",
+                    "status": "available",
+                    "path": str(path),
+                    "summary": get_afd_project_summary(path),
+                }
+            if example_name:
+                baseline = _example_project_baseline_summary(example_name, project_root=project_root)
+                if baseline:
+                    return {
+                        "source": "example_project_baseline",
+                        "status": "available",
+                        "path": path_text,
+                        "summary": baseline,
+                    }
+            return {
+                "source": "afd_project_summary",
+                "status": "unavailable",
+                "path": path_text,
+                "error": "当前路径在本机不可读或不是 .afd 文件",
+            }
+        except Exception as exc:  # pragma: no cover - depends on local file state
+            if example_name:
+                baseline = _example_project_baseline_summary(example_name, project_root=project_root)
+                if baseline:
+                    return {
+                        "source": "example_project_baseline",
+                        "status": "available",
+                        "path": path_text,
+                        "summary": baseline,
+                        "path_error": str(exc),
+                    }
+            return {
+                "source": "afd_project_summary",
+                "status": "error",
+                "path": path_text,
+                "error": str(exc),
+            }
+    if example_name:
+        baseline = _example_project_baseline_summary(example_name, project_root=project_root)
+        if baseline:
+            return {"source": "example_project_baseline", "status": "available", "summary": baseline}
+    return {"source": "conversation_context", "status": "reference_only"}
+
+
+def _example_project_baseline_summary(example_name: str, *, project_root: Path | None) -> dict[str, Any] | None:
+    normalized = _normalize_frontend_demo_example(example_name)
+    if not normalized:
+        return None
+    root = project_root or Path.cwd()
+    baseline_path = root / "docs" / "example_project_baselines.json"
+    try:
+        data = json.loads(baseline_path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    examples = data.get("examples") if isinstance(data, dict) else []
+    for item in examples if isinstance(examples, list) else []:
+        if not isinstance(item, dict):
+            continue
+        name = str(item.get("name") or "").replace(".afd", "")
+        if name.casefold() == normalized.casefold():
+            summary = item.get("summary") if isinstance(item.get("summary"), dict) else {}
+            return {**summary, "baseline_name": item.get("name"), "baseline_path": item.get("path")}
+    return None
+
+
+def _current_project_dialog_summary(
+    current_project: dict[str, Any] | None,
+    current_project_summary: dict[str, Any] | None,
+) -> str:
+    if not current_project:
+        return "当前窗口还没有可确认的工程对象；请先打开官方示例或在 Prompt 中提供 `.afd` 路径。"
+    label = str(
+        current_project.get("label")
+        or current_project.get("working_project")
+        or current_project.get("output_afd_path")
+        or current_project.get("afd_path")
+        or current_project.get("source_geometry_path")
+        or current_project.get("example_name")
+        or "当前工程"
+    )
+    summary = current_project_summary.get("summary") if isinstance(current_project_summary, dict) else None
+    if isinstance(summary, dict):
+        material = summary.get("material") if isinstance(summary.get("material"), dict) else {}
+        usage = summary.get("usage") if isinstance(summary.get("usage"), dict) else {}
+        used_features = [name for name, value in usage.items() if str(value or "").casefold() == "used"]
+        parts = [
+            f"当前工程：{label}",
+            f"项目名：{summary.get('project_name')}" if summary.get("project_name") else "",
+            f"特征：{summary.get('feature_name')}" if summary.get("feature_name") else "",
+            f"材料：{material.get('name')}" if material.get("name") else "",
+            f"板厚：{material.get('thickness')} mm" if material.get("thickness") else "",
+            f"用途标志：{', '.join(used_features)}" if used_features else "",
+            f"候选字段数：{summary.get('candidate_field_count')}" if summary.get("candidate_field_count") is not None else "",
+        ]
+        source = current_project_summary.get("source") if isinstance(current_project_summary, dict) else ""
+        return "；".join(part for part in parts if part) + f"。依据：{source}。"
+    status = current_project_summary.get("status") if isinstance(current_project_summary, dict) else ""
+    error = current_project_summary.get("error") if isinstance(current_project_summary, dict) else ""
+    if status in {"error", "unavailable"}:
+        return f"当前工程：{label}。已保留工程引用，但本机未读到可用 `.afd` 摘要；原因：{error}。"
+    return f"当前工程：{label}。当前上下文只包含工程引用，尚未取得内部摘要。"
+
+
+def _project_consultation_example_names(project_root: Path | None) -> list[str]:
+    examples, _error = _safe_call(list_example_projects, fallback=[])
+    names: list[str] = []
+    for example in examples if isinstance(examples, list) else []:
+        if isinstance(example, dict):
+            name = str(example.get("name") or example.get("stem") or example.get("example_name") or "").strip()
+            path = str(example.get("path") or example.get("afd_path") or "").strip()
+        else:
+            name = ""
+            path = str(example or "").strip()
+        if not name and path:
+            name = Path(path).stem
+        normalized = _normalize_frontend_demo_example(name)
+        if normalized and normalized not in names:
+            names.append(normalized)
+    if not names and project_root is not None:
+        names = []
+    return names[:8]
 
 
 def _build_local_runtime_result(
@@ -1715,6 +3853,11 @@ def _payload_requests_connection_test(payload: dict[str, Any]) -> bool:
     return isinstance(runtime_config, dict) and runtime_config.get("connectionTest") is True
 
 
+def _payload_conversation_context(payload: dict[str, Any]) -> dict[str, Any]:
+    context = payload.get("conversationContext")
+    return context if isinstance(context, dict) else {}
+
+
 def _payload_requested_roles(payload: dict[str, Any]) -> tuple[str, ...]:
     runtime_config = payload.get("runtimeConfig")
     raw_roles = None
@@ -1736,6 +3879,9 @@ def _payload_agent_tool_requests(payload: dict[str, Any], *, prompt: str = "") -
     raw_requests = payload.get("agentToolRequests")
     if isinstance(raw_requests, list):
         return [request for request in raw_requests if isinstance(request, dict)]
+    geometry_import_requests = _geometry_import_tool_requests(payload, prompt=prompt)
+    if geometry_import_requests:
+        return geometry_import_requests
     ui_requests = _autoform_ui_tool_requests(payload, prompt=prompt)
     if ui_requests:
         return ui_requests
@@ -1748,13 +3894,40 @@ def _payload_agent_tool_requests(payload: dict[str, Any], *, prompt: str = "") -
     return _project_operation_tool_requests(payload, prompt=prompt)
 
 
+def _geometry_import_tool_requests(payload: dict[str, Any], *, prompt: str) -> list[dict[str, Any]]:
+    local_execution = _payload_local_execution_context(payload)
+    if not _prompt_requests_geometry_import(prompt):
+        return []
+    if _frontend_project_operation(local_execution) != "new_project" and not _prompt_requests_new_project(prompt):
+        return []
+    source_path = extract_geometry_path_from_text(prompt, base_dir=_find_project_root())
+    if not source_path:
+        return []
+    return [
+        {
+            "agent_id": "project_workflow",
+            "tool": "autoform_import_geometry_to_new_project",
+            "arguments": {
+                "source_geometry_path": source_path,
+                "output_dir": "output/geometry_import_projects",
+                "length_unit": "mm",
+                "geometry_type": "part",
+                "graphics": "directx11",
+                "gui_wait_seconds": 10,
+                "dry_run": False,
+            },
+            "reason": "Frontend new-project operation plus CAD geometry import prompt.",
+        }
+    ]
+
+
 def _frontend_local_execution_tool_requests(payload: dict[str, Any], *, prompt: str) -> list[dict[str, Any]]:
     local_execution = _payload_local_execution_context(payload)
     if not _local_execution_is_approved(local_execution):
         return []
     if not _prompt_requests_frontend_demo_project(prompt):
         return []
-    arguments = _project_operation_arguments(local_execution, prompt=prompt, default_example="Solver_R13")
+    arguments = _project_operation_arguments(local_execution, prompt=prompt, default_example="")
     if not arguments:
         return []
     return [
@@ -1786,12 +3959,46 @@ def _payload_local_execution_context(payload: dict[str, Any]) -> dict[str, Any]:
     return local_execution if isinstance(local_execution, dict) else {}
 
 
+def _payload_selects_existing_project_without_path(payload: dict[str, Any], *, prompt: str) -> bool:
+    local_execution = _payload_local_execution_context(payload)
+    if _frontend_project_operation(local_execution) != "existing_project":
+        return False
+    if _afd_path_from_prompt(prompt):
+        return False
+    return _prompt_has_project_scope(prompt) and (
+        _prompt_requests_project_action(prompt) or _prompt_requests_project_consultation(prompt)
+    )
+
+
+def _payload_requests_example_selection(payload: dict[str, Any], *, prompt: str) -> bool:
+    local_execution = _payload_local_execution_context(payload)
+    if not _prompt_mentions_example_kind(prompt):
+        return False
+    if not _prompt_requests_frontend_demo_project(prompt):
+        return False
+    if _afd_path_from_prompt(prompt) or _known_frontend_demo_example_from_prompt(prompt):
+        return False
+    if _frontend_project_operation(local_execution) == "example_project" and _normalize_frontend_demo_example(
+        local_execution.get("exampleName")
+    ):
+        return False
+    return True
+
+
 def _local_execution_is_approved(local_execution: dict[str, Any]) -> bool:
     return local_execution.get("enabled") is True and local_execution.get("approved") is True
 
 
 def _autoform_ui_tool_requests(payload: dict[str, Any], *, prompt: str) -> list[dict[str, Any]]:
-    if not _prompt_requests_autoform_ui_start(prompt):
+    local_execution = _payload_local_execution_context(payload)
+    selected_new_project = _frontend_project_operation(local_execution) == "new_project"
+    explicit_ui_start = _prompt_requests_autoform_ui_start(prompt)
+    if selected_new_project and _prompt_has_preparation_intent(prompt) and not explicit_ui_start:
+        return []
+    if not (
+        explicit_ui_start
+        or (selected_new_project and _prompt_requests_project_action(prompt) and _prompt_has_project_scope(prompt))
+    ):
         return []
     return [
         {
@@ -1887,15 +4094,18 @@ def _project_operation_example_name(
     prompt_example = _known_frontend_demo_example_from_prompt(prompt)
     if prompt_example:
         return prompt_example
+    project_operation = _frontend_project_operation(local_execution)
+    if project_operation in {"new_project", "existing_project"}:
+        return ""
+    if project_operation == "example_project":
+        return _normalize_frontend_demo_example(local_execution.get("exampleName")) or default_example
     if _prompt_requests_non_default_project(prompt):
         return ""
-    if local_execution.get("exampleName") not in {None, ""}:
-        return _normalize_frontend_demo_example(local_execution.get("exampleName")) or default_example
-    return default_example
+    return ""
 
 
 def _frontend_demo_example_name(local_execution: dict[str, Any], *, prompt: str = "") -> str:
-    return _project_operation_example_name(local_execution, prompt=prompt, default_example="Solver_R13")
+    return _project_operation_example_name(local_execution, prompt=prompt, default_example="")
 
 
 def _normalize_frontend_demo_example(value: Any) -> str:
@@ -1946,8 +4156,10 @@ def _afd_path_from_prompt(prompt: str) -> str:
 def _prompt_requests_project_operation(prompt: str, *, local_execution: dict[str, Any]) -> bool:
     text = str(prompt or "").casefold()
     has_project_reference = bool(_afd_path_from_prompt(prompt)) or bool(_known_frontend_demo_example_from_prompt(prompt))
-    if not _prompt_requests_non_default_project(prompt):
-        has_project_reference = has_project_reference or local_execution.get("exampleName") not in {None, ""}
+    if _frontend_project_operation(local_execution) == "existing_project":
+        has_project_reference = has_project_reference or bool(_afd_path_from_prompt(prompt))
+    elif _frontend_project_operation(local_execution) == "example_project":
+        has_project_reference = has_project_reference or bool(_normalize_frontend_demo_example(local_execution.get("exampleName")))
     has_project_reference = has_project_reference or _text_contains_any(
         text,
         ("\u5de5\u7a0b", "\u9879\u76ee", "\u793a\u4f8b", "\u6837\u4f8b", ".afd", "afd", "autoform", "project"),
@@ -1956,6 +4168,69 @@ def _prompt_requests_project_operation(prompt: str, *, local_execution: dict[str
         _prompt_requests_project_copy(prompt)
         or _prompt_requests_window_open(prompt)
         or _prompt_requests_solver_execution(prompt)
+    )
+
+
+def _frontend_project_operation(local_execution: dict[str, Any]) -> str:
+    raw = str(local_execution.get("projectOperation") or "").strip().casefold()
+    if raw in {"new_project", "existing_project", "example_project"}:
+        return raw
+    return ""
+
+
+def _prompt_has_project_scope(prompt: str) -> bool:
+    text = str(prompt or "").casefold()
+    return _text_contains_any(text, ("\u5de5\u7a0b", "\u9879\u76ee", ".afd", "afd", "autoform", "project"))
+
+
+def _prompt_requests_geometry_import(prompt: str) -> bool:
+    text = str(prompt or "").casefold()
+    has_supported_suffix = any(suffix in text for suffix in SUPPORTED_GEOMETRY_SUFFIXES)
+    has_geometry_object = _text_contains_any(
+        text,
+        (
+            "cad",
+            "step",
+            "stp",
+            "igs",
+            "iges",
+            "stl",
+            "geometry",
+            "model",
+            "\u51e0\u4f55",
+            "\u6a21\u578b",
+            "\u96f6\u4ef6",
+            "\u684c\u9762",
+        ),
+    )
+    has_import_action = _prompt_affirms_any(
+        prompt,
+        (
+            "import",
+            "load",
+            "\u5bfc\u5165",
+            "\u8bfb\u5165",
+            "\u9009\u62e9",
+            "\u52a0\u8f7d",
+        ),
+    )
+    has_new_project = _prompt_requests_new_project(prompt)
+    return has_supported_suffix and has_geometry_object and (has_import_action or has_new_project)
+
+
+def _prompt_requests_new_project(prompt: str) -> bool:
+    return _prompt_affirms_any(
+        prompt,
+        ("\u65b0\u5efa", "\u521b\u5efa", "\u5efa\u4e00\u4e2a", "new project", "create project"),
+    )
+
+
+def _prompt_requests_project_action(prompt: str) -> bool:
+    return (
+        _prompt_requests_project_copy(prompt)
+        or _prompt_requests_window_open(prompt)
+        or _prompt_requests_solver_execution(prompt)
+        or _prompt_requests_new_project(prompt)
     )
 
 
@@ -1982,25 +4257,22 @@ def _prompt_requests_non_default_project(prompt: str) -> bool:
 
 
 def _prompt_requests_project_copy(prompt: str) -> bool:
-    text = str(prompt or "").casefold()
-    return _text_contains_any(
-        text,
+    return _prompt_affirms_any(
+        prompt,
         ("\u590d\u5236", "\u62f7\u8d1d", "\u5907\u4efd", "\u5b89\u5168\u7684\u5730\u65b9", "copy", "backup"),
     )
 
 
 def _prompt_requests_window_open(prompt: str) -> bool:
-    text = str(prompt or "").casefold()
-    return _text_contains_any(
-        text,
-        ("\u6253\u5f00", "\u7a97\u53e3", "\u542f\u52a8", "\u5c55\u793a", "\u6f14\u793a", "open", "window", "gui"),
+    return _prompt_affirms_any(
+        prompt,
+        ("\u6253\u5f00", "\u542f\u52a8", "\u5c55\u793a", "\u6f14\u793a", "open", "start", "launch", "show"),
     )
 
 
 def _prompt_requests_solver_execution(prompt: str) -> bool:
-    text = str(prompt or "").casefold()
-    return _text_contains_any(
-        text,
+    return _prompt_affirms_any(
+        prompt,
         (
             "\u6c42\u89e3",
             "\u8dd1\u6c42\u89e3",
@@ -2019,22 +4291,49 @@ def _prompt_requests_solver_execution(prompt: str) -> bool:
 def _prompt_requests_autoform_ui_start(prompt: str) -> bool:
     text = str(prompt or "").casefold()
     has_project_scope = _text_contains_any(text, ("\u5de5\u7a0b", "\u9879\u76ee", "project", "autoform"))
-    has_start_intent = _text_contains_any(
-        text,
+    has_project_creation = _prompt_affirms_any(
+        prompt,
         (
             "\u65b0\u5efa",
             "\u521b\u5efa",
             "\u5efa\u4e00\u4e2a",
             "\u65b0\u5f00",
-            "\u542f\u52a8autoform",
-            "\u6253\u5f00autoform",
             "new project",
             "create project",
-            "start autoform",
-            "open autoform",
         ),
     )
-    return has_project_scope and has_start_intent
+    has_explicit_ui = _prompt_affirms_any(
+        prompt,
+        (
+            "\u542f\u52a8autoform",
+            "\u6253\u5f00autoform",
+            "\u542f\u52a8 autoform",
+            "\u6253\u5f00 autoform",
+            "autoform\u4e3b\u754c\u9762",
+            "autoform\u754c\u9762",
+            "autoform\u7a97\u53e3",
+            "\u8f6f\u4ef6\u754c\u9762",
+            "\u4e3b\u754c\u9762",
+            "\u65b0\u5efa\u5de5\u7a0b\u754c\u9762",
+            "\u65b0\u5efa\u9879\u76ee\u754c\u9762",
+            "start autoform",
+            "open autoform",
+            "launch autoform",
+        ),
+    )
+    has_explicit_autoform_start = _prompt_affirms_any(
+        prompt,
+        (
+            "\u542f\u52a8autoform",
+            "\u6253\u5f00autoform",
+            "\u542f\u52a8 autoform",
+            "\u6253\u5f00 autoform",
+            "start autoform",
+            "open autoform",
+            "launch autoform",
+        ),
+    )
+    return has_project_scope and has_explicit_ui and (has_project_creation or has_explicit_autoform_start)
 
 
 def _prompt_requests_mcp_gateway_status(prompt: str) -> bool:
@@ -2069,7 +4368,371 @@ def _prompt_requests_mcp_gateway_status(prompt: str) -> bool:
 
 
 def _text_contains_any(text: str, needles: tuple[str, ...]) -> bool:
-    return any(needle.casefold() in text for needle in needles)
+    return shared_text_contains_any(text, needles)
+
+
+def _prompt_has_preparation_intent(prompt: str) -> bool:
+    text = str(prompt or "").casefold()
+    has_preparation_action = _text_contains_any(
+        text,
+        (
+            "\u65b0\u5efa",
+            "\u521b\u5efa",
+            "\u5efa\u7acb",
+            "\u51c6\u5907",
+            "\u751f\u6210\u5019\u9009",
+            "\u5efa\u4e00\u4e2a",
+            "新建",
+            "创建",
+            "建立",
+            "准备",
+            "生成候选",
+            "建一个",
+            "create",
+            "prepare",
+            "new project",
+        ),
+    )
+    has_domain_object = _text_contains_any(
+        text,
+        (
+            "\u8584\u677f",
+            "\u677f\u539a",
+            "\u539a\u5ea6",
+            "\u6750\u6599",
+            "\u94dd\u5408\u91d1",
+            "\u51e0\u4f55",
+            "\u5de5\u827a",
+            "薄板",
+            "板厚",
+            "厚度",
+            "材料",
+            "铝合金",
+            "6061",
+            "几何",
+            "工艺",
+            "blank",
+            "sheet",
+            "plate",
+            "material",
+            "geometry",
+            "process",
+        ),
+    )
+    has_dimension_triplet = bool(re.search(r"\d+(?:\.\d+)?\s*(?:x|\*|×)\s*\d+(?:\.\d+)?\s*(?:x|\*|×)\s*\d+(?:\.\d+)?", text))
+    return has_preparation_action and (has_domain_object or has_dimension_triplet)
+
+
+def _prompt_has_geometry_candidate_update_intent(prompt: str) -> bool:
+    text = str(prompt or "").casefold()
+    has_dimension_triplet = bool(re.search(r"\d+(?:\.\d+)?\s*(?:x|\*|×)\s*\d+(?:\.\d+)?\s*(?:x|\*|×)\s*\d+(?:\.\d+)?", text))
+    if not has_dimension_triplet:
+        return False
+    has_update_action = _text_contains_any(
+        text,
+        (
+            "\u4fee\u6539",
+            "\u8c03\u6574",
+            "\u6539\u6210",
+            "\u6539\u4e3a",
+            "\u53d8\u66f4",
+            "\u91cd\u5b9a\u4e49",
+            "\u8bbe\u7f6e",
+            "\u8bbe\u4e3a",
+            "\u66f4\u65b0",
+            "修改",
+            "调整",
+            "改成",
+            "改为",
+            "变更",
+            "重定义",
+            "设置",
+            "设为",
+            "更新",
+            "modify",
+            "change",
+            "resize",
+            "set",
+        ),
+    )
+    has_geometry_object = _text_contains_any(
+        text,
+        (
+            "\u8584\u677f",
+            "\u677f\u539a",
+            "\u5c3a\u5bf8",
+            "\u5927\u5c0f",
+            "\u51e0\u4f55",
+            "薄板",
+            "板厚",
+            "尺寸",
+            "大小",
+            "几何",
+            "blank",
+            "sheet",
+            "plate",
+            "geometry",
+            "dimension",
+            "size",
+        ),
+    )
+    return has_update_action and has_geometry_object
+
+
+def _prompt_has_material_user_answer_fields(prompt: str) -> bool:
+    text = str(prompt or "").casefold()
+    if not _text_contains_any(
+        text,
+        (
+            "\u6750\u6599",
+            "\u94dd\u5408\u91d1",
+            "\u6768\u6c0f\u6a21\u91cf",
+            "\u5f39\u6027\u6a21\u91cf",
+            "\u6cca\u677e\u6bd4",
+            "\u6d41\u52a8\u66f2\u7ebf",
+            "材料",
+            "6061",
+            "aa6061",
+            "al6061",
+            "铝合金",
+            ".mtb",
+            ".mat",
+            "杨氏模量",
+            "弹性模量",
+            "泊松比",
+            "poisson",
+            "temper",
+            "流动曲线",
+            "fld",
+        ),
+    ):
+        return False
+    return bool(
+        re.search(r"\b(?:o|t4|t6|t61|t651|t6511)\b", text, flags=re.IGNORECASE)
+        or re.search(r"\.(?:mtb|mat)\b", text, flags=re.IGNORECASE)
+        or re.search(r"(?:\u6768\u6c0f\u6a21\u91cf|\u5f39\u6027\u6a21\u91cf|\bE\b)\s*(?:\u4e3a|\u662f|=|:|\uff1a)?\s*\d", text, flags=re.IGNORECASE)
+        or re.search(r"(?:\u6cca\u677e\u6bd4|poisson|\u03bd|nu)\s*(?:\u4e3a|\u662f|=|:|\uff1a)?\s*0(?:\.\d+)?", text, flags=re.IGNORECASE)
+        or re.search(r"(?:杨氏模量|弹性模量|\bE\b)\s*(?:为|是|=|:|：)?\s*\d", text, flags=re.IGNORECASE)
+        or re.search(r"(?:泊松比|poisson|ν|nu)\s*(?:为|是|=|:|：)?\s*0(?:\.\d+)?", text, flags=re.IGNORECASE)
+        or _text_contains_any(text, ("流动曲线", "成形极限图", "r值", "r 值", "n值", "n 值", "flow curve"))
+    )
+
+
+def _extract_material_grade_for_runtime(prompt: str) -> str:
+    text = str(prompt or "")
+    if re.search(r"(?:AA|Al)?\s*6061", text, flags=re.IGNORECASE):
+        return "AA6061"
+    match = re.search(r"\b(?:AA|Al)?\s*\d{4}(?:[-_ ]?T\d+)?\b", text, flags=re.IGNORECASE)
+    if match:
+        normalized = re.sub(r"\s+", "", match.group(0)).upper()
+        return normalized if normalized.startswith(("AA", "AL")) else f"AA{normalized}"
+    return "unknown_material"
+
+
+def _prompt_accepts_local_default_material_config(prompt: str) -> bool:
+    text = str(prompt or "").casefold()
+    return _text_contains_any(
+        text,
+        (
+            "\u9ed8\u8ba4\u914d\u7f6e",
+            "\u672c\u673a\u914d\u7f6e",
+            "\u672c\u673a\u7684\u914d\u7f6e",
+            "\u5168\u90e8\u4f7f\u7528\u672c\u673a",
+            "\u5168\u90fd\u4f7f\u7528\u672c\u673a",
+            "\u90fd\u4f7f\u7528\u672c\u673a",
+            "\u4f7f\u7528\u672c\u673a",
+            "默认配置",
+            "本机配置",
+            "本机的配置",
+            "全部使用本机",
+            "全都使用本机",
+            "都使用本机",
+            "使用本机",
+            "default config",
+            "default material",
+            "local default",
+            "use local",
+        ),
+    )
+
+
+def _prompt_has_material_database_query_intent(prompt: str) -> bool:
+    text = str(prompt or "").casefold()
+    has_material_object = _text_contains_any(
+        text,
+        (
+            "\u6750\u6599",
+            "\u94dd\u5408\u91d1",
+            "材料",
+            "铝合金",
+            "6061",
+            "aa6061",
+            "al6061",
+            "material",
+            "alloy",
+        ),
+    )
+    has_query_action = _text_contains_any(
+        text,
+        (
+            "\u5bfb\u627e",
+            "\u67e5\u627e",
+            "\u641c\u7d22",
+            "\u68c0\u7d22",
+            "\u6750\u6599\u5e93",
+            "\u6750\u6599\u914d\u7f6e",
+            "\u672c\u673a",
+            "寻找",
+            "查找",
+            "搜索",
+            "检索",
+            "材料库",
+            "材料配置",
+            "本机",
+            "autoform",
+            ".mtb",
+            ".mat",
+            "find",
+            "search",
+            "query",
+            "lookup",
+            "material library",
+            "material database",
+            "material card",
+        ),
+    )
+    return has_material_object and has_query_action
+
+
+def _center_plan_or_conversation_has_role(
+    center_plan: dict[str, Any],
+    conversation_context: dict[str, Any],
+    role_id: str,
+) -> bool:
+    context_view = center_plan.get("context_view") if isinstance(center_plan.get("context_view"), dict) else {}
+    selected_roles = context_view.get("selected_role_ids") if isinstance(context_view.get("selected_role_ids"), list) else []
+    if any(str(item) == role_id for item in selected_roles):
+        return True
+    prior_roles = conversation_context.get("selected_role_ids")
+    if isinstance(prior_roles, list) and any(str(item) == role_id for item in prior_roles):
+        return True
+    last_turn = conversation_context.get("last_turn") if isinstance(conversation_context.get("last_turn"), dict) else {}
+    prior_roles = last_turn.get("selected_role_ids")
+    return isinstance(prior_roles, list) and any(str(item) == role_id for item in prior_roles)
+
+
+def _conversation_context_material_card(conversation_context: dict[str, Any]) -> dict[str, Any]:
+    material_card = conversation_context.get("material_card")
+    if isinstance(material_card, dict):
+        return material_card
+    last_turn = conversation_context.get("last_turn") if isinstance(conversation_context.get("last_turn"), dict) else {}
+    material_card = last_turn.get("material_card")
+    return material_card if isinstance(material_card, dict) else {}
+
+
+def _conversation_context_has_material_pending(conversation_context: dict[str, Any]) -> bool:
+    if not conversation_context:
+        return False
+    pending = conversation_context.get("pending_user_input")
+    if not isinstance(pending, dict):
+        last_turn = conversation_context.get("last_turn") if isinstance(conversation_context.get("last_turn"), dict) else {}
+        pending = last_turn.get("pending_user_input") if isinstance(last_turn.get("pending_user_input"), dict) else {}
+    if pending.get("source_agent") == "material_agent" and pending.get("status") == "needs_user_input":
+        return True
+    material_card = _conversation_context_material_card(conversation_context)
+    return bool(material_card.get("grade") or material_card.get("local_autoform_material_candidates"))
+
+
+def _prompt_is_status_or_inspection_only(prompt: str) -> bool:
+    text = str(prompt or "").casefold()
+    has_status_word = _text_contains_any(
+        text,
+        (
+            "检查",
+            "状态",
+            "连接",
+            "列出",
+            "查看",
+            "只读",
+            "只做状态",
+            "status",
+            "check",
+            "inspect",
+            "list",
+        ),
+    )
+    has_preparation_action = _text_contains_any(text, ("新建", "创建", "建立", "准备", "create", "prepare", "new project"))
+    return has_status_word and not has_preparation_action
+
+
+def _prompt_requests_project_consultation(prompt: str) -> bool:
+    text = str(prompt or "").casefold()
+    if (
+        _prompt_requests_autoform_ui_start(prompt)
+        or _prompt_requests_project_copy(prompt)
+        or _prompt_requests_window_open(prompt)
+        or _prompt_requests_solver_execution(prompt)
+        or _prompt_has_geometry_candidate_update_intent(prompt)
+        or _prompt_has_preparation_intent(prompt)
+    ):
+        return False
+    has_project_scope = _text_contains_any(
+        text,
+        (
+            "工程",
+            "项目",
+            "工作内容",
+            "任务内容",
+            "当前工作",
+            "当前项目",
+            "当前工程",
+            "这个工程",
+            "这个项目",
+            "autoform",
+            ".afd",
+            "project",
+            "workbench",
+        ),
+    )
+    has_consultation_intent = _text_contains_any(
+        text,
+        (
+            "咨询",
+            "讨论",
+            "解释",
+            "说明",
+            "告知",
+            "告诉",
+            "介绍",
+            "是什么",
+            "做什么",
+            "能做什么",
+            "怎么看",
+            "为什么",
+            "怎么",
+            "检查",
+            "查看",
+            "状态",
+            "信息",
+            "question",
+            "discuss",
+            "explain",
+            "status",
+            "info",
+            "what",
+            "why",
+            "how",
+        ),
+    )
+    return has_project_scope and has_consultation_intent
+
+
+def _prompt_affirms_any(prompt: str, needles: tuple[str, ...]) -> bool:
+    return shared_prompt_affirms_any(prompt, needles)
+
+
+def _prompt_match_is_negated(text: str, match_start: int) -> bool:
+    return shared_prompt_match_is_negated(text, match_start)
 
 
 def _prompt_requests_frontend_demo_project(prompt: str) -> bool:
@@ -2087,15 +4750,12 @@ def _prompt_requests_frontend_demo_project(prompt: str) -> bool:
             "autocomp_r13",
         ),
     )
-    has_action_word = _text_contains_any(
-        text,
+    has_action_word = _prompt_affirms_any(
+        prompt,
         (
             "\u6253\u5f00",
-            "\u7a97\u53e3",
             "\u8fd0\u884c",
             "\u6c42\u89e3",
-            "\u5c55\u793a",
-            "\u6f14\u793a",
             "\u542f\u52a8",
             "\u590d\u5236",
             "\u62f7\u8d1d",
@@ -2103,13 +4763,19 @@ def _prompt_requests_frontend_demo_project(prompt: str) -> bool:
             "copy",
             "backup",
             "open",
-            "window",
-            "gui",
+            "start",
+            "launch",
+            "show",
             "solve",
             "solver",
         ),
     )
     return has_project_word and has_action_word
+
+
+def _prompt_mentions_example_kind(prompt: str) -> bool:
+    text = str(prompt or "").casefold()
+    return _text_contains_any(text, ("\u5b98\u65b9", "\u793a\u4f8b", "\u6837\u4f8b", "example", "sample"))
 
 
 def _prompt_requests_example_project_locations(prompt: str) -> bool:

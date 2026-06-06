@@ -60,3 +60,67 @@ def test_build_runtime_run_events_wraps_usage_snapshot() -> None:
         "stage_summary",
     ]
     assert events[3]["payload"] == usage
+
+
+def test_build_runtime_run_events_emits_agent_messages() -> None:
+    run_id = make_run_id("agent-message-preparation")
+
+    events = build_runtime_run_events(
+        run_id=run_id,
+        prompt="新建一个工程，创建一个20*20*3的6061铝合金薄板",
+        reply={
+            "text": "done",
+            "runtime": {"apiKeyConfigured": True, "directApiCalled": False},
+            "metrics": {"connection": "多 Agent 本地准备链路"},
+            "agentMessages": [
+                {
+                    "agent_id": "material_agent",
+                    "speaker": "材料Agent",
+                    "text": "已识别材料候选为 AA6061。",
+                }
+            ],
+        },
+    )
+
+    message_event = next(event for event in events if event["type"] == "agent_message")
+    assert message_event["source_agent"] == "material_agent"
+    assert message_event["payload"]["speaker"] == "材料Agent"
+    assert message_event["payload"]["text"] == "已识别材料候选为 AA6061。"
+
+
+def test_build_runtime_run_events_emits_user_input_requests() -> None:
+    run_id = make_run_id("material-user-input")
+
+    events = build_runtime_run_events(
+        run_id=run_id,
+        prompt="新建一个工程，创建一个20*20*3的6061铝合金薄板",
+        reply={
+            "text": "needs input",
+            "runtime": {"apiKeyConfigured": True, "directApiCalled": False},
+            "metrics": {"connection": "多 Agent 本地准备链路"},
+            "pendingUserInput": {
+                "object_type": "UserInputRequestSet",
+                "request_id": "user_input_material_task_run",
+                "task_id": "task_run",
+                "source_agent": "material_agent",
+                "target_agent": "center_agent",
+                "status": "needs_user_input",
+                "reason": "材料参数缺失。",
+                "questions": [
+                    {
+                        "object_type": "UserQuestion",
+                        "question_id": "question_material_temper_task_run",
+                        "field_group": "material_temper",
+                        "target_fields": ["material_temper"],
+                        "text": "请确认 AA6061 材料状态。",
+                        "required": True,
+                    }
+                ],
+            },
+        },
+    )
+
+    request_event = next(event for event in events if event["type"] == "user_input_requested")
+    assert request_event["source_agent"] == "material_agent"
+    assert request_event["payload"]["target_agent"] == "center_agent"
+    assert request_event["payload"]["questions"][0]["field_group"] == "material_temper"

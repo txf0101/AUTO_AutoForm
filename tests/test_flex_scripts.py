@@ -8,14 +8,22 @@ import struct
 import subprocess
 import sys
 
+import autoform_agent.flex_scripts.sandbox as sandbox_module
 from autoform_agent.flex_scripts import (
+    cad_parser_probe,
+    script_approval_create,
+    script_audit,
+    script_deps,
     script_discover,
     script_fork,
     script_new,
     script_patch,
+    script_promote,
     script_run,
+    script_sample_run,
     script_validate,
 )
+from autoform_agent.flex_scripts.security import audit_python_file
 from autoform_agent.flex_scripts.cad_measurement import measure_cad_geometry
 
 
@@ -145,6 +153,70 @@ def test_sandbox_fork_of_stable_skill_validates() -> None:
     assert report["status"] == "passed"
 
 
+def test_static_audit_blocks_dangerous_import(tmp_path: Path) -> None:
+    script = tmp_path / "bad.py"
+    script.write_text("import subprocess\nsubprocess.run(['cmd'])\n", encoding="utf-8")
+
+    audit = audit_python_file(script)
+
+    assert audit["status"] == "failed"
+    assert any(check["name"] == "blocked_imports" and check["status"] == "failed" for check in audit["checks"])
+
+
+def test_script_deps_and_audit_for_sandbox() -> None:
+    created = script_new("audit_test_skill", title="Audit Test Skill", objective="audit sandbox")
+    deps = script_deps(sandbox_id=created["sandbox_id"])
+    audit = script_audit(created["sandbox_id"])
+    sample = script_sample_run(created["sandbox_id"])
+
+    assert deps["status"] == "passed"
+    assert deps["cad_parser_probe"]["object_type"] == "CadParserProbe"
+    assert audit["status"] == "passed"
+    assert sample["object_type"] == "ScriptRunRecord"
+    assert sample["sandbox_dir"].endswith(created["sandbox_id"])
+
+
+def test_script_approval_record_binds_validation_hash_before_promote(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(sandbox_module, "FLEX_SKILLS_ROOT", tmp_path / "skills")
+    created = script_new("approval_test_skill", title="Approval Test Skill", objective="approval sandbox")
+    script_validate(created["sandbox_id"])
+
+    approval = script_approval_create(created["sandbox_id"], risk_level="L2", approved_by="center_agent")
+    promoted = script_promote(created["sandbox_id"], approved_by="center_agent", approval_record=approval["approval_record"])
+
+    assert approval["status"] == "approved"
+    assert approval["validation_report_hash"]
+    assert promoted["status"] == "completed"
+    assert promoted["approval_validation"]["status"] == "passed"
+    assert str(tmp_path / "skills") in promoted["target_dir"]
+
+
+def test_script_promote_rejects_stale_approval_after_validation_changes() -> None:
+    created = script_new("stale_approval_skill", title="Stale Approval Skill", objective="approval sandbox")
+    script_validate(created["sandbox_id"])
+    approval = script_approval_create(created["sandbox_id"], risk_level="L2", approved_by="center_agent")
+    script_patch(
+        created["sandbox_id"],
+        relative_path="stale_approval_skill.py",
+        find='"value"',
+        replace='"changed"',
+    )
+    script_validate(created["sandbox_id"])
+
+    promoted = script_promote(created["sandbox_id"], approved_by="center_agent", approval_record=approval["approval_record"])
+
+    assert promoted["status"] == "promotion_requested"
+    assert promoted["approval_validation"]["status"] == "failed"
+
+
+def test_cad_parser_probe_reports_candidates() -> None:
+    probe = cad_parser_probe()
+
+    assert probe["object_type"] == "CadParserProbe"
+    assert "cadquery" in probe["modules"]
+    assert "FreeCADCmd" in probe["commands"]
+
+
 def test_cli_script_list_and_cad_measure_geometry(tmp_path: Path) -> None:
     source = tmp_path / "plate30-40-3.step"
     source.write_text("ISO-10303-21;", encoding="utf-8")
@@ -172,6 +244,14 @@ def test_cli_script_list_and_cad_measure_geometry(tmp_path: Path) -> None:
         encoding="utf-8",
         check=False,
     )
+    probed = subprocess.run(
+        [sys.executable, "-m", "autoform_agent", "cad-parser-probe"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        check=False,
+    )
 
     assert listed.returncode == 0
     assert "cad_measure_geometry_v1" in listed.stdout
@@ -179,3 +259,5 @@ def test_cli_script_list_and_cad_measure_geometry(tmp_path: Path) -> None:
     payload = json.loads(measured.stdout)
     assert payload["status"] == "blocked"
     assert payload["result"]["parser"] == "probe_only"
+    assert probed.returncode == 0
+    assert json.loads(probed.stdout)["object_type"] == "CadParserProbe"

@@ -23,6 +23,9 @@ SCRIPT_RUN_SCHEMA_VERSION = "autoform.script_run_record.v1"
 SKILL_CARD_SCHEMA_VERSION = "autoform.skill_card.v1"
 VALIDATION_REPORT_SCHEMA_VERSION = "autoform.script_validation_report.v1"
 CAD_MEASUREMENT_SCHEMA_VERSION = "autoform.cad_measurement_result.v1"
+STATIC_AUDIT_SCHEMA_VERSION = "autoform.script_static_audit.v1"
+DEPENDENCY_REPORT_SCHEMA_VERSION = "autoform.script_dependency_report.v1"
+APPROVAL_RECORD_SCHEMA_VERSION = "autoform.script_approval_record.v1"
 
 ALLOWED_RISK_LEVELS = {"L0", "L1", "L2", "L3", "L4"}
 EXECUTABLE_RISK_LEVELS = {"L0", "L1"}
@@ -46,6 +49,7 @@ class SkillRecord:
     tags: tuple[str, ...] = ()
     skill_card_path: Path | None = None
     stable: bool = True
+    metadata: dict[str, Any] | None = None
 
     def as_catalog_row(self) -> dict[str, Any]:
         return {
@@ -61,6 +65,7 @@ class SkillRecord:
             "tags": list(self.tags),
             "skill_card_path": str(self.skill_card_path) if self.skill_card_path else "",
             "stable": self.stable,
+            "metadata": self.metadata or {},
         }
 
 
@@ -80,6 +85,11 @@ def slug(value: str, *, default: str = "item", limit: int = 80) -> str:
 def params_hash(params: dict[str, Any]) -> str:
     payload = json.dumps(params or {}, sort_keys=True, ensure_ascii=False, default=str)
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:12]
+
+
+def hash_json(value: Any) -> str:
+    payload = json.dumps(json_safe(value), sort_keys=True, ensure_ascii=False, default=str)
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def file_sha256(path: str | Path) -> str:

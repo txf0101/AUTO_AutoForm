@@ -17,10 +17,18 @@ from pathlib import Path
 
 from .paths import AutoFormInstallation, get_default_installation
 
+# 小白读法：
+# AutoForm 的材料库通常放在安装数据目录下，写入这里会改变本机环境。
+# 所以本文件把“先计划、再复制”写得很明确：dry_run=True 只列将要安装的文件，
+# dry_run=False 才会真正创建目录并复制文件。
+
+# AutoForm 可直接识别的核心材料文件扩展名。
 MATERIAL_EXTENSIONS = {".mat", ".mtb"}
-# CSV files may be referenced by material definitions as raw data support files.
+# CSV 常被材料卡引用为原始曲线或表格数据，所以默认和材料文件一起保留。
 SUPPORT_EXTENSIONS = {".csv"}
+# 文档类文件默认不安装；只有 include_docs=True 时才纳入计划。
 DOC_EXTENSIONS = {".pdf", ".doc", ".docx", ".xls", ".xlsx", ".txt"}
+# 支持把材料包作为压缩包输入。进入安装流程前会先解压到临时目录。
 ARCHIVE_EXTENSIONS = {".rar", ".zip", ".7z", ".tar", ".gz", ".tgz"}
 SCALAR_MATERIAL_KEYS = {
     "YoungsModulus",
@@ -42,7 +50,9 @@ class MaterialFile:
     """One file selected for installation into the AutoForm materials tree."""
 
     path: Path
+    # relative_path 保留源目录内部层级。复制时用它拼目标路径，避免所有文件被拍平。
     relative_path: Path
+    # category 只做分类说明：material、support 或 document。
     category: str
 
     def as_dict(self) -> dict:
@@ -232,10 +242,10 @@ def plan_material_files(source_dir: Path, include_docs: bool = False) -> list[Ma
         raise NotADirectoryError(source_dir)
 
     files: list[MaterialFile] = []
+    # 默认只收 .mat、.mtb、.csv。这样材料安装更接近 AutoForm 实际需要。
     allowed = set(MATERIAL_EXTENSIONS) | set(SUPPORT_EXTENSIONS)
     if include_docs:
-        # Documentation is useful for reference, but AutoForm only consumes the
-        # material and support files directly.
+        # include_docs=True 时，说明用户希望把说明书、表格等资料也复制过去作参考。
         allowed |= DOC_EXTENSIONS
 
     for path in sorted(source_dir.rglob("*")):
@@ -266,19 +276,21 @@ def install_material_library(
 
     install = install or get_default_installation()
     source = source.resolve()
+    # 输入可以是目录，也可以是压缩包。压缩包要先解压到临时目录再扫描。
     is_archive = source.is_file() and source.suffix.lower() in ARCHIVE_EXTENSIONS
 
     with _prepared_source(source) as prepared_source:
-        # Archives often contain one top-level folder named after the package.
-        # Directory sources are left untouched so repeated installs keep the
-        # caller's intended layout.
+        # 很多压缩包里面会多套一层同名文件夹。这里会去掉这层包装目录，
+        # 让计划输出里的相对路径更接近真实材料库结构。
         root = _choose_content_root(prepared_source) if is_archive else prepared_source
         library = library_name or source.stem
         target = (target_dir or install.materials_dir / library).resolve()
+        # planned 是完整预演清单。无论 dry_run 是真是假，都会先生成这个清单。
         planned = plan_material_files(root, include_docs=include_docs)
         copied: list[Path] = []
 
         if not dry_run:
+            # 只有这里会真正写文件。dry_run=True 时不会创建目标目录，也不会复制材料。
             target.mkdir(parents=True, exist_ok=True)
             for item in planned:
                 destination = target / item.relative_path
@@ -322,11 +334,12 @@ class _prepared_source:
     def __enter__(self) -> Path:
         """Return a directory view of the source for downstream file planning."""
         if self.source.is_dir():
+            # 已经是文件夹就直接扫描它，不复制源文件。
             return self.source
         if self.source.suffix.lower() not in ARCHIVE_EXTENSIONS:
             raise ValueError(f"Unsupported material source: {self.source}")
-        # Windows bsdtar handles the RAR5 file found in this workflow, while the
-        # older 7za bundled with AutoForm may fail to list it.
+        # Windows 自带 tar/bsdtar 能处理本项目遇到的 RAR5 材料包；
+        # 解压到临时目录后，后续扫描逻辑可以把压缩包当普通文件夹看。
         self._tmp = tempfile.TemporaryDirectory(prefix="autoform_materials_")
         tmp_path = Path(self._tmp.name)
         subprocess.run(["tar", "-xf", str(self.source), "-C", str(tmp_path)], check=True)
@@ -341,6 +354,8 @@ class _prepared_source:
 def _choose_content_root(path: Path) -> Path:
     """Drop a single archive wrapper directory when it adds no information."""
 
+    # 如果压缩包解出来只有一个文件夹，没有旁边的散文件，就进入那个文件夹。
+    # 例如 OEM.zip -> OEM/DC04.mat，最终扫描 OEM 里面的内容。
     children = [child for child in path.iterdir() if child.is_dir()]
     files = [child for child in path.iterdir() if child.is_file()]
     if len(children) == 1 and not files:

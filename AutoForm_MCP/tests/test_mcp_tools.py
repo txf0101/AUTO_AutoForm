@@ -12,8 +12,8 @@ pytest.importorskip("mcp.server.fastmcp")
 
 def test_mcp_server_registers_all_tool_layers() -> None:
     """The stable MCP entry point should still expose the V1.0 tool surface."""
-    from autoform_agent import mcp_server
-    from autoform_agent.mcp_tools import ALL_TOOL_FUNCTIONS, MCP_TOOL_LAYERS
+    from autoform_mcp_agent import mcp_server
+    from autoform_mcp_agent.mcp_tools import ALL_TOOL_FUNCTIONS, MCP_TOOL_LAYERS
 
     tool_names = set(mcp_server.mcp._tool_manager._tools)
 
@@ -41,7 +41,7 @@ def test_mcp_server_registers_all_tool_layers() -> None:
 
 def test_mcp_server_keeps_status_resource_and_legacy_exports() -> None:
     """Existing imports from `mcp_server` should keep working after the split."""
-    from autoform_agent import mcp_server
+    from autoform_mcp_agent import mcp_server
 
     resource_uris = set(mcp_server.mcp._resource_manager._resources)
 

@@ -10,7 +10,7 @@
 
 `AutoForm_MCP` 指本目录。独立 GitHub 仓库的根目录应该就是本目录，不是完整 `AUTO_AutoForm` 工作区。
 
-`stdio` 指标准输入输出。MCP host 启动 `python -m autoform_agent.mcp_server` 后，会通过标准输入输出和它交换 JSON-RPC 消息。
+`stdio` 指标准输入输出。MCP host 启动 `python -m autoform_mcp_agent.mcp_server` 后，会通过标准输入输出和它交换 JSON-RPC 消息。
 
 `autoform://status` 是只读状态资源。连接成功后，优先读取它，确认本机环境、AutoForm 安装发现和工具能力。
 
@@ -23,8 +23,8 @@ git clone https://github.com/txf0101/AutoForm_MCP.git AutoForm_MCP
 cd AutoForm_MCP
 conda env create -f environment.yml
 conda activate afagent
-python -c "import autoform_agent.mcp_server; print('mcp import ok')"
-python -m autoform_agent.cli status
+python -c "import autoform_mcp_agent.mcp_server; print('mcp import ok')"
+python -m autoform_mcp_agent.cli status
 ```
 
 cmd：
@@ -34,8 +34,8 @@ git clone https://github.com/txf0101/AutoForm_MCP.git AutoForm_MCP
 cd AutoForm_MCP
 conda env create -f environment.yml
 conda activate afagent
-python -c "import autoform_agent.mcp_server; print('mcp import ok')"
-python -m autoform_agent.cli status
+python -c "import autoform_mcp_agent.mcp_server; print('mcp import ok')"
+python -m autoform_mcp_agent.cli status
 ```
 
 如果你拿到的是完整 `AUTO_AutoForm` 工作区，先进入子目录再执行环境检查：
@@ -43,7 +43,7 @@ python -m autoform_agent.cli status
 ```powershell
 cd AutoForm_MCP
 conda activate afagent
-python -c "import autoform_agent.mcp_server; print('mcp import ok')"
+python -c "import autoform_mcp_agent.mcp_server; print('mcp import ok')"
 ```
 
 ## 配置 MCP host
@@ -59,12 +59,12 @@ codex_mcp_config.autoform-mcp.toml
 Claude Code 可以用：
 
 ```powershell
-claude mcp add --transport stdio --scope user --env PYTHONPATH="<repo-root>" autoform-mcp -- conda run -n afagent python -m autoform_agent.mcp_server
+claude mcp add --transport stdio --scope user --env PYTHONPATH="<repo-root>" autoform-mcp -- conda run -n afagent python -m autoform_mcp_agent.mcp_server
 claude mcp list
 claude mcp get autoform-mcp
 ```
 
-其他 stdio MCP 客户端使用同样的命令结构：command 是 `conda`，args 是 `run -n afagent python -m autoform_agent.mcp_server`，环境变量 `PYTHONPATH` 指向 `<repo-root>`。
+其他 stdio MCP 客户端使用同样的命令结构：command 是 `conda`，args 是 `run -n afagent python -m autoform_mcp_agent.mcp_server`，环境变量 `PYTHONPATH` 指向 `<repo-root>`。
 
 ## 连接后怎么用
 
@@ -76,11 +76,11 @@ claude mcp get autoform-mcp
 
 ## 每个目录负责什么
 
-`autoform_agent/mcp_server.py` 是 MCP 启动入口。
+`autoform_mcp_agent/mcp_server.py` 是 MCP 启动入口。
 
-`autoform_agent/mcp_tools/` 是 MCP wrapper 层，负责把外部 MCP 参数转成内部函数参数。
+`autoform_mcp_agent/mcp_tools/` 是 MCP wrapper 层，负责把外部 MCP 参数转成内部函数参数。
 
-`autoform_agent/*.py` 是业务层，负责 AutoForm 安装发现、工程运行、求解器计划、GUI 窗口、结果审阅、材料、QuickLink 和发布检查。
+`autoform_mcp_agent/*.py` 是业务层，负责 AutoForm 安装发现、工程运行、求解器计划、GUI 窗口、结果审阅、材料、QuickLink 和发布检查。
 
 `tests/` 是测试目录，重点检查 MCP 工具注册、GUI 原语、结果审阅和工程运行计划。
 

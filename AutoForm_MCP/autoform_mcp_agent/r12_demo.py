@@ -61,11 +61,11 @@ def r12_project_view_demo(
         },
         "source_basis": [
             {
-                "path": "autoform_agent/process.py",
+                "path": "autoform_mcp_agent/process.py",
                 "fact": "open_afd_observer launches AFFormingUI.exe -file for a selected .afd project.",
             },
             {
-                "path": "autoform_agent/result_viewer.py",
+                "path": "autoform_mcp_agent/result_viewer.py",
                 "fact": "RESULT_VIEWS maps top view to shortcut Z and isometric view to shortcut E.",
             },
             {

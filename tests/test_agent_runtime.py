@@ -1591,6 +1591,218 @@ def test_agent_runtime_material_response_with_ascii_gui_negation_does_not_run_pr
     assert reply["runtime"]["materialUserResponse"]["script_run"]["status"] == "completed"
 
 
+def test_agent_runtime_material_assignment_runs_without_frontend_approval(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Material assignment is allowed to enter the guarded workflow without a frontend approval stop."""
+
+    calls: list[tuple[str, dict, bool]] = []
+
+    class FakeGateway:
+        def list_tools(self, *, agent_id=None, include_guarded=True):
+            return [{"name": "autoform_assign_material_to_project", "owner_agent": "material_agent"}]
+
+        def call_tool(self, tool_name, arguments, *, agent_id="manager", execution_approved=False, secret_values=()):
+            calls.append((tool_name, arguments, execution_approved))
+            assert tool_name == "autoform_assign_material_to_project"
+            assert agent_id == "material_agent"
+            assert execution_approved is False
+            assert arguments["afd_path"] == r"F:\cases\door_panel.afd"
+            assert str(arguments["material_path"]).endswith("AA6061-T4.mtb")
+            assert arguments["save_project"] is True
+            return {
+                "object_type": "AgentToolGatewayResult",
+                "tool": tool_name,
+                "agent_id": agent_id,
+                "arguments": arguments,
+                "started_at": "2026-06-07T00:00:00+00:00",
+                "finished_at": "2026-06-07T00:00:01+00:00",
+                "status": "completed",
+                "policy": {"requires_approval": False, "execution_class": "guarded_gui", "risk_level": "high"},
+                "result": {
+                    "status": "completed",
+                    "afd_path": r"F:\cases\door_panel.afd",
+                    "material_path": r"C:\materials\AA6061-T4.mtb",
+                    "material_changed": True,
+                    "backup_dir": r"F:\evidence\backup",
+                    "evidence_dir": r"F:\evidence\material",
+                    "gui_observation": {"pid": 24680},
+                },
+            }
+
+    monkeypatch.setattr("autoform_agent.agent_system.kernel.build_agent_tool_gateway", lambda project_root=None: FakeGateway())
+
+    reply = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-material-assignment-blocked",
+            "prompt": r"assign material C:\materials\AA6061-T4.mtb to current project",
+            "conversationContext": {
+                "current_project": {
+                    "schema_version": "autoform.current_project.v1",
+                    "kind": "afd_project",
+                    "working_project": r"F:\cases\door_panel.afd",
+                }
+            },
+            "uiContext": {"surface": "p0-run-event-workbench", "localExecution": {"enabled": False, "approved": False}},
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    assert calls and calls[0][0] == "autoform_assign_material_to_project"
+    assert reply["runtime"]["directApiCalled"] is False
+    assert reply["runtime"]["localToolCompletedCount"] == 1
+    assert reply["runtime"]["localToolBlockedCount"] == 0
+    assert reply["runtime"]["willControlGui"] is True
+    assert reply["runtime"]["willModifyAfd"] is True
+    assert reply["toolRuns"][0]["tool"] == "autoform_assign_material_to_project"
+    assert reply["toolRuns"][0]["status"] == "completed"
+    assert reply["pendingApproval"] is None
+    assert reply["runtime"]["pendingApproval"] is None
+    assert reply["runtime"]["currentProject"]["material_assignment_result"]["material_changed"] is True
+
+
+def test_agent_runtime_material_assignment_with_approval_updates_current_project(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Approved material assignment stores the evidence summary in currentProject."""
+
+    class FakeGateway:
+        def list_tools(self, *, agent_id=None, include_guarded=True):
+            return [{"name": "autoform_assign_material_to_project", "owner_agent": "material_agent"}]
+
+        def call_tool(self, tool_name, arguments, *, agent_id="manager", execution_approved=False, secret_values=()):
+            assert tool_name == "autoform_assign_material_to_project"
+            assert agent_id == "material_agent"
+            assert execution_approved is True
+            assert arguments["afd_path"] == r"F:\cases\door_panel.afd"
+            assert str(arguments["material_path"]).endswith("AA6061-T4.mtb")
+            return {
+                "object_type": "AgentToolGatewayResult",
+                "tool": tool_name,
+                "agent_id": agent_id,
+                "arguments": arguments,
+                "started_at": "2026-06-07T00:00:00+00:00",
+                "finished_at": "2026-06-07T00:00:01+00:00",
+                "status": "completed",
+                "policy": {"requires_approval": False, "execution_class": "guarded_gui", "risk_level": "high"},
+                "result": {
+                    "status": "completed",
+                    "afd_path": r"F:\cases\door_panel.afd",
+                    "material_path": r"C:\materials\AA6061-T4.mtb",
+                    "material_changed": True,
+                    "backup_dir": r"F:\evidence\backup",
+                    "evidence_dir": r"F:\evidence\material",
+                    "gui_observation": {"pid": 24680},
+                },
+            }
+
+    monkeypatch.setattr("autoform_agent.agent_system.kernel.build_agent_tool_gateway", lambda project_root=None: FakeGateway())
+
+    reply = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-material-assignment-approved",
+            "prompt": r"assign material C:\materials\AA6061-T4.mtb to current project",
+            "conversationContext": {
+                "current_project": {
+                    "schema_version": "autoform.current_project.v1",
+                    "kind": "afd_project",
+                    "working_project": r"F:\cases\door_panel.afd",
+                }
+            },
+            "uiContext": {"surface": "p0-run-event-workbench", "localExecution": {"enabled": True, "approved": True}},
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    assert reply["runtime"]["directApiCalled"] is False
+    assert reply["runtime"]["localToolCompletedCount"] == 1
+    assert reply["runtime"]["willControlGui"] is True
+    assert reply["runtime"]["willModifyAfd"] is True
+    assert reply["toolRuns"][0]["tool"] == "autoform_assign_material_to_project"
+    assert reply["toolRuns"][0]["status"] == "completed"
+    current_project = reply["runtime"]["currentProject"]
+    assert current_project["last_tool"] == "autoform_assign_material_to_project"
+    assert current_project["working_project"] == r"F:\cases\door_panel.afd"
+    assert current_project["material_assignment_result"]["material_changed"] is True
+
+
+def test_agent_runtime_material_assignment_business_block_has_no_pending_approval(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Material assignment validation blocks should not be converted into approval requests."""
+
+    class FakeGateway:
+        def list_tools(self, *, agent_id=None, include_guarded=True):
+            return [{"name": "autoform_assign_material_to_project", "owner_agent": "material_agent"}]
+
+        def call_tool(self, tool_name, arguments, *, agent_id="manager", execution_approved=False, secret_values=()):
+            assert tool_name == "autoform_assign_material_to_project"
+            assert execution_approved is False
+            return {
+                "object_type": "AgentToolGatewayResult",
+                "tool": tool_name,
+                "agent_id": agent_id,
+                "arguments": arguments,
+                "started_at": "2026-06-07T00:00:00+00:00",
+                "finished_at": "2026-06-07T00:00:01+00:00",
+                "status": "completed",
+                "policy": {"requires_approval": False, "execution_class": "guarded_gui", "risk_level": "high"},
+                "result": {
+                    "status": "blocked_project_path_required",
+                    "blocked_reason": "afd_path does not exist",
+                    "evidence_dir": r"F:\evidence\material",
+                    "material_changed": False,
+                },
+            }
+
+    monkeypatch.setattr("autoform_agent.agent_system.kernel.build_agent_tool_gateway", lambda project_root=None: FakeGateway())
+
+    reply = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-material-assignment-business-block",
+            "prompt": r"assign material C:\materials\AA6061-T4.mtb to current project",
+            "conversationContext": {
+                "current_project": {
+                    "schema_version": "autoform.current_project.v1",
+                    "kind": "afd_project",
+                    "working_project": r"F:\cases\missing.afd",
+                }
+            },
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    assert reply["toolRuns"][0]["status"] == "blocked_project_path_required"
+    assert reply["pendingApproval"] is None
+    assert reply["runtime"]["pendingApproval"] is None
+
+
+def test_agent_runtime_material_supplement_write_negation_does_not_assign_material() -> None:
+    """Candidate material replies with write negation must stay on the old no-GUI path."""
+
+    reply = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-material-user-response-write-negation",
+            "prompt": "Material supplement: AA6061-T4, use AA6061-T4.mtb, E=69000 MPa, poisson=0.33; do not launch GUI, do not write project, do not open project, do not solve.",
+            "uiContext": {
+                "surface": "p0-run-event-workbench",
+                "localExecution": {"enabled": True, "approved": True, "exampleName": "Solver_R13"},
+            },
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    assert "toolRuns" not in reply
+    assert reply["runtime"]["multiAgentMaterialResume"] is True
+    assert reply["runtime"]["localToolRunCount"] == 0
+    assert reply["runtime"]["willControlGui"] is False
+    assert reply["runtime"]["willSubmitSolver"] is False
+
+
 def test_agent_runtime_ui_local_execution_approval_does_not_approve_explicit_tool_requests(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1845,6 +2057,169 @@ def test_agent_runtime_gateway_call_blocks_unapproved_autoform_control(monkeypat
     assert gateway_result["tool"] == "autoform_result_open_latest"
     assert "execute" in gateway_result["blocked_arguments"]
     assert "request-sensitive-value" not in str(reply)
+
+
+def test_agent_runtime_execution_context_preserves_pending_approval(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A blocked gateway action must return a resumable execution context."""
+
+    class FakeGateway:
+        def list_tools(self, *, agent_id="manager", include_guarded=False):
+            return []
+
+        def call_tool(self, tool_name, arguments, *, agent_id="manager", execution_approved=False):
+            return {
+                "object_type": "AgentToolGatewayResult",
+                "tool": tool_name,
+                "agent_id": agent_id,
+                "arguments": arguments,
+                "started_at": "2026-06-07T00:00:00+00:00",
+                "finished_at": "2026-06-07T00:00:01+00:00",
+                "status": "blocked_requires_approval",
+                "approval_required": True,
+                "blocked_arguments": ["execute"],
+                "policy": {
+                    "name": tool_name,
+                    "risk_level": "medium",
+                    "execution_class": "guarded_solver",
+                },
+            }
+
+    monkeypatch.setattr("autoform_agent.agent_system.kernel.build_agent_tool_gateway", lambda project_root=None: FakeGateway())
+
+    reply = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-execution-context-blocked",
+            "prompt": "run Solver_R13",
+            "agentToolRequests": [
+                {
+                    "agent_id": "project_workflow",
+                    "tool": "autoform_project_run",
+                    "arguments": {"example_name": "Solver_R13", "execute": True},
+                }
+            ],
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    execution_context = reply["runtime"]["executionContext"]
+    assert execution_context["pending_approval"]["tool"] == "autoform_project_run"
+    assert execution_context["resumable_action"]["arguments"]["example_name"] == "Solver_R13"
+    assert reply["pendingApproval"]["status"] == "needs_approval"
+
+
+def test_agent_runtime_execution_context_resumes_after_approval(monkeypatch: pytest.MonkeyPatch) -> None:
+    """An approved follow-up should clear pending approval and keep the same project chain."""
+
+    class FakeGateway:
+        def list_tools(self, *, agent_id="manager", include_guarded=False):
+            return []
+
+        def call_tool(self, tool_name, arguments, *, agent_id="manager", execution_approved=False):
+            if not execution_approved:
+                return {
+                    "object_type": "AgentToolGatewayResult",
+                    "tool": tool_name,
+                    "agent_id": agent_id,
+                    "arguments": arguments,
+                    "started_at": "2026-06-07T00:00:00+00:00",
+                    "finished_at": "2026-06-07T00:00:01+00:00",
+                    "status": "blocked_requires_approval",
+                    "approval_required": True,
+                    "blocked_arguments": ["execute"],
+                    "policy": {"name": tool_name, "risk_level": "medium", "execution_class": "guarded_solver"},
+                }
+            return {
+                "object_type": "AgentToolGatewayResult",
+                "tool": tool_name,
+                "agent_id": agent_id,
+                "arguments": arguments,
+                "started_at": "2026-06-07T00:00:02+00:00",
+                "finished_at": "2026-06-07T00:00:03+00:00",
+                "status": "completed",
+                "policy": {"name": tool_name, "risk_level": "medium", "execution_class": "guarded_solver"},
+                "result": {
+                    "status": "completed",
+                    "working_project": "F:/demo/output/Solver_R13.afd",
+                    "run_dir": "F:/demo/output",
+                    "evidence_dir": "F:/demo/output/evidence",
+                },
+            }
+
+    monkeypatch.setattr("autoform_agent.agent_system.kernel.build_agent_tool_gateway", lambda project_root=None: FakeGateway())
+    first = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-execution-context-approved",
+            "prompt": "run Solver_R13",
+            "agentToolRequests": [
+                {
+                    "agent_id": "project_workflow",
+                    "tool": "autoform_project_run",
+                    "arguments": {"example_name": "Solver_R13", "execute": True},
+                }
+            ],
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+    context = {"execution_context": first["runtime"]["executionContext"]}
+
+    second = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-execution-context-approved",
+            "prompt": "批准，继续刚才的 Solver_R13",
+            "conversationContext": context,
+            "agentToolExecutionApproved": True,
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    execution_context = second["runtime"]["executionContext"]
+    assert execution_context["pending_approval"] is None
+    assert execution_context["current_project"]["working_project"] == "F:/demo/output/Solver_R13.afd"
+    assert execution_context["approved_actions"]
+    assert "F:/demo/output/evidence" in execution_context["evidence_refs"]
+
+
+def test_agent_runtime_cad_followup_reuses_execution_context_measurement(monkeypatch: pytest.MonkeyPatch) -> None:
+    """CAD follow-up should reuse completed measurement from execution_context."""
+
+    def fail_script_run(*args, **kwargs):
+        raise AssertionError("script_run should not be called when completed measurement is in context")
+
+    monkeypatch.setattr("autoform_agent.agent_runtime.run_flex_script", fail_script_run)
+    measurement = {
+        "status": "completed",
+        "source_geometry_path": "F:/parts/plate.step",
+        "parser": "cadquery",
+        "unit": "mm",
+        "length": 400,
+        "width": 300,
+        "thickness": 3,
+        "evidence_dir": "F:/evidence",
+        "filename_dimension_candidate": {"length": 30, "width": 40, "thickness": 3, "unit": "mm"},
+    }
+    reply = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-cad-followup",
+            "prompt": "what is the previous plate thickness",
+            "conversationContext": {
+                "execution_context": {
+                    "current_project": {
+                        "source_geometry_path": "F:/parts/plate.step",
+                        "cad_measurement_result": measurement,
+                    }
+                }
+            },
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    assert reply["runtime"]["cadMeasurement"]["thickness"] == 3
+    assert reply["runtime"]["executionContext"]["current_project"]["cad_measurement_result"]["parser"] == "cadquery"
+    assert reply.get("toolRuns") in (None, [])
 
 
 def test_agent_runtime_registers_result_review_catalog_entries() -> None:

@@ -31,7 +31,7 @@ REQUIRED_RELEASE_FILES = [
     "docs/api_runtime_call_chain.md",
 ]
 
-PACKAGE_INCLUDE_DIRS = ["autoform_agent", "docs", "tests"]
+PACKAGE_INCLUDE_DIRS = ["autoform_mcp_agent", "docs", "tests"]
 PACKAGE_INCLUDE_FILES = [
     ".env.example",
     "INSTALL.md",
@@ -100,7 +100,7 @@ def release_package_plan(
         "dry_run": dry_run,
         "file_count": len(planned_files),
         "planned_files": planned_files,
-        "exclusions": ["output", "tmp", ".pytest_cache", "autoform_agent_data", ".env", "__pycache__"],
+        "exclusions": ["output", "tmp", ".pytest_cache", "autoform_mcp_agent_data", ".env", "__pycache__"],
     }
     if dry_run:
         return plan
@@ -144,8 +144,8 @@ def install_check_plan(project_root: str | Path | None = None) -> dict:
             },
             {
                 "name": "check_status",
-                "command": "python -m autoform_agent.cli status",
-                "evidence": "autoform_agent.diagnostics.autoform_status_snapshot",
+                "command": "python -m autoform_mcp_agent.cli status",
+                "evidence": "autoform_mcp_agent.diagnostics.autoform_status_snapshot",
                 "required": True,
             },
             {

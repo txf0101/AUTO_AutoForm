@@ -18,13 +18,15 @@ AutoForm Agent 是一个本地辅助工具项目。它把本机 AutoForm Forming
 
 `Agent runtime` 指 Python 后端运行时。本项目的运行时入口是 `autoform_agent.agent_runtime`，HTTP bridge 和 CLI 的 `agent-turn` 命令都会调用它。配置 `DeepSeek_V4_API`、`DEEPSEEK_API_KEY`、`CHAT_API_KEY`，或在页面临时输入 API key 后，它会直接调用 DeepSeek API 或兼容 chat completions 的 HTTP 接口。
 
+`execution_context` 指跨轮执行上下文。它会随网页 `conversationContext` 或 CLI `agent-turn --conversation-context` 进入下一轮，保存当前工程、待审批动作、可续接动作、已批准动作、脚本运行记录、上下文补丁、证据目录和最近一次工具结果。真实 GUI、工程写入或求解被审批阻断时，后续批准会沿用同一 `task_id` 和原始工具参数。
+
 `多 Agent 系统` 指 AutoForm Agent 的角色、交接和编排区域。当前目录是 `autoform_agent/agent_system/`，说明文档是 `docs/multi_agent_architecture.md`。可以运行 `python -m autoform_agent.cli agent-roles` 查看角色，也可以运行 `python -m autoform_agent.cli agent-center-plan "你的需求"` 生成 R5 中心 Agent 任务卡、任务 DAG、C0 上下文视图、候选补丁审查和审计事件。
 
 `低风险准备链路` 指 R6 至 R11 的需求分诊、几何数据、RAG 证据、材料候选、工艺候选、低风险脚本和端到端回放。当前入口是 `autoform_agent/preparation_agents.py` 和 CLI 的 `prepare-triage`、`prepare-evidence`、`prepare-script-run`、`prepare-r11-replay`。该链路只生成候选卡片、候选补丁、证据包、脚本运行记录和 `StageSummary`，不会提交真实 AutoForm 求解。
 
-`柔性脚本` 指登记在 `flex_script_library/` 的稳定脚本能力，以及临时放在 `tmp/flex_script_sandbox/` 的 fork、新建和调试脚本。稳定脚本通过 `Script Agent` 和 `Script Executor` 运行，结果统一保存为 `ScriptRunRecord`，证据写入 `output/script_runs/`。当前 MCP 只暴露 `autoform_script_catalog` 和 `autoform_script_run` 两个控制入口；脚本 fork、新建、patch、validate 和 promote 先通过 CLI 或内部 Agent 能力完成。
+`柔性脚本` 指登记在 `flex_script_library/` 的稳定脚本能力，以及临时放在 `tmp/flex_script_sandbox/` 的 fork、新建和调试脚本。稳定脚本由 `Script Agent` 和 `Script Executor` 运行，结果统一保存为 `ScriptRunRecord`，证据写入 `output/script_runs/`。当前 MCP 只暴露 `autoform_script_catalog` 和 `autoform_script_run` 两个控制入口；脚本 fork、新建、patch、validate、audit、deps、sample-run 和 promote 先由 CLI 或内部 Agent 能力完成。L2 脚本入库需要静态审计、依赖探测、验证报告和中心审批记录。
 
-`CAD 实测` 指 `cad_measure_geometry_v1` 脚本读取 CAD 文件后生成 `cad_measurement_result`。第一阶段内置 STL bounding box 解析；STEP、STP、IGS 和 IGES 会先探测 FreeCAD、FreeCADCmd、OCP/OCC、meshio 等解析器。当前机器缺少解析器时会返回 `status=blocked`、`parser=probe_only`、`blocked_reason` 和 `evidence_dir`。文件名中的 `30-40-3` 只会作为 `filename_dimension_candidate`，不能当作实测长宽厚。
+`CAD 实测` 指 `cad_measure_geometry_v1` 脚本读取 CAD 文件后生成 `cad_measurement_result`。当前内置 STL bounding box 解析；STEP、STP、IGS 和 IGES 会探测 CadQuery/OCP、FreeCADCmd、FreeCAD、meshio 和 trimesh。CadQuery/OCP 或 FreeCADCmd 可用时，STEP 可以返回真实 bbox；解析器缺失或解析失败时会返回 `status=blocked`、`blocked_reason` 和 `evidence_dir`。文件名中的 `30-40-3` 只会作为 `filename_dimension_candidate`，不能当作实测长宽厚。
 
 `P0 契约资料` 指 `schemas/`、`fixtures/`、`policy/`、`evals/`、`repo_scaffold.md` 和 `naming_policy.md`。这些文件先固定事件、任务卡、候选补丁、证据包、token 用量和权限边界，后续 UI、后端事件网关和中心 Agent 都应按这些资料联调。
 
@@ -101,7 +103,7 @@ start_autoform_agent.cmd
 powershell -ExecutionPolicy Bypass -File .\start_autoform_agent.ps1
 ```
 
-启动器会显示两个选项。根据 `README.md` 和 `start_autoform_agent.ps1` 的说明，选项一用于检查后端 Agent API runtime 是否能导入，选项二会同时启动网页需要的 HTTP bridge 和静态前端服务，并打开本地页面。
+启动器会显示两个选项。根据 `README.md` 和 `start_autoform_agent.ps1` 的说明，选项一用于检查后端 Agent API runtime 是否能导入，选项二会同时启动网页需要的 HTTP bridge 和静态前端服务，在打开本地页面前对本启动器记录的服务做一次快速刷新。
 
 如果端口已经被监听，启动器会复用现有服务。这个行为来自 `start_autoform_agent.ps1` 中的端口检查和启动逻辑。若启动器提示 HTTP bridge 或前端服务早于当前源码，说明浏览器可能仍连接旧后台进程；需要刷新时运行：
 
@@ -332,6 +334,8 @@ http://127.0.0.1:8765/frontend/index.html?fixture=../fixtures/r11_low_risk_prepa
 
 如果用户只问“你能在本机中寻找 AutoForm 软件应有的 6061 铝合金材料配置吗”，后端会直接进入材料 Agent 本地检索链路。Agent 协作消息会显示“中心Agent -> 材料Agent”的分发、“材料Agent -> 中心Agent”的脚本结果，以及“材料Agent -> 中心Agent -> 用户”的缺失参数转问。前端会把上一轮材料候选和待确认问题压缩成 `conversationContext`，用户下一轮说“全都使用本机的配置，默认配置”时，后端会继续交给材料 Agent，而不是回到通用环境快照。
 
+如果演示目标是把材料真实写入当前 `.afd`，prompt 需要明确写成“给当前工程赋予材料 C:\...\AA6061-T4.mtb”或 “assign material ... to current project”。后端会生成 `autoform_assign_material_to_project`，该请求属于高风险受控 GUI 工具；当前按演示要求进入 `AgentToolGateway` 白名单后直接执行，不再等待前端审批开关。工具默认写当前工程原件，写入前自动把原 `.afd` 复制到 `output/material_assignment_backups/<timestamp>_<afd_stem>/`，再经 AutoForm GUI 选择材料、保存工程，并在 `output/material_assignment/<timestamp>_<material_stem>/evidence/` 写入截图、窗口树、`workflow_log.jsonl`、`manifest.json` 和赋材前后材料字段对比。只想补充候选材料时，应保留“不要启动 GUI、不写入工程”等限制语，避免进入真实写入链路。
+
 如果用户明确输入“启动 AutoForm 主界面并新建工程”或“打开 AutoForm 主界面”这类软件启动需求，后端会生成 `autoform_start_ui` 请求，“工程操作”的官方示例项不会把该请求改写成 `Solver_R13`。该请求同样经过 `AgentToolGateway`：未勾选本机执行批准时返回审批阻断，并提示需要勾选“允许本机 MCP 工具控制”；勾选并批准后启动 AutoForm Forming 主界面。若用户的新建工程请求同时给出桌面 STEP、IGES 或 STL 等几何文件并表达导入意图，后端会改用 `autoform_import_geometry_to_new_project`，工具自行启动或恢复 AutoForm 窗口。当前项目还没有覆盖所有新建工程向导参数的通用白名单工具，因此非几何导入类的工程类型、材料、几何和工序参数仍需在 AutoForm GUI 内确认，或等待后续新增专门 MCP wrapper。
 
 如果用户输入“打开 `F:\cases\DoorPanel.afd`”或“打开别的项目 `F:\cases\DoorPanel.afd`”这类包含显式 `.afd` 路径的 prompt，后端会优先使用该路径生成 `autoform_project_run` 请求；官方示例工程名只在用户没有给出路径或新建目标时参与默认示例选择。用户只说“打开别的项目”但没有提供 `.afd` 路径时，后端不会用默认示例工程替代用户目标，需要用户补充工程路径。
@@ -376,6 +380,12 @@ python -m autoform_agent import-geometry-to-new-project --source-geometry-path "
 python -m autoform_agent script-list --query cad
 ```
 
+查看本机 CAD 解析器：
+
+```powershell
+python -m autoform_agent cad-parser-probe
+```
+
 测量桌面上的 STEP 文件：
 
 ```powershell
@@ -388,7 +398,20 @@ python -m autoform_agent cad-measure-geometry --source-geometry-path "C:\Users\T
 python -m autoform_agent script-run cad_measure_geometry_v1 --param source_geometry_path="C:\Users\Tang Xufeng\Desktop\薄板30-40-3.STEP" --param length_unit=mm
 ```
 
-如果本机没有 STEP 解析器，返回 `blocked` 是符合第一阶段设计的结果。此时需要查看 `blocked_reason` 和 `evidence_dir`，并把 `filename_dimension_candidate` 当作文件名候选值处理。对于 `.stl` 文件，当前脚本会用内置顶点解析计算真实 bounding box，并返回 `axis_aligned_bbox`、`length`、`width` 和 `thickness`。
+如果本机没有 STEP 解析器，返回 `blocked` 是符合当前设计的结果。此时需要查看 `blocked_reason` 和 `evidence_dir`，并把 `filename_dimension_candidate` 当作文件名候选值处理。对于 `.stl` 文件，当前脚本会用内置顶点解析计算真实 bounding box，并返回 `axis_aligned_bbox`、`length`、`width` 和 `thickness`。如果 `cad-parser-probe` 显示 CadQuery/OCP 可用，STEP 实测成功时会返回 `parser=cadquery` 和真实 bbox。
+
+脚本调试和入库相关命令如下，普通用户通常只需要前两类命令，维护者处理新脚本时再使用审计、依赖、样例运行和审批命令：
+
+```powershell
+python -m autoform_agent script-new demo_skill --title "Demo Skill" --objective "说明脚本目标"
+python -m autoform_agent script-patch --sandbox-id <sandbox_id> --relative-path demo_skill.py --find "\"value\"" --replace "\"patched\""
+python -m autoform_agent script-validate --sandbox-id <sandbox_id>
+python -m autoform_agent script-audit --sandbox-id <sandbox_id>
+python -m autoform_agent script-deps --sandbox-id <sandbox_id> --install-hint
+python -m autoform_agent script-sample-run --sandbox-id <sandbox_id>
+python -m autoform_agent script-approval-create --sandbox-id <sandbox_id> --risk-level L2 --approved-by center_agent
+python -m autoform_agent script-promote --sandbox-id <sandbox_id> --approved-by center_agent --approval-record <approval_record_path>
+```
 
 ## 可选 MCP 工具入口
 
@@ -404,9 +427,9 @@ codex_mcp_config.autoform-agent.toml
 %USERPROFILE%\.codex\config.toml
 ```
 
-把模板内容加入支持 MCP 的客户端配置后，该客户端可以按配置启动 `autoform_agent.mcp_server`。模板中推荐的 MCP host 配置名是 `autoform-mcp`。这个步骤的依据是 `codex_mcp_config.autoform-agent.toml` 和 `README.md` 的“Install And Connect The MCP Server”一节。
+把模板内容加入支持 MCP 的客户端配置后，该客户端可以按配置启动 `autoform_agent.mcp_server`。这里说的是完整 `AUTO_AutoForm` 工作区，包名是 `autoform_agent`。独立 `AutoForm_MCP` 子项目的包名是 `autoform_mcp_agent`，需要使用 `AutoForm_MCP/codex_mcp_config.autoform-mcp.toml`。这个步骤的依据是 `codex_mcp_config.autoform-agent.toml`、`AutoForm_MCP/codex_mcp_config.autoform-mcp.toml` 和 `README.md` 的“Install And Connect The MCP Server”一节。
 
-模板中的 `<path-to-cloned-repo>` 需要替换为当前电脑上的仓库绝对路径。模板默认通过 `conda run -n afagent python -m autoform_agent.mcp_server` 启动；如果 MCP host 找不到 `conda`，可以把 `command` 改成 `afagent` 环境中 `python.exe` 的绝对路径，并把 `args` 改为 `['-m', 'autoform_agent.mcp_server']`。
+根项目模板中的 `<path-to-cloned-repo>` 需要替换为当前电脑上的完整仓库绝对路径。模板默认通过 `conda run -n afagent python -m autoform_agent.mcp_server` 启动；如果 MCP host 找不到 `conda`，可以把 `command` 改成 `afagent` 环境中 `python.exe` 的绝对路径，并把 `args` 改为 `['-m', 'autoform_agent.mcp_server']`。独立 `AutoForm_MCP` 子项目对应的模块名是 `autoform_mcp_agent.mcp_server`。
 
 如果只打开前端网页，页面会调用本地 HTTP bridge，并由 Python 后端运行时返回状态摘要。需要让外部 MCP host 直接调用 `autoform_` 工具时，才需要完成上面的 MCP 配置步骤。
 

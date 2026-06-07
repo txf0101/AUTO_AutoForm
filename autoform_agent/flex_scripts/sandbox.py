@@ -6,7 +6,8 @@ from pathlib import Path
 import shutil
 from typing import Any
 
-from .contracts import FLEX_SANDBOX_ROOT, ROOT, ensure_under, read_json, slug, timestamp_id, utc_now, write_json
+from .approvals import create_script_approval_record, validate_script_approval_record
+from .contracts import FLEX_SANDBOX_ROOT, FLEX_SKILLS_ROOT, ROOT, ensure_under, read_json, slug, timestamp_id, utc_now, write_json
 from .registry import get_registered_skill
 from .validators import validate_python_files
 
@@ -92,6 +93,25 @@ def validate_sandbox(sandbox_id: str) -> dict[str, Any]:
     return {"status": report["status"], "sandbox_id": sandbox_id, "sandbox_dir": str(sandbox_dir), "validation_report": report}
 
 
+def create_sandbox_approval(
+    sandbox_id: str,
+    *,
+    risk_level: str,
+    approved_by: str = "center_agent",
+    approval_record: str | Path | None = None,
+) -> dict[str, Any]:
+    sandbox_dir = ensure_under(FLEX_SANDBOX_ROOT, FLEX_SANDBOX_ROOT / sandbox_id)
+    if not (sandbox_dir / "validation_report.json").exists():
+        validate_sandbox(sandbox_id)
+    return create_script_approval_record(
+        sandbox_dir,
+        risk_level=risk_level,
+        approved_by=approved_by,
+        approved_actions=["promote"],
+        approval_record=approval_record,
+    )
+
+
 def promote_sandbox(
     sandbox_id: str,
     *,
@@ -102,18 +122,26 @@ def promote_sandbox(
     manifest_path = sandbox_dir / "sandbox_manifest.json"
     manifest = read_json(manifest_path) if manifest_path.exists() else {}
     skill_id = str(manifest.get("skill_id") or sandbox_id).strip()
-    if not approved_by or not approval_record or not Path(approval_record).exists():
+    approval_validation: dict[str, Any] | None = None
+    if approval_record:
+        approval_validation = validate_script_approval_record(
+            approval_record,
+            sandbox_dir=sandbox_dir,
+            approved_by=approved_by,
+        )
+    if not approved_by or not approval_record or not Path(approval_record).exists() or approval_validation.get("status") != "passed":
         request = {
             "status": "promotion_requested",
             "sandbox_id": sandbox_id,
             "skill_id": skill_id,
             "approved_by": approved_by,
             "approval_record": str(approval_record or ""),
+            "approval_validation": approval_validation,
             "created_at": utc_now(),
         }
         write_json(sandbox_dir / "promotion_request.json", request)
         return request
-    skill_root = (ROOT / "flex_script_library" / "skills" / slug(skill_id)).resolve()
+    skill_root = (FLEX_SKILLS_ROOT / slug(skill_id)).resolve()
     versions_root = skill_root / "versions"
     versions_root.mkdir(parents=True, exist_ok=True)
     version_name = _next_version_name(versions_root)
@@ -127,6 +155,7 @@ def promote_sandbox(
         "target_dir": str(target_dir),
         "approved_by": approved_by,
         "approval_record": str(Path(approval_record).resolve()),
+        "approval_validation": approval_validation,
         "created_at": utc_now(),
     }
     write_json(target_dir / "promotion_record.json", result)

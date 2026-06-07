@@ -30,6 +30,8 @@ def main() -> int:
         params.get("source_geometry_path", ""),
         length_unit=params.get("length_unit", "mm"),
         output_root=params.get("output_root") or root / "output" / "cad_measurements",
+        parser=params.get("parser", "auto"),
+        parser_timeout_seconds=int(params.get("parser_timeout_seconds", 60)),
     )
     artifact = Path(result.get("evidence_dir", "")).parent / "cad_measurement_result.json"
     result["artifacts"] = [str(artifact.resolve())] if artifact.exists() else []

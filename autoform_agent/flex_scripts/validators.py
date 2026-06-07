@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from .contracts import VALIDATION_REPORT_SCHEMA_VERSION, utc_now
+from .security import audit_python_tree
 
 
 def build_validation_report(
@@ -53,5 +54,15 @@ def validate_python_files(root: str | Path) -> dict[str, Any]:
             checks.append({"name": "py_compile", "status": "passed", "path": str(path)})
         except Exception as exc:
             checks.append({"name": "py_compile", "status": "failed", "path": str(path), "detail": str(exc)})
-    status = "passed" if checks and all(check["status"] == "passed" for check in checks) else "failed"
-    return build_validation_report(status=status, checks=checks, summary=f"python_files={len(checks)}")
+    audit = audit_python_tree(base)
+    checks.append(
+        {
+            "name": "static_audit",
+            "status": "passed" if audit.get("status") == "passed" else "failed",
+            "detail": audit.get("status"),
+            "audit": audit,
+        }
+    )
+    blocking_checks = [check for check in checks if check.get("status") not in {"passed", "warning"}]
+    status = "passed" if checks and not blocking_checks else "failed"
+    return build_validation_report(status=status, checks=checks, summary=f"python_files={len(sorted(base.rglob('*.py')))}")

@@ -37,6 +37,10 @@ from .scripts import *
 from .scripts import register_script_tools
 
 
+# 小白读法：
+# MCP 工具很多，不能散落在各处随缘注册。这里把工具按领域分层：
+# status 查状态，project 管工程，materials 管材料，gui 管可见窗口和后处理。
+# `register_all_tools` 会按这个顺序逐层调用，让 FastMCP 知道有哪些工具。
 MCP_TOOL_LAYERS: tuple[tuple[str, Callable[[Any], None]], ...] = (
     ('status', register_status_tools),
     ('project', register_project_tools),
@@ -61,13 +65,18 @@ def register_all_tools(mcp: Any) -> None:
     The order is intentionally explicit.  It mirrors the project domains and
     makes duplicate registration easy to diagnose during import checks.
     """
+    # 对新读者来说，这个循环就是“把每一类工具交给 MCP server”。
+    # `register_layer` 是各个子文件提供的注册函数，内部会调用 `mcp.add_tool(...)`。
     for _layer_name, register_layer in MCP_TOOL_LAYERS:
         register_layer(mcp)
 
 
+# 这个大元组是测试和兼容导出的“总点名册”。
+# 新增 MCP 工具时只加到对应子模块还不够，也要进入这里，测试才知道工具面没有丢。
 ALL_TOOL_FUNCTIONS = (
     autoform_status_snapshot,
     autoform_discover_installation,
+    # 工程案例：启动主界面和打开已有 .afd 都在 project 工具层。
     autoform_start_ui,
     autoform_open_afd,
     autoform_resolve_project,
@@ -90,11 +99,13 @@ ALL_TOOL_FUNCTIONS = (
     autoform_job_logs,
     autoform_job_archive,
     autoform_list_jobs,
+    # 材料案例：这里暴露材料安装预演和材料库检查工具。
     autoform_install_materials,
     autoform_list_material_libraries,
     autoform_find_duplicate_material_files,
     autoform_material_library_backup_plan,
     autoform_inspect_material_file,
+    autoform_assign_material_to_project,
     autoform_install_quicklink_bridge,
     autoform_get_quicklink_bridge_status,
     autoform_list_quicklink_exports,
@@ -172,6 +183,7 @@ ALL_TOOL_FUNCTIONS = (
     autoform_result_open_latest,
     autoform_result_open_project,
     autoform_result_show_variable,
+    # 后处理案例：这里暴露结果视角切换工具。
     autoform_result_set_view,
     autoform_result_view_evidence,
     autoform_result_play_forming_animation,

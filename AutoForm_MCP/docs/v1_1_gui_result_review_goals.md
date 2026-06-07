@@ -28,21 +28,21 @@ V1.1 的核心目标是让 MCP 具备面向 AutoForm 后处理的稳定演示能
 
 | 能力或事实 | 依据 |
 | --- | --- |
-| MCP 已能运行工程并打开 GUI 观察窗口 | `autoform_agent/mcp_tools/project.py` 中的 `autoform_project_run(open_gui=True)` |
-| CLI 已有窗口枚举、恢复、聚焦、截图、坐标点击能力 | `autoform_agent/gui_automation.py` 与 `autoform_agent/cli.py` 中的 `gui-window-snapshot`、`gui-restore-window`、`gui-focus`、`gui-screenshot`、`gui-click` |
+| MCP 已能运行工程并打开 GUI 观察窗口 | `autoform_mcp_agent/mcp_tools/project.py` 中的 `autoform_project_run(open_gui=True)` |
+| CLI 已有窗口枚举、恢复、聚焦、截图、坐标点击能力 | `autoform_mcp_agent/gui_automation.py` 与 `autoform_mcp_agent/cli.py` 中的 `gui-window-snapshot`、`gui-restore-window`、`gui-focus`、`gui-screenshot`、`gui-click` |
 | AutoForm 帮助映射包含结果页入口 | `D:\Program Files\AutoForm\AFplus\R13F\help\helpLinks.cfg` 中的 `SolverResultsPagePresenter`、`PostProcessingPagePresenter`、`EvaluationAreaEditor` |
 | AutoForm 帮助映射包含部分评估结果栏目 | 同一文件中的 `SplitsPresenter`、`DrawInPresenter`、`EvalSpringbackPresenter`、`SurfacePresenter`、`ProcessTotalForcesPresenter` |
-| 当前窗口枚举和恢复命令可稳定返回 JSON | `python -m autoform_agent.cli gui-window-snapshot` 返回窗口标题、句柄、进程号、矩形和 `interaction_ready`；`python -m autoform_agent.cli gui-restore-window --wait 0` 在窗口已就绪时返回 `already_ready` |
-| 当前 MCP 已接入 GUI 和结果审阅工具层 | `autoform_agent/mcp_tools/__init__.py` 当前注册 status、project、jobs、materials、quicklink、environment、queue、solver、commands、reporting、release、reference 和 gui 共 13 个工具层，工具总数为 112 |
+| 当前窗口枚举和恢复命令可稳定返回 JSON | `python -m autoform_mcp_agent.cli gui-window-snapshot` 返回窗口标题、句柄、进程号、矩形和 `interaction_ready`；`python -m autoform_mcp_agent.cli gui-restore-window --wait 0` 在窗口已就绪时返回 `already_ready` |
+| 当前 MCP 已接入 GUI 和结果审阅工具层 | `autoform_mcp_agent/mcp_tools/__init__.py` 当前注册 status、project、jobs、materials、quicklink、environment、queue、solver、commands、reporting、release、reference 和 gui 共 13 个工具层，工具总数为 112 |
 | 官方样例可作为结果审阅输入 | 本轮 7 个本机 R13 官方样例均已有运动学运行证据；`official-sample-run-summary --search-dir output\project_runs --mode kinematic` 读取 23 个运行清单并返回 `status=all_expected_examples_passed`、`covered_example_count=7` 和 `passing_example_count=7`；最新 `Solver_R13` 运行目录为 `output/project_runs/v1_1_20260531_live/20260531_152442_Solver_R13_kinematic` |
-| P1 高层审阅计划已形成结构化入口 | `autoform_agent/result_viewer.py` 的 `build_result_review_plan()`、CLI `result-plan`、MCP `autoform_result_plan_review` 和 Agent runtime `autoform_result_review_plan_tool` |
-| GUI 就绪诊断已形成结构化入口 | `autoform_agent/result_viewer.py` 的 `assess_result_review_readiness()`、CLI `result-readiness`、MCP `autoform_result_readiness` 和 Agent runtime `autoform_result_readiness_tool` |
-| 桌面观察就绪探针已形成结构化入口 | `autoform_agent/gui_automation.py` 的 `computer_use_probe()`、CLI `computer-use-probe`、MCP `autoform_computer_use_probe` 和 Agent runtime `autoform_computer_use_probe_tool`；当前会话截图尝试返回 `screen grab failed` |
-| GUI 控件证据登记已形成结构化入口 | `autoform_agent/result_viewer.py` 的 `result_gui_evidence()`、CLI `result-gui-evidence`、MCP `autoform_result_gui_evidence` 和 Agent runtime `autoform_result_gui_evidence_tool` |
+| P1 高层审阅计划已形成结构化入口 | `autoform_mcp_agent/result_viewer.py` 的 `build_result_review_plan()`、CLI `result-plan`、MCP `autoform_result_plan_review` 和 Agent runtime `autoform_result_review_plan_tool` |
+| GUI 就绪诊断已形成结构化入口 | `autoform_mcp_agent/result_viewer.py` 的 `assess_result_review_readiness()`、CLI `result-readiness`、MCP `autoform_result_readiness` 和 Agent runtime `autoform_result_readiness_tool` |
+| 桌面观察就绪探针已形成结构化入口 | `autoform_mcp_agent/gui_automation.py` 的 `computer_use_probe()`、CLI `computer-use-probe`、MCP `autoform_computer_use_probe` 和 Agent runtime `autoform_computer_use_probe_tool`；当前会话截图尝试返回 `screen grab failed` |
+| GUI 控件证据登记已形成结构化入口 | `autoform_mcp_agent/result_viewer.py` 的 `result_gui_evidence()`、CLI `result-gui-evidence`、MCP `autoform_result_gui_evidence` 和 Agent runtime `autoform_result_gui_evidence_tool` |
 | 输出时间步设置已有本机 GUI 证据 | `output/project_runs/frame_rate_experiment/AutoComp_R13_every_time_step_20260531_185003/run_recap.md` 记录了 `Simulation > Control > Output`、`每一时间步`、`Apply`、保存、重算和 Job Log 成功结果 |
 | 底部时间步播放控件已有本机结果证据 | 同一 `run_recap.md` 记录了最终结果中底部时间步长控制条可以播放 `D-20 Drawing` 中间变形并切换到 `D-20 Springback` 末端状态 |
 | 动画播放已有受控 MCP 执行分支、人工播放观察分支和视觉校验 | `autoform_result_play_forming_animation` 可在 `execute=true` 时使用 `autocomp_r13_bottom_strip` profile，经窗口标题和工序检查后调用 Win32 GUI 原语点击；2026-06-02 证据目录 `tmp/result_review_auto_play_v1_1_geometry_guard_probe` 显示窗口矩形稳定且结果视图区差异达到阈值；`manual_user_playback` 作为人工 fallback 保留 |
-| 视角切换取证已有准备入口，主要快捷键已验证 | `autoform_agent/result_viewer.py` 的 `view_control_evidence_protocol()`、CLI `result-view-evidence`、MCP `autoform_result_view_evidence` 和 Agent runtime `autoform_result_view_evidence_tool` 已覆盖等轴测、俯视、正视、侧视、适合窗口和复位的 before、after、compare 流程；2026-06-01 对 AutoComp_R13 窗口实测确认 `E`、`Z`、`X` 和 `Shift+Y` 自动切换有效 |
+| 视角切换取证已有准备入口，主要快捷键已验证 | `autoform_mcp_agent/result_viewer.py` 的 `view_control_evidence_protocol()`、CLI `result-view-evidence`、MCP `autoform_result_view_evidence` 和 Agent runtime `autoform_result_view_evidence_tool` 已覆盖等轴测、俯视、正视、侧视、适合窗口和复位的 before、after、compare 流程；2026-06-01 对 AutoComp_R13 窗口实测确认 `E`、`Z`、`X` 和 `Shift+Y` 自动切换有效 |
 
 动画播放入口已有 AutoComp_R13 底部时间步控制条的本机观察证据，并已接入受控 MCP 执行分支、人工播放观察分支和结果视图区截图差异校验。2026-05-31 的本机实测记录了默认点击和右侧点击覆盖的失败证据。2026-06-02 在补充窗口恢复和窗口几何稳定性闸门后，`autocomp_r13_bottom_strip` profile 返回 `played_with_guarded_mcp_click_profile`，证据目录为 `tmp/result_review_auto_play_v1_1_geometry_guard_probe`，结果视图区 `changed_pixel_ratio=0.2101411782097716`、`mean_delta=19.197265134156257`。当前剩余缺口集中在跨工程播放控件泛化、精确帧数读取和坐标式结果栏目切换，进入 V1.2 或更后续版本。
 
@@ -53,7 +53,7 @@ V1.1 的核心目标是让 MCP 具备面向 AutoForm 后处理的稳定演示能
 新增 MCP 工具层：
 
 ```text
-autoform_agent/mcp_tools/gui.py
+autoform_mcp_agent/mcp_tools/gui.py
 ```
 
 建议暴露以下低层工具：
@@ -249,8 +249,8 @@ V1.1 的交互应采用高层工具优先、低层工具回退的编排方式。
 建议新增以下文件：
 
 ```text
-autoform_agent/result_viewer.py
-autoform_agent/mcp_tools/gui.py
+autoform_mcp_agent/result_viewer.py
+autoform_mcp_agent/mcp_tools/gui.py
 tests/test_gui_automation.py
 tests/test_result_viewer.py
 tests/test_mcp_tools.py

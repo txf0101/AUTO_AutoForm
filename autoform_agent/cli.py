@@ -38,12 +38,17 @@ from .diagnostics import (
 )
 from .extension import internal_extension_boundary
 from .flex_scripts import (
+    cad_parser_probe,
+    script_approval_create,
+    script_audit,
+    script_deps,
     script_discover,
     script_fork,
     script_new,
     script_patch,
     script_promote,
     script_run,
+    script_sample_run,
     script_validate,
 )
 from .geometry_import_workflow import import_geometry_to_new_project
@@ -75,6 +80,7 @@ from .materials import (
     material_library_backup_plan,
     result_to_json,
 )
+from .material_assignment_workflow import assign_material_to_project
 from .paths import discover_installations, get_default_installation
 from .preparation_agents import (
     build_r11_low_risk_replay,
@@ -157,6 +163,8 @@ def main(argv: list[str] | None = None) -> int:
     agent_parser.add_argument("prompt", help="User prompt for the backend AutoForm API runtime.")
     agent_parser.add_argument("--conversation-id", default="cli", help="Stable id included in runtime metadata.")
     agent_parser.add_argument("--max-turns", type=int, default=1, help="Compatibility option retained for old scripts.")
+    agent_parser.add_argument("--conversation-context", help="JSON string or path to a conversationContext JSON file.")
+    agent_parser.add_argument("--approve-local-execution", action="store_true", help="Approve guarded local tool execution for this turn.")
 
     agent_status_parser = subparsers.add_parser("agent-status", help="Inspect backend agent runtime configuration.")
     agent_status_parser.add_argument("--json", action="store_true", help="Print machine-readable runtime status.")
@@ -228,6 +236,23 @@ def main(argv: list[str] | None = None) -> int:
     script_validate_parser = subparsers.add_parser("script-validate", help="Validate Python files inside a flex sandbox.")
     script_validate_parser.add_argument("--sandbox-id", required=True)
 
+    script_audit_parser = subparsers.add_parser("script-audit", help="Run static safety audit for one flex sandbox.")
+    script_audit_parser.add_argument("--sandbox-id", required=True)
+
+    script_deps_parser = subparsers.add_parser("script-deps", help="Probe flexible script dependencies.")
+    script_deps_parser.add_argument("skill_id", nargs="?")
+    script_deps_parser.add_argument("--sandbox-id")
+    script_deps_parser.add_argument("--install-hint", action="store_true")
+
+    script_sample_parser = subparsers.add_parser("script-sample-run", help="Run a sandbox script with sample_params.json.")
+    script_sample_parser.add_argument("--sandbox-id", required=True)
+
+    script_approval_parser = subparsers.add_parser("script-approval-create", help="Create a center approval record for a sandbox script action.")
+    script_approval_parser.add_argument("--sandbox-id", required=True)
+    script_approval_parser.add_argument("--risk-level", required=True, choices=["L2", "L3", "L4"])
+    script_approval_parser.add_argument("--approved-by", default="center_agent")
+    script_approval_parser.add_argument("--approval-record", type=Path)
+
     script_promote_parser = subparsers.add_parser("script-promote", help="Promote a sandbox script when center approval evidence exists.")
     script_promote_parser.add_argument("--sandbox-id", required=True)
     script_promote_parser.add_argument("--approved-by", default="")
@@ -236,15 +261,22 @@ def main(argv: list[str] | None = None) -> int:
     cad_measure_parser = subparsers.add_parser("cad-measure-geometry", help="Measure CAD geometry through the stable cad_measure_geometry_v1 script.")
     cad_measure_parser.add_argument("--source-geometry-path", required=True)
     cad_measure_parser.add_argument("--length-unit", default="mm")
+    cad_measure_parser.add_argument("--parser", default="auto", choices=["auto", "stl_builtin", "cadquery", "freecadcmd"])
+    cad_measure_parser.add_argument("--parser-timeout", type=int, default=60)
+
+    subparsers.add_parser("cad-parser-probe", help="Probe local CAD parser candidates.")
 
     archive_parser = subparsers.add_parser("archive-list", help="List archive members with bsdtar.")
     archive_parser.add_argument("archive", type=Path)
     archive_parser.add_argument("--limit", type=int)
 
+    # 小白读法：这里是在登记命令，不是在执行命令。
+    # start-ui 只需要图形后端和 dry-run 开关，真实执行分支在下面的 main 后半段。
     start_parser = subparsers.add_parser("start-ui", help="Start AutoForm Forming.")
     start_parser.add_argument("--graphics", default="directx11", choices=["directx11", "opengl2"])
     start_parser.add_argument("--dry-run", action="store_true")
 
+    # open-afd 比 start-ui 多一个 .afd 文件路径。路径是否存在由 process.open_afd 检查。
     open_parser = subparsers.add_parser("open-afd", help="Open an AutoForm .afd project.")
     open_parser.add_argument("afd", type=Path)
     open_parser.add_argument("--dry-run", action="store_true")
@@ -355,6 +387,8 @@ def main(argv: list[str] | None = None) -> int:
     result_show_parser.add_argument("--no-screenshot", action="store_true")
     result_show_parser.add_argument("--output-dir", type=Path, default=Path("tmp") / "result_review")
 
+    # result-set-view 把“等轴测、俯视、+Z”等用户说法映射成后处理视角。
+    # 默认只返回计划；加 --execute 才会尝试对可见 AutoForm 窗口发送快捷键。
     result_view_parser = subparsers.add_parser("result-set-view", help="Map and plan a result view change.")
     result_view_parser.add_argument("view")
     result_view_parser.add_argument("--execute", action="store_true")
@@ -505,6 +539,8 @@ def main(argv: list[str] | None = None) -> int:
 
     subparsers.add_parser("jobs", help="List lifecycle-managed jobs.")
 
+    # install-materials 可能写入材料库。新手演示时先用 --dry-run 看计划，
+    # 确认 planned_count、target_dir 和文件列表后再考虑真实复制。
     material_parser = subparsers.add_parser("install-materials", help="Install .mat/.mtb materials.")
     material_parser.add_argument("source", type=Path)
     material_parser.add_argument("--library-name")
@@ -645,6 +681,19 @@ def main(argv: list[str] | None = None) -> int:
     material_inspect_parser.add_argument("path", type=Path)
     material_inspect_parser.add_argument("--preview-lines", type=int, default=20)
     material_inspect_parser.add_argument("--hash", action="store_true")
+
+    material_assign_parser = subparsers.add_parser("assign-material-to-project", help="Assign a material file to an AutoForm .afd project through the guarded GUI workflow.")
+    material_assign_parser.add_argument("--afd-path")
+    material_assign_parser.add_argument("--material-path", required=True)
+    material_assign_parser.add_argument("--material-grade")
+    material_assign_parser.add_argument("--material-temper")
+    material_assign_parser.add_argument("--project-resolution", default="current_or_prompt")
+    material_assign_parser.add_argument("--graphics", default="directx11")
+    material_assign_parser.add_argument("--gui-wait-seconds", type=float, default=10)
+    material_assign_parser.add_argument("--output-dir", default="output/material_assignment")
+    material_assign_parser.add_argument("--backup-root", default="output/material_assignment_backups")
+    material_assign_parser.add_argument("--no-save", action="store_true")
+    material_assign_parser.add_argument("--dry-run", action="store_true")
 
     subparsers.add_parser("example-projects", help="List official AutoForm .afd examples.")
 
@@ -851,12 +900,19 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "agent-turn":
+        payload = {
+            "conversationId": args.conversation_id,
+            "prompt": args.prompt,
+        }
+        conversation_context = _parse_json_or_file(args.conversation_context) if args.conversation_context else {}
+        if conversation_context:
+            payload["conversationContext"] = conversation_context
+        if args.approve_local_execution:
+            payload["agentToolExecutionApproved"] = True
+            payload["uiContext"] = {"localExecution": {"enabled": True, "approved": True}}
         _print_json(
             run_agent_runtime_turn(
-                {
-                    "conversationId": args.conversation_id,
-                    "prompt": args.prompt,
-                },
+                payload,
                 max_turns=args.max_turns,
             ),
             ensure_ascii=False,
@@ -971,6 +1027,34 @@ def main(argv: list[str] | None = None) -> int:
         _print_json(script_validate(args.sandbox_id), ensure_ascii=False)
         return 0
 
+    if args.command == "script-audit":
+        _print_json(script_audit(args.sandbox_id), ensure_ascii=False)
+        return 0
+
+    if args.command == "script-deps":
+        report = script_deps(args.skill_id, sandbox_id=args.sandbox_id)
+        if args.install_hint:
+            _print_json(report, ensure_ascii=False)
+        else:
+            _print_json(report, ensure_ascii=False)
+        return 0
+
+    if args.command == "script-sample-run":
+        _print_json(script_sample_run(args.sandbox_id), ensure_ascii=False)
+        return 0
+
+    if args.command == "script-approval-create":
+        _print_json(
+            script_approval_create(
+                args.sandbox_id,
+                risk_level=args.risk_level,
+                approved_by=args.approved_by,
+                approval_record=args.approval_record,
+            ),
+            ensure_ascii=False,
+        )
+        return 0
+
     if args.command == "script-promote":
         _print_json(
             script_promote(args.sandbox_id, approved_by=args.approved_by, approval_record=args.approval_record),
@@ -985,11 +1069,17 @@ def main(argv: list[str] | None = None) -> int:
                 {
                     "source_geometry_path": args.source_geometry_path,
                     "length_unit": args.length_unit,
+                    "parser": args.parser,
+                    "parser_timeout_seconds": str(args.parser_timeout),
                 },
                 caller_agent="geometry_data_agent",
             ),
             ensure_ascii=False,
         )
+        return 0
+
+    if args.command == "cad-parser-probe":
+        _print_json(cad_parser_probe(), ensure_ascii=False)
         return 0
 
     if args.command == "archive-list":
@@ -1001,11 +1091,15 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "start-ui":
+        # CLI 的 start-ui 案例最终进入 process.start_forming_ui。
+        # --dry-run 只打印命令；不加 --dry-run 会打开 AutoForm 主界面。
         command = start_forming_ui(graphics=args.graphics, dry_run=args.dry_run)
         print(json.dumps(command, ensure_ascii=False))
         return 0
 
     if args.command == "open-afd":
+        # CLI 的 open-afd 案例最终进入 process.open_afd。
+        # 它先检查 .afd 文件存在，再拼出 AFFormingUI.exe -file 命令。
         command = open_afd(args.afd, dry_run=args.dry_run)
         print(json.dumps(command, ensure_ascii=False))
         return 0
@@ -1177,6 +1271,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "result-set-view":
+        # 结果视角切换先做语义映射，再决定是否执行快捷键。
+        # --no-screenshot 会关闭截图校验，适合课堂上只讲计划和映射。
         _print_json(
             set_result_view(
                 args.view,
@@ -1384,6 +1480,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "install-materials":
+        # 材料安装始终先生成计划。--json 输出完整 planned_files；
+        # 默认摘要输出适合人在终端快速确认，不会刷出太长列表。
         result = install_material_library(
             args.source,
             install=get_default_installation(),
@@ -1620,6 +1718,25 @@ def main(argv: list[str] | None = None) -> int:
                 args.path,
                 preview_lines=args.preview_lines,
                 hash_contents=args.hash,
+            ),
+            ensure_ascii=False,
+        )
+        return 0
+
+    if args.command == "assign-material-to-project":
+        _print_json(
+            assign_material_to_project(
+                afd_path=args.afd_path,
+                material_path=args.material_path,
+                material_grade=args.material_grade,
+                material_temper=args.material_temper,
+                project_resolution=args.project_resolution,
+                graphics=args.graphics,
+                gui_wait_seconds=args.gui_wait_seconds,
+                save_project=not args.no_save,
+                dry_run=args.dry_run,
+                output_dir=args.output_dir,
+                backup_root=args.backup_root,
             ),
             ensure_ascii=False,
         )
@@ -1959,6 +2076,22 @@ def _parse_key_value_params(items: list[str]) -> dict[str, str]:
             raise SystemExit(f"--param has an empty key: {item}")
         params[key] = value
     return params
+
+
+def _parse_json_or_file(value: str) -> dict:
+    """Parse a JSON object from a literal string or UTF-8 file path."""
+
+    text = str(value or "").strip()
+    if not text:
+        return {}
+    if not text.startswith("{"):
+        path = Path(text)
+        if path.exists() and path.is_file():
+            text = path.read_text(encoding="utf-8")
+    payload = json.loads(text)
+    if not isinstance(payload, dict):
+        raise SystemExit("--conversation-context must be a JSON object")
+    return payload
 
 
 def _parse_env_overrides(items: list[str]) -> dict[str, str]:

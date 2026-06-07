@@ -9,8 +9,8 @@ git clone https://github.com/txf0101/AutoForm_MCP.git AutoForm_MCP
 cd AutoForm_MCP
 conda env create -f environment.yml
 conda activate afagent
-python -c "import autoform_agent.mcp_server; print('mcp import ok')"
-python -m autoform_agent.cli status
+python -c "import autoform_mcp_agent.mcp_server; print('mcp import ok')"
+python -m autoform_mcp_agent.cli status
 ```
 
 cmd:
@@ -20,8 +20,8 @@ git clone https://github.com/txf0101/AutoForm_MCP.git AutoForm_MCP
 cd AutoForm_MCP
 conda env create -f environment.yml
 conda activate afagent
-python -c "import autoform_agent.mcp_server; print('mcp import ok')"
-python -m autoform_agent.cli status
+python -c "import autoform_mcp_agent.mcp_server; print('mcp import ok')"
+python -m autoform_mcp_agent.cli status
 ```
 
 If AutoForm_MCP is inside the larger `AUTO_AutoForm` workspace, enter the subfolder first:

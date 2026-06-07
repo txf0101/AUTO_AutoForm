@@ -391,7 +391,7 @@ GUI_EVIDENCE_RECORDS: tuple[GuiEvidenceRecord, ...] = (
             "The same visual validation used by the guarded click profile checks the central result-view crop.",
         ),
         evidence_paths=(
-            "autoform_agent/result_viewer.py",
+            "autoform_mcp_agent/result_viewer.py",
             "tests/test_result_viewer.py",
         ),
         observed_controls=("user-operated AutoForm playback control", "MCP before and after screenshot capture"),
@@ -419,8 +419,8 @@ GUI_EVIDENCE_RECORDS: tuple[GuiEvidenceRecord, ...] = (
             "tests/test_result_viewer.py covers dialog classification and readiness blocking.",
         ),
         evidence_paths=(
-            "autoform_agent/gui_automation.py",
-            "autoform_agent/result_viewer.py",
+            "autoform_mcp_agent/gui_automation.py",
+            "autoform_mcp_agent/result_viewer.py",
             "tests/test_result_viewer.py",
         ),
         observed_controls=("AutoForm top-level window title", "Win32 class name", "window visibility", "window rectangle"),
@@ -449,7 +449,7 @@ GUI_EVIDENCE_RECORDS: tuple[GuiEvidenceRecord, ...] = (
         ),
         evidence_paths=(
             "docs/v1_1_gui_result_review_goals.md",
-            "autoform_agent/result_viewer.py",
+            "autoform_mcp_agent/result_viewer.py",
             "output/session_reviews/20260601_mcp_v1_1_view_control_live_evidence_recap.md",
         ),
         limitations=(
@@ -1996,15 +1996,15 @@ def _view_control_evidence_plan(output_dir: Path) -> dict:
                 "view": view_key,
                 "label": item["label"],
                 "before_command": (
-                    "python -m autoform_agent.cli result-view-evidence "
+                    "python -m autoform_mcp_agent.cli result-view-evidence "
                     f"--view {view_key} --phase before --execute --output-dir {output_dir}"
                 ),
                 "after_command": (
-                    "python -m autoform_agent.cli result-view-evidence "
+                    "python -m autoform_mcp_agent.cli result-view-evidence "
                     f"--view {view_key} --phase after --execute --output-dir {output_dir}"
                 ),
                 "compare_command": (
-                    "python -m autoform_agent.cli result-view-evidence "
+                    "python -m autoform_mcp_agent.cli result-view-evidence "
                     f"--view {view_key} --phase compare --output-dir {output_dir}"
                 ),
                 "operator_instruction": _view_control_operator_instruction(item),

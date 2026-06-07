@@ -18,11 +18,12 @@ def test_mcp_server_registers_all_tool_layers() -> None:
     tool_names = set(mcp_server.mcp._tool_manager._tools)
 
     assert len(MCP_TOOL_LAYERS) == 14
-    assert len(ALL_TOOL_FUNCTIONS) == 115
-    assert len(tool_names) == 115
+    assert len(ALL_TOOL_FUNCTIONS) == 116
+    assert len(tool_names) == 116
     assert "autoform_status_snapshot" in tool_names
     assert "autoform_project_run" in tool_names
     assert "autoform_import_geometry_to_new_project" in tool_names
+    assert "autoform_assign_material_to_project" in tool_names
     assert "autoform_official_sample_run_summary" in tool_names
     assert "autoform_module_coverage_matrix" in tool_names
     assert "autoform_gui_window_snapshot" in tool_names

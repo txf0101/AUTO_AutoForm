@@ -27,6 +27,7 @@ from .intent_utils import (
     text_contains_any as shared_text_contains_any,
 )
 from .inventory import get_afd_project_summary, list_example_projects
+from .material_assignment_workflow import extract_material_path_from_text
 from .paths import discover_installations
 from .preparation_agents import (
     build_material_review,
@@ -185,6 +186,8 @@ def run_agent_runtime_turn(
     )
     prompt = str(payload.get("prompt") or "").strip()
     conversation_id = str(payload.get("conversationId") or "unknown")
+    conversation_context = _payload_conversation_context(payload)
+    execution_approved = _payload_execution_approved(payload)
     run_id = make_run_id(conversation_id)
     runtime_snapshot = snapshot or collect_agent_runtime_snapshot(runtime_config.project_root)
 
@@ -222,10 +225,9 @@ def run_agent_runtime_turn(
         conversation_id=conversation_id,
         requested_roles=_payload_requested_roles(payload),
         tool_requests=_payload_agent_tool_requests(payload, prompt=prompt),
-        execution_approved=_payload_execution_approved(payload),
+        execution_approved=execution_approved,
         project_root=runtime_config.project_root,
     )
-    conversation_context = _payload_conversation_context(payload)
 
     if _center_plan_has_tool_results(center_plan):
         return _finalize_runtime_reply(
@@ -239,6 +241,8 @@ def run_agent_runtime_turn(
             prompt=prompt,
             conversation_id=conversation_id,
             config=runtime_config,
+            conversation_context=conversation_context,
+            execution_approved=execution_approved,
         )
 
     if _payload_requests_example_selection(payload, prompt=prompt):
@@ -253,6 +257,8 @@ def run_agent_runtime_turn(
             prompt=prompt,
             conversation_id=conversation_id,
             config=runtime_config,
+            conversation_context=conversation_context,
+            execution_approved=execution_approved,
         )
 
     if _prompt_requests_example_project_locations(prompt):
@@ -267,6 +273,8 @@ def run_agent_runtime_turn(
             prompt=prompt,
             conversation_id=conversation_id,
             config=runtime_config,
+            conversation_context=conversation_context,
+            execution_approved=execution_approved,
         )
 
     if _center_plan_requests_material_user_response(center_plan, prompt=prompt, conversation_context=conversation_context):
@@ -282,6 +290,8 @@ def run_agent_runtime_turn(
             prompt=prompt,
             conversation_id=conversation_id,
             config=runtime_config,
+            conversation_context=conversation_context,
+            execution_approved=execution_approved,
         )
 
     if _center_plan_requests_material_database_query(center_plan, prompt=prompt):
@@ -297,6 +307,8 @@ def run_agent_runtime_turn(
             prompt=prompt,
             conversation_id=conversation_id,
             config=runtime_config,
+            conversation_context=conversation_context,
+            execution_approved=execution_approved,
         )
 
     if _prompt_requests_cad_measurement(prompt):
@@ -315,6 +327,8 @@ def run_agent_runtime_turn(
                 prompt=prompt,
                 conversation_id=conversation_id,
                 config=runtime_config,
+                conversation_context=conversation_context,
+                execution_approved=execution_approved,
             )
 
     if _center_plan_requests_geometry_candidate_update(center_plan, prompt=prompt):
@@ -329,6 +343,8 @@ def run_agent_runtime_turn(
             prompt=prompt,
             conversation_id=conversation_id,
             config=runtime_config,
+            conversation_context=conversation_context,
+            execution_approved=execution_approved,
         )
 
     if _center_plan_requests_local_preparation(center_plan, prompt=prompt):
@@ -343,6 +359,8 @@ def run_agent_runtime_turn(
             prompt=prompt,
             conversation_id=conversation_id,
             config=runtime_config,
+            conversation_context=conversation_context,
+            execution_approved=execution_approved,
         )
 
     if _payload_selects_existing_project_without_path(payload, prompt=prompt):
@@ -357,6 +375,8 @@ def run_agent_runtime_turn(
             prompt=prompt,
             conversation_id=conversation_id,
             config=runtime_config,
+            conversation_context=conversation_context,
+            execution_approved=execution_approved,
         )
 
     if _prompt_requests_project_consultation(prompt):
@@ -372,6 +392,8 @@ def run_agent_runtime_turn(
             prompt=prompt,
             conversation_id=conversation_id,
             config=runtime_config,
+            conversation_context=conversation_context,
+            execution_approved=execution_approved,
         )
 
     if not runtime_config.api_key_configured:
@@ -387,6 +409,8 @@ def run_agent_runtime_turn(
             prompt=prompt,
             conversation_id=conversation_id,
             config=runtime_config,
+            conversation_context=conversation_context,
+            execution_approved=execution_approved,
         )
 
     try:
@@ -401,6 +425,8 @@ def run_agent_runtime_turn(
             prompt=prompt,
             conversation_id=conversation_id,
             config=runtime_config,
+            conversation_context=conversation_context,
+            execution_approved=execution_approved,
         )
     except Exception as exc:  # pragma: no cover - depends on live provider behavior
         return _finalize_runtime_reply(
@@ -415,6 +441,8 @@ def run_agent_runtime_turn(
             prompt=prompt,
             conversation_id=conversation_id,
             config=runtime_config,
+            conversation_context=conversation_context,
+            execution_approved=execution_approved,
         )
 
 
@@ -545,6 +573,7 @@ def build_runtime_tool_catalog(project_root: Path | None = None) -> list[dict[st
     gateway_tool_count = len(build_agent_tool_gateway(project_root=root).list_tools())
     return [
         {"name": "autoform_import_geometry_to_new_project", "domain": "project", "purpose": "Create a new AutoForm project from STEP/IGES/STL geometry and save .afd evidence through AgentToolGateway."},
+        {"name": "autoform_assign_material_to_project", "domain": "materials", "purpose": "Assign a .mtb or .mat material file to an existing .afd through guarded AutoForm GUI automation, backup, save, and evidence capture."},
         {"name": "autoform_script_catalog", "domain": "script_agent", "purpose": "List stable flexible scripts and optional legacy registry rows."},
         {"name": "autoform_script_run", "domain": "script_agent", "purpose": "Run one stable registered low-risk flexible script and return a ScriptRunRecord."},
         {"name": "cad_measure_geometry_v1", "domain": "geometry", "purpose": "Measure STL geometry with a built-in bbox parser and return blocked evidence for STEP or IGES when no parser is available."},
@@ -1145,6 +1174,9 @@ def _compact_large_tool_payload(value: Any) -> dict[str, Any] | None:
         "timeout_seconds",
         "status",
         "run_dir",
+        "source_geometry_path",
+        "output_afd_path",
+        "evidence_dir",
         "working_project",
         "copy_project",
         "gui_open_requested",
@@ -1432,6 +1464,9 @@ def _build_gateway_tool_runtime_result(
     blocked_count = sum(1 for run in tool_runs if _tool_run_is_blocked(run))
     failed_count = sum(1 for run in tool_runs if run.get("status") == "failed")
     active_tool = _active_runtime_tool(tool_runs) or "autoform_agent_mcp_gateway_call"
+    will_control_gui = _gateway_tool_runs_will_control_gui(tool_runs)
+    will_modify_afd = _gateway_tool_runs_will_modify_afd(tool_runs)
+    will_submit_solver = _gateway_tool_runs_will_submit_solver(tool_runs)
 
     return AgentRuntimeResult(
         role="assistant",
@@ -1480,6 +1515,9 @@ def _build_gateway_tool_runtime_result(
             "localToolCompletedCount": completed_count,
             "localToolBlockedCount": blocked_count,
             "localToolFailedCount": failed_count,
+            "willControlGui": will_control_gui,
+            "willModifyAfd": will_modify_afd,
+            "willSubmitSolver": will_submit_solver,
             "centerAgentStatus": center_plan.get("status"),
             "centerAgentSchema": center_plan.get("schema_version"),
             "currentProject": _current_project_from_tool_runs(tool_runs),
@@ -1510,6 +1548,7 @@ def _gateway_tool_runs_from_center_plan(
         tool_name = str(item.get("tool") or "")
         run: dict[str, Any] = {
             "tool": tool_name,
+            "agent_id": str(item.get("agent_id") or ""),
             "arguments": redact_secret_data(item.get("arguments") if isinstance(item.get("arguments"), dict) else {}, (config.api_key,)),
             "reason": "frontend_agent_tool_request",
             "started_at": str(item.get("started_at") or _utc_now()),
@@ -1517,6 +1556,8 @@ def _gateway_tool_runs_from_center_plan(
             "status": _tool_run_status_from_gateway(gateway_status),
             "gatewayStatus": gateway_status,
         }
+        if isinstance(item.get("policy"), dict):
+            run["policy"] = _sanitize_tool_payload(item.get("policy"), config)
         if item.get("approval_required"):
             run["approvalRequired"] = True
         if item.get("blocked_arguments"):
@@ -1543,9 +1584,19 @@ def _tool_run_status_from_gateway(gateway_status: str) -> str:
 
 def _tool_run_status_from_result(tool_name: str, gateway_status: str, result: Any) -> str:
     status = _tool_run_status_from_gateway(gateway_status)
-    if tool_name == "autoform_import_geometry_to_new_project" and isinstance(result, dict):
+    if tool_name in {"autoform_import_geometry_to_new_project", "autoform_assign_material_to_project"} and isinstance(result, dict):
         result_status = str(result.get("status") or "").strip()
-        if result_status in {"completed", "failed", "blocked", "planned"}:
+        if result_status in {
+            "completed",
+            "failed",
+            "blocked",
+            "planned",
+            "blocked_project_path_required",
+            "blocked_project_path_ambiguous",
+            "blocked_material_path_required",
+            "blocked_material_path_ambiguous",
+            "blocked_verification_failed",
+        }:
             return result_status
     return status
 
@@ -1578,6 +1629,8 @@ def _gateway_tool_response_text(
             summary = _project_run_result_summary(result)
         elif tool_name == "autoform_import_geometry_to_new_project":
             summary = _geometry_import_result_summary(result)
+        elif tool_name == "autoform_assign_material_to_project":
+            summary = _material_assignment_result_summary(result)
         if summary:
             lines.append(summary)
         elif tool_name == "autoform_status_snapshot":
@@ -1614,6 +1667,27 @@ def _current_project_from_tool_runs(tool_runs: list[dict[str, Any]]) -> dict[str
         arguments = run.get("arguments") if isinstance(run.get("arguments"), dict) else {}
         gui = result.get("gui_observation") if isinstance(result.get("gui_observation"), dict) else {}
         project = result.get("project") if isinstance(result.get("project"), dict) else {}
+        if tool_name == "autoform_assign_material_to_project":
+            afd_path = str(result.get("afd_path") or arguments.get("afd_path") or "").strip()
+            material_path = str(result.get("material_path") or arguments.get("material_path") or "").strip()
+            if afd_path or material_path:
+                return _current_project_payload(
+                    kind="material_assignment_project",
+                    label=afd_path or material_path or "材料赋值工程",
+                    afd_path=afd_path,
+                    working_project=afd_path,
+                    material_assignment_result={
+                        "status": result.get("status") or status,
+                        "material_path": material_path,
+                        "material_changed": result.get("material_changed"),
+                        "backup_dir": result.get("backup_dir"),
+                        "evidence_dir": result.get("evidence_dir"),
+                    },
+                    last_tool=tool_name,
+                    last_tool_status=str(result.get("status") or status),
+                    gui_pid=gui.get("pid"),
+                    source="gateway_tool_result",
+                )
         if tool_name == "autoform_import_geometry_to_new_project":
             if str(result.get("status") or status).strip() != "completed":
                 continue
@@ -1679,6 +1753,13 @@ def _build_cad_measurement_runtime_result(
     source_geometry_path: str,
 ) -> AgentRuntimeResult:
     current_project = _conversation_context_current_project(conversation_context or {})
+    if current_project is None:
+        execution_context = _conversation_execution_context(conversation_context or {})
+        current_project = (
+            execution_context.get("current_project")
+            if isinstance(execution_context.get("current_project"), dict)
+            else None
+        )
     existing = _existing_cad_measurement_result(current_project)
     if existing:
         script_record: dict[str, Any] | None = None
@@ -1713,6 +1794,10 @@ def _build_cad_measurement_runtime_result(
     )
     project = dict(project)
     project["cad_measurement_result"] = measurement
+    if script_record is not None:
+        project["last_script_run"] = _compact_script_record(script_record)
+        if script_record.get("evidence_dir"):
+            project["latest_evidence_dir"] = script_record.get("evidence_dir")
     if measurement.get("filename_dimension_candidate"):
         project["filename_dimension_candidate"] = measurement.get("filename_dimension_candidate")
     messages = [
@@ -1800,6 +1885,10 @@ def _cad_measurement_source_path(prompt: str, *, conversation_context: dict[str,
     if prompt_path:
         return prompt_path
     current_project = _conversation_context_current_project(conversation_context or {})
+    if current_project is None:
+        execution_context = _conversation_execution_context(conversation_context or {})
+        project = execution_context.get("current_project") if isinstance(execution_context.get("current_project"), dict) else None
+        current_project = project
     if current_project:
         source = str(current_project.get("source_geometry_path") or "").strip()
         if source:
@@ -1885,8 +1974,11 @@ def _current_project_payload(
     source_geometry_path: str = "",
     output_afd_path: str = "",
     evidence_dir: str = "",
+    latest_evidence_dir: str = "",
     filename_dimension_candidate: dict[str, Any] | None = None,
     cad_measurement_result: dict[str, Any] | None = None,
+    material_assignment_result: dict[str, Any] | None = None,
+    last_script_run: dict[str, Any] | None = None,
     last_tool: str = "",
     last_tool_status: str = "",
     gui_pid: Any = None,
@@ -1904,8 +1996,11 @@ def _current_project_payload(
         "source_geometry_path": source_geometry_path,
         "output_afd_path": output_afd_path,
         "evidence_dir": evidence_dir,
+        "latest_evidence_dir": latest_evidence_dir or evidence_dir,
         "filename_dimension_candidate": filename_dimension_candidate,
         "cad_measurement_result": cad_measurement_result,
+        "material_assignment_result": material_assignment_result,
+        "last_script_run": last_script_run,
         "last_tool": last_tool,
         "last_tool_status": last_tool_status,
         "gui_pid": gui_pid,
@@ -1961,6 +2056,16 @@ def _gateway_tool_agent_messages(
                 text += f" 源模型：{_compact_dialog_text(source, maximum=120)}。"
             if _tool_run_is_blocked(run):
                 text += " 该动作需要前端本机 MCP 工具控制批准。"
+        elif tool_name == "autoform_assign_material_to_project":
+            material = result.get("material_path") or run.get("arguments", {}).get("material_path") or ""
+            text = f"材料赋值工具返回 {status}。"
+            if material:
+                text += f" 材料文件：{_compact_dialog_text(material, maximum=120)}。"
+            if _tool_run_is_blocked(run):
+                reason = result.get("blocked_reason") or result.get("failure_reason") or run.get("error") or ""
+                if reason:
+                    text += f" 阻断原因：{_compact_dialog_text(reason, maximum=120)}。"
+                text += " 已保留备份和证据，请核对 GUI 材料页控件或保存后的材料字段变化。"
         elif tool_name == "autoform_start_ui":
             text = f"AutoForm 主界面启动请求返回 {status}。"
             if _tool_run_is_blocked(run):
@@ -1969,7 +2074,8 @@ def _gateway_tool_agent_messages(
             text = _status_snapshot_result_summary(result)
         else:
             text = f"{tool_name} 返回 {status}。"
-        messages.append(_agent_directed_message("project_workflow", "center_agent", _compact_dialog_text(text, maximum=220)))
+        source_agent = "material_agent" if tool_name == "autoform_assign_material_to_project" else "project_workflow"
+        messages.append(_agent_directed_message(source_agent, "center_agent", _compact_dialog_text(text, maximum=220)))
     messages.append(
         _agent_message(
             "center_agent",
@@ -3085,6 +3191,32 @@ def _geometry_import_result_summary(result: dict[str, Any]) -> str:
     return "autoform_import_geometry_to_new_project 已返回：" + "；".join(parts) + "。"
 
 
+def _material_assignment_result_summary(result: dict[str, Any]) -> str:
+    if not result:
+        return ""
+    status = result.get("status") or "unknown"
+    afd_path = result.get("afd_path") or ""
+    material_path = result.get("material_path") or ""
+    evidence_dir = result.get("evidence_dir") or ""
+    backup_dir = result.get("backup_dir") or ""
+    changed = result.get("material_changed")
+    reason = result.get("blocked_reason") or result.get("failure_reason") or ""
+    parts = [f"status={status}"]
+    if afd_path:
+        parts.append(f"afd_path={afd_path}")
+    if material_path:
+        parts.append(f"material_path={material_path}")
+    if changed is not None:
+        parts.append(f"material_changed={changed}")
+    if backup_dir:
+        parts.append(f"backup_dir={backup_dir}")
+    if evidence_dir:
+        parts.append(f"evidence_dir={evidence_dir}")
+    if reason:
+        parts.append(f"reason={reason}")
+    return "autoform_assign_material_to_project 已返回：" + "；".join(parts) + "。"
+
+
 def _status_snapshot_result_summary(result: dict[str, Any]) -> str:
     if not result:
         return "autoform_status_snapshot 已返回状态快照。"
@@ -3108,6 +3240,49 @@ def _gateway_tool_solver_detail(tool_runs: list[dict[str, Any]]) -> str:
         if summary:
             return summary[:180]
     return ""
+
+
+def _gateway_tool_runs_will_control_gui(tool_runs: list[dict[str, Any]]) -> bool:
+    for run in tool_runs:
+        tool_name = str(run.get("tool") or "")
+        policy = run.get("policy") if isinstance(run.get("policy"), dict) else {}
+        execution_class = str(policy.get("execution_class") or policy.get("executionClass") or "")
+        if execution_class == "guarded_gui":
+            return True
+        if tool_name in {
+            "autoform_start_ui",
+            "autoform_import_geometry_to_new_project",
+            "autoform_assign_material_to_project",
+            "autoform_gui_control_demo",
+            "autoform_r12_project_view_demo",
+        }:
+            return True
+        arguments = run.get("arguments") if isinstance(run.get("arguments"), dict) else {}
+        if arguments.get("open_gui") is True:
+            return True
+    return False
+
+
+def _gateway_tool_runs_will_modify_afd(tool_runs: list[dict[str, Any]]) -> bool:
+    for run in tool_runs:
+        tool_name = str(run.get("tool") or "")
+        arguments = run.get("arguments") if isinstance(run.get("arguments"), dict) else {}
+        if tool_name == "autoform_assign_material_to_project" and arguments.get("save_project") is not False:
+            return True
+        if tool_name == "autoform_import_geometry_to_new_project":
+            return True
+        if tool_name == "autoform_project_run" and arguments.get("copy_project") is True:
+            return True
+    return False
+
+
+def _gateway_tool_runs_will_submit_solver(tool_runs: list[dict[str, Any]]) -> bool:
+    for run in tool_runs:
+        tool_name = str(run.get("tool") or "")
+        arguments = run.get("arguments") if isinstance(run.get("arguments"), dict) else {}
+        if tool_name == "autoform_project_run" and arguments.get("execute") is True:
+            return True
+    return False
 
 
 def _first_solver_case_from_result(result: dict[str, Any]) -> dict[str, Any]:
@@ -3442,12 +3617,16 @@ def _conversation_context_current_project(conversation_context: dict[str, Any]) 
     source_geometry_path = str(project.get("source_geometry_path") or project.get("sourceGeometryPath") or "").strip()
     output_afd_path = str(project.get("output_afd_path") or project.get("outputAfdPath") or "").strip()
     evidence_dir = str(project.get("evidence_dir") or project.get("evidenceDir") or "").strip()
+    latest_evidence_dir = str(project.get("latest_evidence_dir") or project.get("latestEvidenceDir") or evidence_dir or "").strip()
     filename_dimension_candidate = project.get("filename_dimension_candidate") or project.get("geometry_dimension_candidate")
     if not isinstance(filename_dimension_candidate, dict):
         filename_dimension_candidate = None
     cad_measurement_result = project.get("cad_measurement_result") or project.get("cadMeasurementResult")
     if not isinstance(cad_measurement_result, dict):
         cad_measurement_result = None
+    last_script_run = project.get("last_script_run") or project.get("lastScriptRun")
+    if not isinstance(last_script_run, dict):
+        last_script_run = None
     label = str(project.get("label") or working_project or output_afd_path or afd_path or example_name or run_dir or source_geometry_path or "").strip()
     kind = str(project.get("kind") or "").strip() or (
         "example_project" if example_name else "afd_project" if working_project or afd_path or output_afd_path else "project_reference"
@@ -3464,8 +3643,10 @@ def _conversation_context_current_project(conversation_context: dict[str, Any]) 
         source_geometry_path=source_geometry_path,
         output_afd_path=output_afd_path,
         evidence_dir=evidence_dir,
+        latest_evidence_dir=latest_evidence_dir,
         filename_dimension_candidate=filename_dimension_candidate,
         cad_measurement_result=cad_measurement_result,
+        last_script_run=last_script_run,
         last_tool=str(project.get("last_tool") or project.get("lastTool") or ""),
         last_tool_status=str(project.get("last_tool_status") or project.get("lastToolStatus") or ""),
         gui_pid=project.get("gui_pid") if "gui_pid" in project else project.get("guiPid"),
@@ -3819,6 +4000,8 @@ def _finalize_runtime_reply(
     prompt: str,
     conversation_id: str,
     config: AgentRuntimeConfig,
+    conversation_context: dict[str, Any] | None = None,
+    execution_approved: bool = False,
 ) -> dict[str, Any]:
     """Attach R4 RunEvents and run id metadata to one runtime reply."""
 
@@ -3845,7 +4028,268 @@ def _finalize_runtime_reply(
     if isinstance(runtime, dict):
         runtime.setdefault("apiKeySource", config.api_key_source)
         runtime.setdefault("apiKeyFingerprint", credential_fingerprint(config.api_key))
+        _attach_execution_context(
+            reply,
+            prompt=prompt,
+            conversation_id=conversation_id,
+            conversation_context=conversation_context or {},
+            execution_approved=execution_approved,
+        )
     return reply
+
+
+def _attach_execution_context(
+    reply: dict[str, Any],
+    *,
+    prompt: str,
+    conversation_id: str,
+    conversation_context: dict[str, Any],
+    execution_approved: bool,
+) -> None:
+    runtime = reply.setdefault("runtime", {})
+    if not isinstance(runtime, dict):
+        return
+    center_plan = reply.get("centerPlan") if isinstance(reply.get("centerPlan"), dict) else {}
+    previous = _conversation_execution_context(conversation_context)
+    tool_runs = reply.get("toolRuns") if isinstance(reply.get("toolRuns"), list) else []
+    current_project = (
+        runtime.get("currentProject")
+        if isinstance(runtime.get("currentProject"), dict)
+        else _conversation_context_current_project(conversation_context)
+    )
+    if current_project is None and isinstance(previous.get("current_project"), dict):
+        current_project = previous.get("current_project")
+    pending_approval, resumable_action = _pending_approval_from_tool_runs(
+        tool_runs,
+        center_plan=center_plan,
+        conversation_id=conversation_id,
+        prompt=prompt,
+    )
+    if pending_approval is None and not execution_approved:
+        pending_approval = previous.get("pending_approval") if isinstance(previous.get("pending_approval"), dict) else None
+    if resumable_action is None and not execution_approved:
+        resumable_action = previous.get("resumable_action") if isinstance(previous.get("resumable_action"), dict) else None
+
+    script_records = _merge_compact_records(
+        previous.get("script_run_records") if isinstance(previous.get("script_run_records"), list) else [],
+        _script_records_from_reply(reply),
+        limit=8,
+        key="run_id",
+    )
+    approved_actions = _approved_actions_from_context(previous)
+    if execution_approved:
+        approved_actions = _merge_compact_records(
+            approved_actions,
+            [
+                {
+                    "approval_id": f"approval_{make_run_id(conversation_id)}",
+                    "task_id": _center_task_id(center_plan) or previous.get("task_id") or "",
+                    "conversation_id": conversation_id,
+                    "status": "approved",
+                    "scope": "local_tool_execution",
+                    "approved_at": _utc_now(),
+                }
+            ],
+            limit=12,
+            key="approval_id",
+        )
+    context_patches = _merge_compact_records(
+        previous.get("context_patches") if isinstance(previous.get("context_patches"), list) else [],
+        center_plan.get("context_patches") if isinstance(center_plan.get("context_patches"), list) else [],
+        limit=8,
+        key="patch_id",
+    )
+    evidence_refs = _merge_text_list(
+        previous.get("evidence_refs") if isinstance(previous.get("evidence_refs"), list) else [],
+        _evidence_refs_from_reply(reply, current_project),
+        limit=20,
+    )
+    execution_context = {
+        "schema_version": "autoform.execution_context.v1",
+        "object_type": "ExecutionContext",
+        "task_id": _center_task_id(center_plan) or str(previous.get("task_id") or ""),
+        "conversation_id": conversation_id,
+        "current_project": current_project,
+        "pending_approval": pending_approval,
+        "resumable_action": resumable_action,
+        "approved_actions": approved_actions,
+        "script_run_records": script_records,
+        "context_patches": context_patches,
+        "evidence_refs": evidence_refs,
+        "last_tool_result": _last_tool_result(tool_runs) or previous.get("last_tool_result"),
+        "last_prompt": prompt,
+        "updated_at": _utc_now(),
+    }
+    runtime["executionContext"] = execution_context
+    runtime["pendingApproval"] = pending_approval
+    runtime["resumableAction"] = resumable_action
+    runtime["approvedActions"] = approved_actions
+    if current_project and not isinstance(runtime.get("currentProject"), dict):
+        runtime["currentProject"] = current_project
+    reply["pendingApproval"] = pending_approval
+    reply["resumableAction"] = resumable_action
+    reply["approvedActions"] = approved_actions
+
+
+def _conversation_execution_context(conversation_context: dict[str, Any]) -> dict[str, Any]:
+    if not isinstance(conversation_context, dict):
+        return {}
+    direct = conversation_context.get("execution_context")
+    if isinstance(direct, dict):
+        return direct
+    camel = conversation_context.get("executionContext")
+    if isinstance(camel, dict):
+        return camel
+    last_turn = conversation_context.get("last_turn") if isinstance(conversation_context.get("last_turn"), dict) else {}
+    nested = last_turn.get("execution_context") or last_turn.get("executionContext")
+    return nested if isinstance(nested, dict) else {}
+
+
+def _pending_approval_from_tool_runs(
+    tool_runs: list[dict[str, Any]],
+    *,
+    center_plan: dict[str, Any],
+    conversation_id: str,
+    prompt: str,
+) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
+    for run in tool_runs:
+        if not _tool_run_is_blocked(run):
+            continue
+        if str(run.get("tool") or "") == "autoform_assign_material_to_project" and str(run.get("status") or "") != "blocked_requires_approval":
+            continue
+        arguments = run.get("arguments") if isinstance(run.get("arguments"), dict) else {}
+        policy = run.get("policy") if isinstance(run.get("policy"), dict) else {}
+        task_id = _center_task_id(center_plan)
+        approval = {
+            "object_type": "PendingApproval",
+            "approval_id": f"pending_{task_id or make_run_id(conversation_id)}_{run.get('tool') or 'tool'}",
+            "task_id": task_id,
+            "conversation_id": conversation_id,
+            "status": "needs_approval",
+            "tool": run.get("tool"),
+            "agent_id": run.get("agent_id") or run.get("agentId") or "",
+            "risk_level": policy.get("risk_level") or "medium",
+            "execution_class": policy.get("execution_class") or "",
+            "arguments": arguments,
+            "blocked_arguments": run.get("blockedArguments") or run.get("blocked_arguments") or [],
+            "reason": run.get("error") or "gateway blocked guarded action until local execution approval is present",
+            "requested_at": run.get("started_at") or _utc_now(),
+        }
+        action = {
+            "object_type": "ResumableAction",
+            "task_id": task_id,
+            "conversation_id": conversation_id,
+            "approval_id": approval["approval_id"],
+            "tool": run.get("tool"),
+            "agent_id": approval["agent_id"],
+            "arguments": arguments,
+            "source_prompt": prompt,
+            "status": "waiting_for_approval",
+        }
+        return approval, action
+    return None, None
+
+
+def _script_records_from_reply(reply: dict[str, Any]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    runtime = reply.get("runtime") if isinstance(reply.get("runtime"), dict) else {}
+    script_run = runtime.get("scriptRun") if isinstance(runtime.get("scriptRun"), dict) else None
+    if script_run:
+        rows.append(_compact_script_record(script_run))
+    for run in reply.get("toolRuns") if isinstance(reply.get("toolRuns"), list) else []:
+        result = run.get("result") if isinstance(run.get("result"), dict) else {}
+        if result.get("object_type") == "ScriptRunRecord":
+            rows.append(_compact_script_record(result))
+    return [row for row in rows if row]
+
+
+def _compact_script_record(record: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "run_id": record.get("run_id") or "",
+        "skill_id": record.get("skill_id") or "",
+        "skill_version": record.get("skill_version") or "",
+        "status": record.get("status") or "",
+        "run_dir": record.get("run_dir") or "",
+        "evidence_dir": record.get("evidence_dir") or "",
+        "finished_at": record.get("finished_at") or "",
+    }
+
+
+def _approved_actions_from_context(previous: dict[str, Any]) -> list[dict[str, Any]]:
+    rows = previous.get("approved_actions") if isinstance(previous.get("approved_actions"), list) else []
+    return [row for row in rows if isinstance(row, dict)][-12:]
+
+
+def _merge_compact_records(
+    previous: list[Any],
+    current: list[Any],
+    *,
+    limit: int,
+    key: str,
+) -> list[dict[str, Any]]:
+    merged: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for item in [*(previous or []), *(current or [])]:
+        if not isinstance(item, dict):
+            continue
+        marker = str(item.get(key) or "")
+        if marker and marker in seen:
+            continue
+        if marker:
+            seen.add(marker)
+        merged.append(item)
+    return merged[-limit:]
+
+
+def _merge_text_list(previous: list[Any], current: list[str], *, limit: int) -> list[str]:
+    rows: list[str] = []
+    seen: set[str] = set()
+    for item in [*(previous or []), *(current or [])]:
+        text = str(item or "").strip()
+        if not text or text in seen:
+            continue
+        seen.add(text)
+        rows.append(text)
+    return rows[-limit:]
+
+
+def _evidence_refs_from_reply(reply: dict[str, Any], current_project: dict[str, Any] | None) -> list[str]:
+    refs: list[str] = []
+    if current_project:
+        for key in ("evidence_dir", "run_dir", "working_project", "output_afd_path", "afd_path"):
+            value = str(current_project.get(key) or "").strip()
+            if value:
+                refs.append(value)
+    for run in reply.get("toolRuns") if isinstance(reply.get("toolRuns"), list) else []:
+        result = run.get("result") if isinstance(run.get("result"), dict) else {}
+        for key in ("evidence_dir", "run_dir", "working_project", "output_afd_path"):
+            value = str(result.get(key) or "").strip()
+            if value:
+                refs.append(value)
+        script_result = result.get("result") if isinstance(result.get("result"), dict) else {}
+        value = str(script_result.get("evidence_dir") or "").strip()
+        if value:
+            refs.append(value)
+    return refs
+
+
+def _last_tool_result(tool_runs: list[dict[str, Any]]) -> dict[str, Any] | None:
+    if not tool_runs:
+        return None
+    run = tool_runs[-1]
+    result = run.get("result") if isinstance(run.get("result"), dict) else {}
+    return {
+        "tool": run.get("tool"),
+        "status": run.get("status"),
+        "gatewayStatus": run.get("gatewayStatus"),
+        "run_dir": result.get("run_dir") if isinstance(result, dict) else "",
+        "evidence_dir": result.get("evidence_dir") if isinstance(result, dict) else "",
+    }
+
+
+def _center_task_id(center_plan: dict[str, Any]) -> str:
+    task_card = center_plan.get("task_card") if isinstance(center_plan.get("task_card"), dict) else {}
+    return str(task_card.get("task_id") or "")
 
 
 def _payload_requests_connection_test(payload: dict[str, Any]) -> bool:
@@ -3879,6 +4323,12 @@ def _payload_agent_tool_requests(payload: dict[str, Any], *, prompt: str = "") -
     raw_requests = payload.get("agentToolRequests")
     if isinstance(raw_requests, list):
         return [request for request in raw_requests if isinstance(request, dict)]
+    resumable_requests = _resumable_tool_requests_from_context(payload, prompt=prompt)
+    if resumable_requests:
+        return resumable_requests
+    material_assignment_requests = _material_assignment_tool_requests(payload, prompt=prompt)
+    if material_assignment_requests:
+        return material_assignment_requests
     geometry_import_requests = _geometry_import_tool_requests(payload, prompt=prompt)
     if geometry_import_requests:
         return geometry_import_requests
@@ -3892,6 +4342,65 @@ def _payload_agent_tool_requests(payload: dict[str, Any], *, prompt: str = "") -
     if mcp_status_requests:
         return mcp_status_requests
     return _project_operation_tool_requests(payload, prompt=prompt)
+
+
+def _resumable_tool_requests_from_context(payload: dict[str, Any], *, prompt: str) -> list[dict[str, Any]]:
+    if not _payload_execution_approved(payload):
+        return []
+    if not _prompt_confirms_resumable_action(prompt):
+        return []
+    context = _payload_conversation_context(payload)
+    execution_context = _conversation_execution_context(context)
+    action = execution_context.get("resumable_action") if isinstance(execution_context.get("resumable_action"), dict) else None
+    if not action:
+        return []
+    tool = str(action.get("tool") or "").strip()
+    arguments = action.get("arguments") if isinstance(action.get("arguments"), dict) else {}
+    if not tool or not arguments:
+        return []
+    return [
+        {
+            "agent_id": str(action.get("agent_id") or "project_workflow"),
+            "tool": tool,
+            "arguments": arguments,
+            "reason": "Resume approved action from execution_context.resumable_action.",
+        }
+    ]
+
+
+def _material_assignment_tool_requests(payload: dict[str, Any], *, prompt: str) -> list[dict[str, Any]]:
+    if not _prompt_requests_material_assignment(prompt):
+        return []
+    conversation_context = _payload_conversation_context(payload)
+    current_project = _conversation_context_current_project(conversation_context) or {}
+    material_card = _conversation_context_material_card(conversation_context)
+    afd_path = _afd_path_from_prompt(prompt) or str(
+        current_project.get("output_afd_path") or current_project.get("working_project") or current_project.get("afd_path") or ""
+    ).strip()
+    material_path = extract_material_path_from_text(prompt, project_root=_find_project_root()) or _material_path_from_context(material_card)
+    arguments: dict[str, Any] = {
+        "afd_path": afd_path or None,
+        "material_path": material_path or None,
+        "material_grade": _extract_material_grade_for_runtime(prompt),
+        "project_resolution": "current_or_prompt",
+        "graphics": "directx11",
+        "gui_wait_seconds": 10,
+        "save_project": True,
+        "dry_run": False,
+        "output_dir": "output/material_assignment",
+        "backup_root": "output/material_assignment_backups",
+    }
+    material_temper = _material_temper_from_prompt(prompt)
+    if material_temper:
+        arguments["material_temper"] = material_temper
+    return [
+        {
+            "agent_id": "material_agent",
+            "tool": "autoform_assign_material_to_project",
+            "arguments": arguments,
+            "reason": "User requested a real material assignment into the current or specified AutoForm project.",
+        }
+    ]
 
 
 def _geometry_import_tool_requests(payload: dict[str, Any], *, prompt: str) -> list[dict[str, Any]]:
@@ -4176,6 +4685,25 @@ def _frontend_project_operation(local_execution: dict[str, Any]) -> str:
     if raw in {"new_project", "existing_project", "example_project"}:
         return raw
     return ""
+
+
+def _prompt_confirms_resumable_action(prompt: str) -> bool:
+    return _prompt_affirms_any(
+        prompt,
+        (
+            "批准",
+            "同意",
+            "允许",
+            "确认",
+            "继续",
+            "执行",
+            "approve",
+            "approved",
+            "continue",
+            "proceed",
+            "yes",
+        ),
+    )
 
 
 def _prompt_has_project_scope(prompt: str) -> bool:
@@ -4516,6 +5044,58 @@ def _prompt_has_material_user_answer_fields(prompt: str) -> bool:
         or re.search(r"(?:泊松比|poisson|ν|nu)\s*(?:为|是|=|:|：)?\s*0(?:\.\d+)?", text, flags=re.IGNORECASE)
         or _text_contains_any(text, ("流动曲线", "成形极限图", "r值", "r 值", "n值", "n 值", "flow curve"))
     )
+
+
+def _prompt_requests_material_assignment(prompt: str) -> bool:
+    text = str(prompt or "").casefold()
+    if not _text_contains_any(text, ("\u6750\u6599", "\u94dd\u5408\u91d1", ".mtb", ".mat", "material")):
+        return False
+    if not _text_contains_any(
+        text,
+        (
+            "\u5f53\u524d\u5de5\u7a0b",
+            "\u5de5\u7a0b",
+            "\u9879\u76ee",
+            ".afd",
+            "current project",
+            "project",
+            "afd",
+        ),
+    ):
+        return False
+    return shared_prompt_affirms_any(
+        prompt,
+        (
+            "\u8d4b\u4e88\u6750\u6599",
+            "\u8d4b\u6750",
+            "\u5199\u5165\u6750\u6599",
+            "\u8bbe\u7f6e\u6750\u6599",
+            "\u5e94\u7528\u6750\u6599",
+            "\u7ed9\u5de5\u7a0b\u8d4b\u6750",
+            "\u7ed9\u5f53\u524d\u5de5\u7a0b\u8d4b\u6750",
+            "assign material",
+            "set material",
+            "apply material",
+            "write material",
+        ),
+    )
+
+
+def _material_path_from_context(material_card: dict[str, Any]) -> str:
+    selected = material_card.get("selected_material_source") if isinstance(material_card.get("selected_material_source"), dict) else {}
+    if selected.get("path"):
+        return str(selected.get("path"))
+    candidates = material_card.get("local_autoform_material_candidates")
+    if isinstance(candidates, list):
+        for item in candidates:
+            if isinstance(item, dict) and item.get("path"):
+                return str(item.get("path"))
+    return ""
+
+
+def _material_temper_from_prompt(prompt: str) -> str:
+    match = re.search(r"(?:AA|AL)?\s*\d{4}\s*[-_\s]?(O|T\d{1,3})\b", str(prompt or ""), flags=re.IGNORECASE)
+    return match.group(1).upper() if match else ""
 
 
 def _extract_material_grade_for_runtime(prompt: str) -> str:

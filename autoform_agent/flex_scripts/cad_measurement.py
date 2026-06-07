@@ -8,6 +8,8 @@ from pathlib import Path
 import re
 import shutil
 import struct
+import subprocess
+import sys
 from typing import Any
 
 from .contracts import (
@@ -19,6 +21,7 @@ from .contracts import (
     utc_now,
     write_json,
 )
+from .dependencies import probe_cad_parsers
 
 
 SUPPORTED_SUFFIXES = {".stl", ".step", ".stp", ".igs", ".iges"}
@@ -29,6 +32,8 @@ def measure_cad_geometry(
     *,
     length_unit: str = "mm",
     output_root: str | Path = CAD_MEASUREMENT_OUTPUT_ROOT,
+    parser: str = "auto",
+    parser_timeout_seconds: int = 60,
 ) -> dict[str, Any]:
     """Measure CAD geometry when a first-stage local parser is available."""
 
@@ -51,6 +56,7 @@ def measure_cad_geometry(
         "source_geometry_path": str(source_path),
         "source_sha256": "",
         "parser": "",
+        "requested_parser": parser,
         "unit": length_unit,
         "axis_aligned_bbox": None,
         "oriented_bbox": None,
@@ -85,17 +91,29 @@ def measure_cad_geometry(
         return result
 
     suffix = source_path.suffix.casefold()
+    requested_parser = _normalize_parser(parser)
     try:
         if suffix == ".stl":
-            result = _measure_stl(source_path, base=base, log_event=log_event)
+            if requested_parser not in {"auto", "stl_builtin"}:
+                result = _blocked_parser_choice_result(source_path, base=base, log_event=log_event, requested_parser=requested_parser)
+            else:
+                result = _measure_stl(source_path, base=base, log_event=log_event)
+        elif suffix in {".step", ".stp", ".igs", ".iges"}:
+            result = _measure_step_iges(
+                source_path,
+                base=base,
+                log_event=log_event,
+                requested_parser=requested_parser,
+                parser_timeout_seconds=parser_timeout_seconds,
+            )
         else:
-            result = _blocked_probe_result(source_path, base=base, log_event=log_event)
+            result = _measure_stl(source_path, base=base, log_event=log_event)
     except Exception as exc:
         log_event("measure_geometry", "failed", error_type=type(exc).__name__, error=str(exc))
         result = {
             **base,
             "status": "failed",
-            "parser": "stl_builtin" if suffix == ".stl" else "probe_only",
+            "parser": "stl_builtin" if suffix == ".stl" else requested_parser if requested_parser != "auto" else "probe_only",
             "failure_reason": str(exc),
             "finished_at": utc_now(),
         }
@@ -153,10 +171,142 @@ def _blocked_probe_result(source_path: Path, *, base: dict[str, Any], log_event)
     }
 
 
-def probe_step_iges_parsers() -> dict[str, Any]:
+def _blocked_parser_choice_result(
+    source_path: Path,
+    *,
+    base: dict[str, Any],
+    log_event,
+    requested_parser: str,
+) -> dict[str, Any]:
+    log_event("parser_choice", "blocked", requested_parser=requested_parser, source_suffix=source_path.suffix)
     return {
+        **base,
+        "status": "blocked",
+        "parser": requested_parser,
+        "measurement_method": "parser_choice_validation",
+        "confidence": "none",
+        "blocked_reason": f"requested parser {requested_parser} cannot parse {source_path.suffix} in this stage",
+        "finished_at": utc_now(),
+    }
+
+
+def _measure_step_iges(
+    source_path: Path,
+    *,
+    base: dict[str, Any],
+    log_event,
+    requested_parser: str,
+    parser_timeout_seconds: int,
+) -> dict[str, Any]:
+    parsers = _parser_order(requested_parser)
+    failures: list[dict[str, Any]] = []
+    for parser_name in parsers:
+        if parser_name == "cadquery":
+            if not _module_probe("cadquery").get("available"):
+                failures.append({"parser": parser_name, "status": "unavailable"})
+                continue
+            result = _measure_step_with_cadquery(source_path, base=base, log_event=log_event)
+        elif parser_name == "freecadcmd":
+            command = shutil.which("FreeCADCmd") or shutil.which("FreeCAD")
+            if not command:
+                failures.append({"parser": parser_name, "status": "unavailable"})
+                continue
+            result = _measure_step_with_freecadcmd(
+                source_path,
+                base=base,
+                log_event=log_event,
+                command=command,
+                timeout_seconds=parser_timeout_seconds,
+            )
+        else:
+            failures.append({"parser": parser_name, "status": "unsupported"})
+            continue
+        if result.get("status") == "completed":
+            if failures:
+                result["parser_failures_before_success"] = failures
+            return result
+        failures.append({"parser": parser_name, "status": result.get("status"), "reason": result.get("failure_reason") or result.get("blocked_reason")})
+        if requested_parser != "auto":
+            return result
+    blocked = _blocked_probe_result(source_path, base=base, log_event=log_event)
+    blocked["parser_failures"] = failures
+    return blocked
+
+
+def _measure_step_with_cadquery(source_path: Path, *, base: dict[str, Any], log_event) -> dict[str, Any]:
+    try:
+        from cadquery import importers  # type: ignore
+
+        obj = importers.importStep(str(source_path))
+        shape = obj.val() if hasattr(obj, "val") else obj
+        bbox = shape.BoundingBox() if hasattr(shape, "BoundingBox") else shape.wrapped.BoundingBox()
+        mins = [bbox.xmin, bbox.ymin, bbox.zmin]
+        maxs = [bbox.xmax, bbox.ymax, bbox.zmax]
+        dims = [bbox.xlen, bbox.ylen, bbox.zlen]
+        log_event("cadquery_bbox", "completed", dimensions=dims)
+        return _bbox_result(base, parser="cadquery", method="cadquery_shape_axis_aligned_bbox", mins=mins, maxs=maxs, dims=dims)
+    except Exception as exc:
+        log_event("cadquery_bbox", "failed", error_type=type(exc).__name__, error=str(exc))
+        return {
+            **base,
+            "status": "failed",
+            "parser": "cadquery",
+            "measurement_method": "cadquery_shape_axis_aligned_bbox",
+            "confidence": "none",
+            "failure_reason": str(exc),
+            "finished_at": utc_now(),
+        }
+
+
+def _measure_step_with_freecadcmd(
+    source_path: Path,
+    *,
+    base: dict[str, Any],
+    log_event,
+    command: str,
+    timeout_seconds: int,
+) -> dict[str, Any]:
+    evidence_dir = Path(str(base.get("evidence_dir") or "")).resolve()
+    script_path = evidence_dir / "freecad_bbox_probe.py"
+    output_path = evidence_dir / "freecad_bbox_result.json"
+    script_path.write_text(_freecad_probe_script(source_path, output_path), encoding="utf-8")
+    completed = subprocess.run(
+        [command, str(script_path)],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=timeout_seconds,
+        check=False,
+    )
+    (evidence_dir / "freecad_stdout.txt").write_text(completed.stdout or "", encoding="utf-8")
+    (evidence_dir / "freecad_stderr.txt").write_text(completed.stderr or "", encoding="utf-8")
+    if completed.returncode != 0 or not output_path.exists():
+        reason = completed.stderr.strip()[:900] or f"FreeCADCmd returncode={completed.returncode}"
+        log_event("freecadcmd_bbox", "failed", returncode=completed.returncode, error=reason)
+        return {
+            **base,
+            "status": "failed",
+            "parser": "freecadcmd",
+            "measurement_method": "freecad_boundbox",
+            "confidence": "none",
+            "failure_reason": reason,
+            "finished_at": utc_now(),
+        }
+    payload = json.loads(output_path.read_text(encoding="utf-8"))
+    bbox = payload.get("axis_aligned_bbox") if isinstance(payload.get("axis_aligned_bbox"), dict) else {}
+    dims = bbox.get("dimensions") if isinstance(bbox.get("dimensions"), list) else []
+    mins = bbox.get("min") if isinstance(bbox.get("min"), list) else []
+    maxs = bbox.get("max") if isinstance(bbox.get("max"), list) else []
+    log_event("freecadcmd_bbox", "completed", command=command, dimensions=dims)
+    return _bbox_result(base, parser="freecadcmd", method="freecad_boundbox", mins=mins, maxs=maxs, dims=dims)
+
+
+def probe_step_iges_parsers() -> dict[str, Any]:
+    legacy = {
         "FreeCADCmd": _command_probe("FreeCADCmd"),
         "FreeCAD": _command_probe("FreeCAD"),
+        "cadquery": _module_probe("cadquery"),
         "OCP": _module_probe("OCP"),
         "OCC": _module_probe("OCC"),
         "meshio": _module_probe("meshio"),
@@ -166,6 +316,75 @@ def probe_step_iges_parsers() -> dict[str, Any]:
             "reason": "no verified AutoForm internal geometry measurement reader registered in first-stage agent",
         },
     }
+    legacy["cad_parser_probe"] = probe_cad_parsers()
+    return legacy
+
+
+def _bbox_result(
+    base: dict[str, Any],
+    *,
+    parser: str,
+    method: str,
+    mins: list[float],
+    maxs: list[float],
+    dims: list[float],
+) -> dict[str, Any]:
+    if len(mins) != 3 or len(maxs) != 3 or len(dims) != 3:
+        raise ValueError("parser returned incomplete bounding box")
+    ordered = sorted([float(item) for item in dims], reverse=True)
+    return {
+        **base,
+        "status": "completed",
+        "parser": parser,
+        "axis_aligned_bbox": {
+            "min": [_round_float(value) for value in mins],
+            "max": [_round_float(value) for value in maxs],
+            "dimensions": [_round_float(value) for value in dims],
+        },
+        "oriented_bbox": {"status": "not_computed", "reason": "axis_aligned_bbox_parser_only"},
+        "length": _round_float(ordered[0]),
+        "width": _round_float(ordered[1]),
+        "thickness": _round_float(ordered[2]),
+        "measurement_method": method,
+        "confidence": "medium",
+        "finished_at": utc_now(),
+    }
+
+
+def _parser_order(requested_parser: str) -> list[str]:
+    if requested_parser == "auto":
+        return ["cadquery", "freecadcmd"]
+    if requested_parser in {"cadquery", "freecadcmd"}:
+        return [requested_parser]
+    return [requested_parser]
+
+
+def _normalize_parser(value: str) -> str:
+    cleaned = str(value or "auto").strip().casefold()
+    aliases = {"freecad": "freecadcmd", "freecadcmd.exe": "freecadcmd", "stl": "stl_builtin"}
+    return aliases.get(cleaned, cleaned if cleaned in {"auto", "stl_builtin", "cadquery", "freecadcmd"} else "auto")
+
+
+def _freecad_probe_script(source_path: Path, output_path: Path) -> str:
+    return f'''from __future__ import annotations
+
+import json
+import Part
+
+shape = Part.Shape()
+shape.read(r"{source_path}")
+box = shape.BoundBox
+payload = {{
+    "status": "completed",
+    "axis_aligned_bbox": {{
+        "min": [box.XMin, box.YMin, box.ZMin],
+        "max": [box.XMax, box.YMax, box.ZMax],
+        "dimensions": [box.XLength, box.YLength, box.ZLength],
+    }},
+}}
+with open(r"{output_path}", "w", encoding="utf-8") as handle:
+    json.dump(payload, handle, ensure_ascii=False, indent=2)
+'''
 
 
 def _command_probe(name: str) -> dict[str, Any]:

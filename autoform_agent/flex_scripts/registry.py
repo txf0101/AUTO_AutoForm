@@ -89,6 +89,7 @@ def _load_stable_skill_cards(skills_root: Path) -> list[SkillRecord]:
                 tags=_split_field(data.get("tags")),
                 skill_card_path=card_path.resolve(),
                 stable=True,
+                metadata=_skill_card_metadata(data),
             )
         )
     return records
@@ -169,6 +170,27 @@ def _split_field(value: Any) -> tuple[str, ...]:
     if isinstance(value, list):
         return tuple(str(item).strip() for item in value if str(item).strip())
     return tuple(item.strip() for item in str(value or "").replace(",", ";").split(";") if item.strip())
+
+
+def _skill_card_metadata(data: dict[str, Any]) -> dict[str, Any]:
+    keys = (
+        "dependencies",
+        "permissions",
+        "resource_limits",
+        "validation_plan",
+        "sample_inputs",
+        "failure_modes",
+        "rollback_strategy",
+        "approval_policy",
+    )
+    metadata: dict[str, Any] = {}
+    for key in keys:
+        value = data.get(key)
+        if value is None:
+            continue
+        split = _split_field(value)
+        metadata[key] = list(split) if len(split) > 1 else str(value)
+    return metadata
 
 
 def _matches(

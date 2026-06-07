@@ -13,8 +13,8 @@ git clone https://github.com/txf0101/AutoForm_MCP.git AutoForm_MCP
 cd AutoForm_MCP
 conda env create -f environment.yml
 conda activate afagent
-python -c "import autoform_agent.mcp_server; print('mcp import ok')"
-python -m autoform_agent.cli status
+python -c "import autoform_mcp_agent.mcp_server; print('mcp import ok')"
+python -m autoform_mcp_agent.cli status
 ```
 
 cmd：
@@ -24,8 +24,8 @@ git clone https://github.com/txf0101/AutoForm_MCP.git AutoForm_MCP
 cd AutoForm_MCP
 conda env create -f environment.yml
 conda activate afagent
-python -c "import autoform_agent.mcp_server; print('mcp import ok')"
-python -m autoform_agent.cli status
+python -c "import autoform_mcp_agent.mcp_server; print('mcp import ok')"
+python -m autoform_mcp_agent.cli status
 ```
 
 如果你拿到的是完整 `AUTO_AutoForm` 工作区，不需要重新克隆，直接进入子目录：
@@ -34,7 +34,7 @@ python -m autoform_agent.cli status
 cd AutoForm_MCP
 conda env create -f environment.yml
 conda activate afagent
-python -c "import autoform_agent.mcp_server; print('mcp import ok')"
+python -c "import autoform_mcp_agent.mcp_server; print('mcp import ok')"
 ```
 
 ## Codex 配置
@@ -44,7 +44,7 @@ python -c "import autoform_agent.mcp_server; print('mcp import ok')"
 ```toml
 [mcp_servers."autoform-mcp"]
 command = 'conda'
-args = ['run', '-n', 'afagent', 'python', '-m', 'autoform_agent.mcp_server']
+args = ['run', '-n', 'afagent', 'python', '-m', 'autoform_mcp_agent.mcp_server']
 startup_timeout_sec = 60
 enabled = true
 
@@ -57,7 +57,7 @@ PYTHONPATH = '<repo-root>'
 ```toml
 [mcp_servers."autoform-mcp"]
 command = '<path-to-afagent-python.exe>'
-args = ['-m', 'autoform_agent.mcp_server']
+args = ['-m', 'autoform_mcp_agent.mcp_server']
 startup_timeout_sec = 60
 enabled = true
 
@@ -68,7 +68,7 @@ PYTHONPATH = '<repo-root>'
 ## Claude Code 配置
 
 ```powershell
-claude mcp add --transport stdio --scope user --env PYTHONPATH="<repo-root>" autoform-mcp -- conda run -n afagent python -m autoform_agent.mcp_server
+claude mcp add --transport stdio --scope user --env PYTHONPATH="<repo-root>" autoform-mcp -- conda run -n afagent python -m autoform_mcp_agent.mcp_server
 claude mcp list
 claude mcp get autoform-mcp
 ```
@@ -76,7 +76,7 @@ claude mcp get autoform-mcp
 如果引号不好处理，可以用 JSON：
 
 ```powershell
-claude mcp add-json autoform-mcp '{"type":"stdio","command":"conda","args":["run","-n","afagent","python","-m","autoform_agent.mcp_server"],"env":{"PYTHONPATH":"<repo-root>"}}'
+claude mcp add-json autoform-mcp '{"type":"stdio","command":"conda","args":["run","-n","afagent","python","-m","autoform_mcp_agent.mcp_server"],"env":{"PYTHONPATH":"<repo-root>"}}'
 ```
 
 ## OpenCalw 或其他 MCP 客户端
@@ -89,7 +89,7 @@ claude mcp add-json autoform-mcp '{"type":"stdio","command":"conda","args":["run
     "autoform-mcp": {
       "type": "stdio",
       "command": "conda",
-      "args": ["run", "-n", "afagent", "python", "-m", "autoform_agent.mcp_server"],
+      "args": ["run", "-n", "afagent", "python", "-m", "autoform_mcp_agent.mcp_server"],
       "env": {
         "PYTHONPATH": "<repo-root>"
       }

@@ -21,6 +21,11 @@ from ..process import collect_forming_job_logs, forming_job_plan, open_afd, run_
 from ..project_workflow import example_project_baseline, official_sample_run_summary, project_run_workflow, resolve_project_input
 
 
+# 小白读法：
+# 这个文件是“工程类 MCP wrapper”。wrapper 的意思是薄薄包一层：
+# 外部 MCP host 传字符串和布尔值进来，这里把它们转成底层函数需要的 Path、
+# 参数名和 JSON 友好返回值。真正启动程序和检查路径的逻辑在 `process.py`。
+
 def autoform_discover_installation() -> list[dict]:
     """Return discovered AutoForm Forming installations and key paths."""
     return [install.as_dict() for install in discover_installations()]
@@ -28,11 +33,15 @@ def autoform_discover_installation() -> list[dict]:
 
 def autoform_start_ui(graphics: str = "directx11", dry_run: bool = True) -> list[str]:
     """Start AutoForm Forming, returning the command that was used."""
+    # start-ui 案例的 MCP 入口。dry_run=True 时只返回将要执行的命令；
+    # dry_run=False 时底层函数会启动 AutoForm Forming GUI。
     return start_forming_ui(graphics=graphics, dry_run=dry_run)
 
 
 def autoform_open_afd(afd_path: str, dry_run: bool = True) -> list[str]:
     """Open an AutoForm .afd project, returning the command that was used."""
+    # open-afd 案例的 MCP 入口。MCP 参数天然是字符串，
+    # 所以这里把 afd_path 转成 Path，再交给 process.open_afd 做存在性检查和命令生成。
     return open_afd(Path(afd_path), dry_run=dry_run)
 
 
@@ -188,6 +197,8 @@ def autoform_list_executables() -> list[dict]:
 
 def register_project_tools(mcp: Any) -> None:
     """Register project and installation MCP tools on one FastMCP instance."""
+    # 这里逐个调用 add_tool，MCP host 才能看到这些工具名。
+    # 新手可以把它理解成“把函数放到菜单里”。
     mcp.add_tool(autoform_discover_installation)
     mcp.add_tool(autoform_start_ui)
     mcp.add_tool(autoform_open_afd)

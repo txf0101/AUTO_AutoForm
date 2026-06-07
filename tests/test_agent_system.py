@@ -167,6 +167,46 @@ def test_agent_tool_gateway_allows_canonical_business_agent_aliases() -> None:
     assert result["status"] == "completed"
 
 
+def test_agent_tool_gateway_runs_material_assignment_without_approval(tmp_path: Path) -> None:
+    gateway = build_agent_tool_gateway()
+    material_tools = {tool["name"] for tool in gateway.list_tools(agent_id="material_agent")}
+    unrelated_tools = {tool["name"] for tool in gateway.list_tools(agent_id="postprocessing_agent")}
+    afd = tmp_path / "door_panel.afd"
+    material = tmp_path / "AA6061-T4.mtb"
+    afd.write_text("Project Name\ndoor_panel\nMaterial Name\nDC04\n", encoding="utf-8")
+    material.write_text("# AA6061-T4\n", encoding="utf-8")
+
+    result = gateway.call_tool(
+        "autoform_assign_material_to_project",
+        {
+            "afd_path": str(afd),
+            "material_path": str(material),
+            "dry_run": True,
+            "output_dir": str(tmp_path / "runs"),
+            "backup_root": str(tmp_path / "backups"),
+        },
+        agent_id="material_agent",
+        execution_approved=False,
+    )
+    rejected = gateway.call_tool(
+        "autoform_assign_material_to_project",
+        {"afd_path": r"F:\cases\door_panel.afd", "material_path": r"C:\materials\AA6061-T4.mtb"},
+        agent_id="postprocessing_agent",
+        execution_approved=True,
+    )
+
+    assert "autoform_assign_material_to_project" in material_tools
+    assert "autoform_assign_material_to_project" not in unrelated_tools
+    assert result["status"] == "completed"
+    assert result["result"]["status"] == "planned"
+    assert result["policy"]["owner_agent"] == "material_agent"
+    assert result["policy"]["risk_level"] == "high"
+    assert result["policy"]["execution_class"] == "guarded_gui"
+    assert result["policy"]["requires_approval"] is False
+    assert result["policy"]["controlled_arguments"] == []
+    assert rejected["status"] == "rejected_agent_not_allowed"
+
+
 def test_geometry_dimension_update_routes_only_to_geometry_agent() -> None:
     """A size edit should keep the center plan focused on geometry."""
 
@@ -236,6 +276,7 @@ def test_geometry_agent_can_run_low_risk_cad_measurement_script(tmp_path: Path) 
     assert "autoform_script_catalog" in names
     assert "autoform_script_run" in names
     assert catalog["status"] == "completed"
+    assert catalog["result"]["skills"][0]["metadata"]["approval_policy"]
     assert run["status"] == "completed"
     assert run["result"]["status"] == "blocked"
     assert run["result"]["result"]["parser"] == "probe_only"

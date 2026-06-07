@@ -37,6 +37,11 @@ from ..result_viewer import (
 )
 
 
+# 小白读法：
+# 这个文件是“GUI 和后处理类 MCP wrapper”。它不直接写复杂逻辑，
+# 只把 MCP host 传来的简单参数转给 `gui_automation.py` 或 `result_viewer.py`。
+# 后处理相关工具默认以计划和证据为主，execute=True 才会尝试控制可见窗口。
+
 def autoform_gui_window_snapshot() -> dict:
     """Return visible AutoForm GUI windows for local desktop automation."""
 
@@ -277,6 +282,9 @@ def autoform_result_set_view(
 ) -> dict:
     """Map, plan, or execute a profiled result view shortcut."""
 
+    # result-set-view 案例入口。
+    # view 是用户输入的目标视角，例如“等轴测”“+Z向视图”或 "top"。
+    # execute=False 只返回计划；execute=True 才进入快捷键执行和截图校验流程。
     return set_result_view(view, execute=execute, verify_screenshot=verify_screenshot, output_dir=output_dir)
 
 
@@ -394,6 +402,8 @@ def autoform_result_readiness(
 def register_gui_tools(mcp: Any) -> None:
     """Register GUI and result-review MCP tools on one FastMCP instance."""
 
+    # 这一段把所有 GUI 和结果审阅工具放进 MCP 工具菜单。
+    # 课堂讲 result-set-view 时，重点看 autoform_result_set_view 这一项。
     mcp.add_tool(autoform_gui_window_snapshot)
     mcp.add_tool(autoform_gui_focus)
     mcp.add_tool(autoform_gui_restore_window)

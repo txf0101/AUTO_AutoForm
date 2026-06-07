@@ -36,6 +36,8 @@ R5 普通 prompt 会先由 `autoform_agent.agent_system.kernel.build_center_agen
 
 当用户继续输入“材料补充：AA6061-T4，使用 AA6061-T4.mtb，杨氏模量 69 GPa，泊松比 0.33”这类答复时，后端识别为中心 Agent 把用户补参转回材料 Agent 的续接任务。材料 Agent 会解析材料状态、材料库文件、弹性常数和缺失字段，生成 `MaterialUserResponseReview`、候选 `ContextPatch` 和 `materialUserResponse` runtime 摘要；若选择本机材料卡，会调用 `skill_material_source_candidate_set` 记录材料来源候选；若杨氏模量和泊松比齐全，会调用 `skill_material_elastic_constants_candidate_set` 记录候选字段。前端会把上一轮 `MaterialCard`、`pendingUserInput` 和 `SharedContextPolicy` 压缩成 `conversationContext` 随下一轮请求传回后端，因此“全都使用本机的配置，默认配置”这类续接可以继续落到材料 Agent。该路径仍保持 `localToolRunCount=0`、`willControlGui=false` 和 `willSubmitSolver=false`。
 
+当 prompt 明确表达“给当前工程赋予材料”“set material”“assign material”等真实写入意图，并给出 `.mtb/.mat` 路径或可从 `conversationContext.MaterialCard.selected_material_source.path` 取得材料来源时，后端生成 `autoform_assign_material_to_project` 请求，调用方为 `material_agent`。该工具在 `AgentToolGateway` 中登记为 `guarded_gui`、`risk_level=high`，当前按用户演示要求不再设置审批阻断；进入白名单后会打开或聚焦 AutoForm GUI、选择材料库文件、保存原 `.afd`。工具默认写当前工程原件，写入前备份到 `output/material_assignment_backups/<timestamp>_<afd_stem>/`，证据写入 `output/material_assignment/<timestamp>_<material_stem>/evidence/`，其中包括截图、窗口树、`workflow_log.jsonl`、`manifest.json`、before summary、after summary 和 `material_changed` 判定。带有“不要启动 GUI、不写入工程”的材料补参 prompt 仍保留在候选记录链路，不生成该工具请求。
+
 当 prompt 单独询问“在本机寻找 6061 铝合金材料配置”这类材料库检索需求时，后端优先进入 `Material Agent Lookup` 本地分支，而不调用 provider 生成说明性文本。响应会包含 `centerPlan.context_view.shared_context_policy`、`role_context_permissions`、`agentMessages`、`materialDatabaseQuery` 和 `pendingUserInput`。Agent 协作消息使用“中心Agent -> 材料Agent”“材料Agent -> 中心Agent -> 用户”等链路式 speaker，便于区分任务分发、领域处理和转问用户。
 
 当 prompt 询问“能否通过 MCP 连接”一类能力状态时，后端会生成只读的 `autoform_status_snapshot` 请求，前端可据此显示 `tool_requested`、`tool_completed` 和本机状态摘要，避免只返回模型说明性文本。
@@ -57,7 +59,7 @@ python -m autoform_agent.mcp_server
 3. `frontend/app.js` 的 `DEFAULT_ENDPOINT` 指向 `http://127.0.0.1:4317/api/agent`，并在请求体中发送 `runtimeConfig`；当用户勾选本机 MCP 工具控制时，页面还会发送 `uiContext.localExecution`、`scope=mcp_gateway` 和批准状态，由后端运行时生成白名单工具请求。
 4. `start_autoform_agent.ps1` 的交互菜单默认检查 API runtime；第二个选项再启动 HTTP bridge、静态前端服务并打开页面。
 5. `start_autoform_agent.ps1` 默认复用已经监听的 `4317` 与 `8765` 服务；当源码时间晚于服务启动时间时会提示旧进程风险。源码更新后需要刷新网页链路时，使用 `-RestartServices` 只重启本启动器 PID 文件中记录的 HTTP bridge 和前端服务。
-6. `autoform_agent/mcp_server.py` 创建 `mcp = FastMCP("autoform-agent")` 并调用 `autoform_agent.mcp_tools.register_all_tools()`。`autoform_agent/mcp_tools/` 下的工具家族模块通过 `mcp.add_tool()` 注册 115 个 `autoform_` 工具，并在 status 模块中注册 `autoform://status` 只读资源。文件末尾在 `__main__` 情况下调用 `mcp.run()`，这是可选 MCP stdio 入口。
+6. `autoform_agent/mcp_server.py` 创建 `mcp = FastMCP("autoform-agent")` 并调用 `autoform_agent.mcp_tools.register_all_tools()`。`autoform_agent/mcp_tools/` 下的工具家族模块通过 `mcp.add_tool()` 注册 116 个 `autoform_` 工具，并在 status 模块中注册 `autoform://status` 只读资源。文件末尾在 `__main__` 情况下调用 `mcp.run()`，这是可选 MCP stdio 入口。
 
 ## 分层职责
 
@@ -112,7 +114,7 @@ python -m autoform_agent import-geometry-to-new-project --source-geometry-path "
 
 当用户询问“这个薄板长宽厚是多少”一类问题时，`autoform_agent.agent_runtime.run_agent_runtime_turn()` 会优先读取 `conversationContext.current_project.source_geometry_path`，没有当前工程路径时再从 prompt 中解析 CAD 文件路径。随后运行稳定库脚本 `cad_measure_geometry_v1`，执行入口由 `autoform_agent.flex_scripts.script_agent.script_run()`、`ScriptExecutor` 和 `ScriptRunner` 串联，输出统一写入 `output/script_runs/<timestamp>_cad_measure_geometry_v1/`，证据位于该目录的 `evidence/` 子目录。CAD 测量结果同时保存到 `output/cad_measurements/` 或调用参数指定的输出目录，并嵌入 `ScriptRunRecord.result`。
 
-`cad_measure_geometry_v1` 的第一阶段只把 `.stl` 作为可实测格式，使用内置 ASCII/Binary STL 顶点解析计算 axis-aligned bounding box，并给出 `length`、`width`、`thickness`。`.step/.stp/.igs/.iges` 会探测 FreeCAD、FreeCADCmd、OCP/OCC、meshio 等解析器；当前机器缺少解析器时返回 `status=blocked`、`parser=probe_only`、`blocked_reason`、`evidence_dir` 和 `filename_dimension_candidate`。`filename_dimension_candidate` 来自文件名中的 `30-40-3` 等模式，仅供后续建模讨论，运行时和前端都不能把它渲染成 CAD 实测尺寸。
+`cad_measure_geometry_v1` 使用内置 ASCII/Binary STL 顶点解析计算 `.stl` axis-aligned bounding box，并给出 `length`、`width`、`thickness`。`.step/.stp/.igs/.iges` 会探测 CadQuery/OCP、FreeCADCmd、FreeCAD、meshio 和 trimesh；当 CadQuery/OCP 或 FreeCADCmd 可用时，STEP 可以返回真实 bbox。解析器缺失或解析失败时返回 `status=blocked`、`parser=probe_only` 或失败 parser 名、`blocked_reason`、`evidence_dir` 和 `filename_dimension_candidate`。`filename_dimension_candidate` 来自文件名中的 `30-40-3` 等模式，仅供后续建模讨论，运行时和前端都不能把它渲染成 CAD 实测尺寸。
 
 MCP 控制面只增加两个入口：`autoform_script_catalog` 用于列出稳定 SkillCard 和 legacy 登记脚本，`autoform_script_run` 用于运行 registry 中允许的 L0/L1 稳定脚本并返回 `ScriptRunRecord`。fork、新建、patch、validate 和 promote 当前只作为 CLI 与 Script Agent 内部能力，避免把每个脚本展开成 MCP 工具。`AgentToolGateway` 把 catalog 标记为只读低风险，把 run 标记为低风险规划执行；AutoForm 工程写入、GUI 控制、求解提交和报告发布继续使用原有审批工具。
 
@@ -120,6 +122,21 @@ CLI 入口为：
 
 ```powershell
 python -m autoform_agent script-list --query cad
+python -m autoform_agent cad-parser-probe
 python -m autoform_agent script-run cad_measure_geometry_v1 --param source_geometry_path="C:\Users\Tang Xufeng\Desktop\薄板30-40-3.STEP" --param length_unit=mm
 python -m autoform_agent cad-measure-geometry --source-geometry-path "C:\Users\Tang Xufeng\Desktop\薄板30-40-3.STEP" --length-unit mm
+python -m autoform_agent script-audit --sandbox-id <sandbox_id>
+python -m autoform_agent script-deps --sandbox-id <sandbox_id> --install-hint
+python -m autoform_agent script-sample-run --sandbox-id <sandbox_id>
+python -m autoform_agent script-approval-create --sandbox-id <sandbox_id> --risk-level L2 --approved-by center_agent
 ```
+
+## 2026-06-07 L2 至 L4 执行上下文与真实执行链路
+
+`autoform_agent.agent_runtime.run_agent_runtime_turn()` 现在在顶层和 `runtime` 内返回 `executionContext`，其结构由 `schemas/execution_context_schema.json` 约束。该对象固定保存 `task_id`、`conversation_id`、`current_project`、`pending_approval`、`resumable_action`、`approved_actions`、`script_run_records`、`context_patches`、`evidence_refs` 和 `last_tool_result`。前端把压缩后的 `conversationContext.execution_context` 回传给下一轮，CLI 的 `agent-turn` 也支持 `--conversation-context`，用于多轮 prompt 自测。
+
+当 `AgentToolGateway` 因真实 GUI、工程写入或求解动作缺少本机执行批准而阻断时，runtime 会构造 `pendingApproval` 和 `resumableAction`。这两个对象包含同一 `task_id`、`conversation_id`、工具名、风险等级、原始参数和阻断原因。用户批准后，runtime 会优先执行 `execution_context.resumable_action`，并把批准记录写入 `approvedActions`；后续追问可继续读取同一工程、脚本记录和证据目录。
+
+柔性脚本 L2 硬化新增了静态审计、依赖探测、输入文件 hash、资源限制、stdout/stderr 截断、审批记录和验证报告 hash。`script_promote` 现在要求审批记录中的 `sandbox_id`、`skill_id`、`risk_level`、`approved_by` 和 `validation_report_hash` 与当前 sandbox 匹配，匹配后创建新的 `versions/<vN>/` 目录；审批缺失或 hash 变化时只生成 promotion request。
+
+本轮真实执行验收覆盖三条链路：CadQuery/OCP 解析 `C:\Users\Tang Xufeng\Desktop\薄板30-40-3.STEP` 得到 bbox `400 x 3 x 300 mm`，runtime 第二轮追问复用已有 `cad_measurement_result` 且 `tool_run_count=0`；审批前的新建工程导入返回 `pendingApproval` 和 `resumableAction`，批准后一次真实导入写出 `output/geometry_import_projects/20260607_133918_薄板30-40-3/薄板30-40-3.afd`；官方示例 `Solver_R13` 经 `project-run --execute --timeout 120` 完成受控运动学求解，证据位于 `output/project_runs/20260607_134351_Solver_R13_kinematic`。

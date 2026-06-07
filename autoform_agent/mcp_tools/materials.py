@@ -15,7 +15,13 @@ from ..materials import (
     list_material_libraries,
     material_library_backup_plan,
 )
+from ..material_assignment_workflow import assign_material_to_project
 
+
+# 小白读法：
+# 这个文件是“材料类 MCP wrapper”。外部 MCP host 只看见 autoform_install_materials
+# 这类工具名；实际扫描文件、解压压缩包、复制材料文件的逻辑在 `materials.py`。
+# 默认 dry_run=True，是为了先给出安装计划，避免一上来就改 ProgramData 材料目录。
 
 def autoform_install_materials(
     source: str,
@@ -24,6 +30,8 @@ def autoform_install_materials(
     dry_run: bool = True,
 ) -> dict:
     """Install AutoForm material files into the configured materials directory."""
+    # install-materials 案例入口。
+    # source 可以是材料文件夹，也可以是支持的压缩包；wrapper 只转 Path 和参数。
     result = install_material_library(
         Path(source),
         library_name=library_name,
@@ -73,13 +81,44 @@ def autoform_inspect_material_file(path: str, preview_lines: int = 20, hash_cont
     return inspect_material_file(Path(path), preview_lines=preview_lines, hash_contents=hash_contents)
 
 
+def autoform_assign_material_to_project(
+    afd_path: str | None = None,
+    material_path: str | None = None,
+    material_grade: str | None = None,
+    material_temper: str | None = None,
+    project_resolution: str = "current_or_prompt",
+    graphics: str = "directx11",
+    gui_wait_seconds: float = 10,
+    save_project: bool = True,
+    dry_run: bool = False,
+    output_dir: str = "output/material_assignment",
+    backup_root: str = "output/material_assignment_backups",
+) -> dict:
+    """Assign one material file to an AutoForm .afd project through the guarded GUI workflow."""
+    return assign_material_to_project(
+        afd_path=afd_path,
+        material_path=material_path,
+        material_grade=material_grade,
+        material_temper=material_temper,
+        project_resolution=project_resolution,
+        graphics=graphics,
+        gui_wait_seconds=gui_wait_seconds,
+        save_project=save_project,
+        dry_run=dry_run,
+        output_dir=output_dir,
+        backup_root=backup_root,
+    )
+
+
 def register_material_tools(mcp: Any) -> None:
     """Register material library MCP tools on one FastMCP instance."""
+    # 把材料相关函数放进 MCP 工具菜单。调用者看到的是函数名，不需要知道底层模块路径。
     mcp.add_tool(autoform_install_materials)
     mcp.add_tool(autoform_list_material_libraries)
     mcp.add_tool(autoform_find_duplicate_material_files)
     mcp.add_tool(autoform_material_library_backup_plan)
     mcp.add_tool(autoform_inspect_material_file)
+    mcp.add_tool(autoform_assign_material_to_project)
 
 
-__all__ = ['autoform_install_materials', 'autoform_list_material_libraries', 'autoform_find_duplicate_material_files', 'autoform_material_library_backup_plan', 'autoform_inspect_material_file', 'register_material_tools']
+__all__ = ['autoform_install_materials', 'autoform_list_material_libraries', 'autoform_find_duplicate_material_files', 'autoform_material_library_backup_plan', 'autoform_inspect_material_file', 'autoform_assign_material_to_project', 'register_material_tools']

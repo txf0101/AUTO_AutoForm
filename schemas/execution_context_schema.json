@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autoform-agent.schemas.execution_context.v1",
+  "title": "ExecutionContext",
+  "type": "object",
+  "required": ["schema_version", "object_type", "task_id", "conversation_id", "updated_at"],
+  "properties": {
+    "schema_version": { "const": "autoform.execution_context.v1" },
+    "object_type": { "const": "ExecutionContext" },
+    "task_id": { "type": "string" },
+    "conversation_id": { "type": "string" },
+    "current_project": { "type": ["object", "null"] },
+    "pending_approval": { "type": ["object", "null"] },
+    "resumable_action": { "type": ["object", "null"] },
+    "approved_actions": { "type": "array", "items": { "type": "object" } },
+    "script_run_records": { "type": "array", "items": { "type": "object" } },
+    "context_patches": { "type": "array", "items": { "type": "object" } },
+    "evidence_refs": { "type": "array", "items": { "type": "string" } },
+    "last_tool_result": { "type": ["object", "null"] },
+    "last_prompt": { "type": "string" },
+    "updated_at": { "type": "string" }
+  },
+  "additionalProperties": true
+}

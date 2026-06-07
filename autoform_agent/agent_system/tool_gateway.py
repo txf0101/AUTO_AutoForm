@@ -13,6 +13,7 @@ from typing import Any, Callable
 
 from ..credentials import redact_secret_data, redact_secret_text
 from ..mcp_tools import (
+    autoform_assign_material_to_project,
     autoform_computer_use_probe,
     autoform_discover_installation,
     autoform_gui_control_demo,
@@ -46,6 +47,11 @@ R5_EXECUTION_CLASS_PLANNING = "planning"
 R5_EXECUTION_CLASS_GUARDED_GUI = "guarded_gui"
 R5_EXECUTION_CLASS_GUARDED_SOLVER = "guarded_solver"
 
+# 小白读法：
+# AgentToolGateway 是“安全门”。Agent 想调用 MCP 同源工具时，先到这里排队。
+# 这里检查三件事：工具名是否在白名单、当前 Agent 是否有权限、这次调用是否需要批准。
+# 打开 AutoForm GUI、执行求解、截图或写文件这类动作都不能绕过这里。
+
 AGENT_TOOL_OWNER_ALIASES = {
     "center_agent": ("manager",),
     "demand_process_planning_agent": ("process_planning_agent", "project_workflow"),
@@ -68,15 +74,23 @@ AGENT_TOOL_OWNER_ALIASES = {
 class GatewayToolSpec:
     """Describe one tool that an AutoForm agent may request."""
 
+    # name 是工具名，必须和 MCP wrapper 函数名一致。
     name: str
+    # owner_agent 表示这个工具归哪个业务 Agent 管。
     owner_agent: str
     purpose: str
+    # handler 是真正会被调用的 Python 函数。
     handler: Callable[..., Any]
+    # source_layer 记录函数来自哪个 MCP wrapper 文件，便于审计和讲解。
     source_layer: str
+    # execution_class 用来粗分风险：只读、规划、受控 GUI、受控求解。
     execution_class: str
     risk_level: str
+    # default_arguments 会先填入，再合并调用方传来的参数。
     default_arguments: dict[str, Any] = field(default_factory=dict)
+    # controlled_arguments 里只要有“有效值”，通常就需要明确批准。
     controlled_arguments: tuple[str, ...] = ()
+    # requires_approval=True 表示这个工具不管参数如何都要用户批准。
     requires_approval: bool = False
     r5_enabled: bool = True
 
@@ -164,10 +178,9 @@ class AgentToolGateway:
         merged_arguments = {**spec.default_arguments, **(arguments or {})}
         controlled = _active_controlled_arguments(merged_arguments, spec.controlled_arguments)
         if (spec.requires_approval or controlled) and not execution_approved:
-            # This is the important safety stop. Reading project facts can run
-            # immediately, but copying projects, opening AutoForm windows, or
-            # submitting solver work must surface as `blocked_requires_approval`
-            # until the caller has an explicit approval flag.
+            # 这是最重要的安全刹车。
+            # 读状态、读项目摘要这类低风险操作可以直接执行；
+            # 打开 AutoForm 窗口、复制工程、提交求解、截图等动作必须先拿到批准。
             return {
                 **base,
                 "status": "blocked_requires_approval",
@@ -282,6 +295,7 @@ def _default_gateway_tools() -> tuple[GatewayToolSpec, ...]:
             execution_class=R5_EXECUTION_CLASS_GUARDED_SOLVER,
             risk_level="medium",
             default_arguments={"execute": False, "open_gui": False, "copy_project": None},
+            # 这三个参数只要被打开，就可能复制工程、开 GUI 或跑求解。
             controlled_arguments=("execute", "open_gui", "copy_project"),
         ),
         GatewayToolSpec(
@@ -293,6 +307,7 @@ def _default_gateway_tools() -> tuple[GatewayToolSpec, ...]:
             execution_class=R5_EXECUTION_CLASS_GUARDED_GUI,
             risk_level="medium",
             default_arguments={"graphics": "directx11", "dry_run": False},
+            # start-ui 会打开 AutoForm 主界面，所以无论参数如何都要求批准。
             requires_approval=True,
         ),
         GatewayToolSpec(
@@ -321,6 +336,26 @@ def _default_gateway_tools() -> tuple[GatewayToolSpec, ...]:
             source_layer="autoform_agent.mcp_tools.quicklink.autoform_get_blank_info",
             execution_class=R5_EXECUTION_CLASS_READ_ONLY,
             risk_level="low",
+        ),
+        GatewayToolSpec(
+            name="autoform_assign_material_to_project",
+            owner_agent="material_agent",
+            purpose="通过受控 AutoForm GUI 将材料库文件赋给当前或指定 .afd 工程，并保存截图、日志和备份证据。",
+            handler=autoform_assign_material_to_project,
+            source_layer="autoform_agent.mcp_tools.materials.autoform_assign_material_to_project",
+            execution_class=R5_EXECUTION_CLASS_GUARDED_GUI,
+            risk_level="high",
+            default_arguments={
+                "project_resolution": "current_or_prompt",
+                "graphics": "directx11",
+                "gui_wait_seconds": 10,
+                "save_project": True,
+                "dry_run": False,
+                "output_dir": "output/material_assignment",
+                "backup_root": "output/material_assignment_backups",
+            },
+            controlled_arguments=(),
+            requires_approval=False,
         ),
         GatewayToolSpec(
             name="autoform_list_exported_geometry",
@@ -449,6 +484,8 @@ def _default_gateway_tools() -> tuple[GatewayToolSpec, ...]:
             execution_class=R5_EXECUTION_CLASS_GUARDED_GUI,
             risk_level="medium",
             default_arguments={"execute": False, "verify_screenshot": False},
+            # execute=True 会发快捷键，verify_screenshot=True 会抓截图；
+            # 这两个都属于可见桌面动作，需要显式批准。
             controlled_arguments=("execute", "verify_screenshot"),
         ),
         GatewayToolSpec(
@@ -489,6 +526,8 @@ def _call_with_supported_arguments(handler: Callable[..., Any], arguments: dict[
 
 
 def _active_controlled_arguments(arguments: dict[str, Any], controlled_names: tuple[str, ...]) -> list[str]:
+    # 只把“真的打开了”的受控参数列出来。
+    # False、None、空字符串表示没有请求这个危险动作。
     active: list[str] = []
     for name in controlled_names:
         value = arguments.get(name)

@@ -6,8 +6,16 @@ description: Measure STL geometry with a built-in bounding-box parser and probe 
 risk_level: L1
 entrypoint: flex_script_library/skills/cad_measure_geometry_v1/versions/v1/cad_measure_geometry.py
 required_params: source_geometry_path
-allowed_params: source_geometry_path;length_unit;output_root
+allowed_params: source_geometry_path;length_unit;output_root;parser;parser_timeout_seconds
 tags: cad;geometry;measurement;stl;step;iges
 input_schema: schemas/cad_measurement_result_schema.json
 output_schema: schemas/cad_measurement_result_schema.json
 validation_rule: cad_measurement_status_and_evidence
+dependencies: python-stdlib;optional-cadquery;optional-FreeCADCmd
+permissions: read_input_geometry;write_output_script_run;write_output_cad_measurement
+resource_limits: timeout_seconds=60;stdout_chars=12000;stderr_chars=12000
+validation_plan: stl_bbox_unit;step_parser_probe;real_input_evidence
+sample_inputs: tests/tmp_ascii_stl;Desktop_thin_plate_step
+failure_modes: parser_missing;parser_failed;unsupported_geometry;input_missing
+rollback_strategy: no_project_write;delete_output_run_dir_if_needed
+approval_policy: L1_run_allowed;L2_plus_changes_require_center_approval

@@ -12,6 +12,11 @@ from typing import Sequence
 from .paths import AutoFormInstallation, get_default_installation
 
 
+# 小白读法：
+# 这个文件负责“真正准备本机进程命令”。上层 MCP/CLI 只负责收参数；
+# 到这里以后，代码会找到 AutoForm 安装目录，拼出 AFSplash.exe 或
+# AFFormingUI.exe 的命令。dry_run=True 时只返回命令，不打开任何窗口。
+
 def start_forming_ui(
     install: AutoFormInstallation | None = None,
     graphics: str = "directx11",
@@ -21,10 +26,12 @@ def start_forming_ui(
 
     install = install or get_default_installation()
     graphics_arg = _graphics_argument(graphics)
+    # AFSplash.exe 是 AutoForm 的启动器；-afformingui 表示打开 Forming 主界面。
+    # graphics_arg 只允许 directx11 或 opengl2，避免上层传入任意未知参数。
     command = [str(install.splash), "-afformingui", graphics_arg]
     if not dry_run:
-        # Popen intentionally returns immediately; the GUI becomes the user's
-        # interactive process after launch.
+        # Popen 会立即返回，不等待用户关闭 AutoForm。
+        # 这样 CLI/MCP 调用不会卡死，AutoForm 窗口交给用户继续操作。
         subprocess.Popen(command, cwd=str(install.bin_dir))
     return command
 
@@ -64,11 +71,11 @@ def open_afd(
     """Open an .afd file in AutoForm Forming and return the launch command."""
 
     install = install or get_default_installation()
+    # 先确认 .afd 文件真实存在。路径错了就直接报错，不去启动 AutoForm。
     afd_path = _existing_afd_path(afd_path)
     command = _open_afd_command(install, afd_path)
     if not dry_run:
-        # Opening a project is a GUI action, so the caller should not block on
-        # process exit.
+        # 打开工程也是 GUI 动作，启动后由用户在 AutoForm 窗口里继续看。
         subprocess.Popen(command, cwd=str(install.bin_dir))
     return command
 
@@ -200,4 +207,6 @@ def _existing_afd_path(afd_path: Path) -> Path:
 
 def _open_afd_command(install: AutoFormInstallation, afd_path: Path) -> list[str]:
     """Build the stable AutoForm UI command used by dry runs and launches."""
+    # AutoForm 打开工程的核心命令就是 AFFormingUI.exe -file <工程路径>。
+    # start-ui 不带工程路径，open-afd 会带 -file。
     return [str(install.forming_ui), "-file", str(afd_path)]

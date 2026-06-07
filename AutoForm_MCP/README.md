@@ -15,8 +15,8 @@ git clone https://github.com/txf0101/AutoForm_MCP.git AutoForm_MCP
 cd AutoForm_MCP
 conda env create -f environment.yml
 conda activate afagent
-python -c "import autoform_agent.mcp_server; print('mcp import ok')"
-python -m autoform_agent.cli status
+python -c "import autoform_mcp_agent.mcp_server; print('mcp import ok')"
+python -m autoform_mcp_agent.cli status
 ```
 
 cmd:
@@ -26,8 +26,8 @@ git clone https://github.com/txf0101/AutoForm_MCP.git AutoForm_MCP
 cd AutoForm_MCP
 conda env create -f environment.yml
 conda activate afagent
-python -c "import autoform_agent.mcp_server; print('mcp import ok')"
-python -m autoform_agent.cli status
+python -c "import autoform_mcp_agent.mcp_server; print('mcp import ok')"
+python -m autoform_mcp_agent.cli status
 ```
 
 If you are inside the larger `AUTO_AutoForm` workspace, use this instead of cloning:
@@ -38,7 +38,7 @@ If you are inside the larger `AUTO_AutoForm` workspace, use this instead of clon
 cd AutoForm_MCP
 conda env create -f environment.yml
 conda activate afagent
-python -c "import autoform_agent.mcp_server; print('mcp import ok')"
+python -c "import autoform_mcp_agent.mcp_server; print('mcp import ok')"
 ```
 
 Replace `<repo-root>` below with the absolute path of this `AutoForm_MCP` folder on the current computer. Do not copy another user's absolute path.
@@ -54,7 +54,7 @@ Add this block to `%USERPROFILE%\.codex\config.toml`. The same block is saved in
 ```toml
 [mcp_servers."autoform-mcp"]
 command = 'conda'
-args = ['run', '-n', 'afagent', 'python', '-m', 'autoform_agent.mcp_server']
+args = ['run', '-n', 'afagent', 'python', '-m', 'autoform_mcp_agent.mcp_server']
 startup_timeout_sec = 60
 enabled = true
 
@@ -69,7 +69,7 @@ If Codex cannot find `conda`, use the Python executable inside your `afagent` en
 ```toml
 [mcp_servers."autoform-mcp"]
 command = '<path-to-afagent-python.exe>'
-args = ['-m', 'autoform_agent.mcp_server']
+args = ['-m', 'autoform_mcp_agent.mcp_server']
 startup_timeout_sec = 60
 enabled = true
 
@@ -86,7 +86,7 @@ Windows 上常见位置包括 `C:\Users\<user>\miniconda3\envs\afagent\python.ex
 PowerShell:
 
 ```powershell
-claude mcp add --transport stdio --scope user --env PYTHONPATH="<repo-root>" autoform-mcp -- conda run -n afagent python -m autoform_agent.mcp_server
+claude mcp add --transport stdio --scope user --env PYTHONPATH="<repo-root>" autoform-mcp -- conda run -n afagent python -m autoform_mcp_agent.mcp_server
 claude mcp list
 claude mcp get autoform-mcp
 ```
@@ -94,7 +94,7 @@ claude mcp get autoform-mcp
 cmd:
 
 ```cmd
-claude mcp add --transport stdio --scope user --env PYTHONPATH="<repo-root>" autoform-mcp -- conda run -n afagent python -m autoform_agent.mcp_server
+claude mcp add --transport stdio --scope user --env PYTHONPATH="<repo-root>" autoform-mcp -- conda run -n afagent python -m autoform_mcp_agent.mcp_server
 claude mcp list
 claude mcp get autoform-mcp
 ```
@@ -104,7 +104,7 @@ If quoting is awkward, use JSON:
 如果命令行引号不好处理，可以用 JSON：
 
 ```powershell
-claude mcp add-json autoform-mcp '{"type":"stdio","command":"conda","args":["run","-n","afagent","python","-m","autoform_agent.mcp_server"],"env":{"PYTHONPATH":"<repo-root>"}}'
+claude mcp add-json autoform-mcp '{"type":"stdio","command":"conda","args":["run","-n","afagent","python","-m","autoform_mcp_agent.mcp_server"],"env":{"PYTHONPATH":"<repo-root>"}}'
 ```
 
 ## OpenCalw Or Any Stdio MCP Host
@@ -119,7 +119,7 @@ Use the same command, args, and environment fields in any stdio-compatible MCP c
     "autoform-mcp": {
       "type": "stdio",
       "command": "conda",
-      "args": ["run", "-n", "afagent", "python", "-m", "autoform_agent.mcp_server"],
+      "args": ["run", "-n", "afagent", "python", "-m", "autoform_mcp_agent.mcp_server"],
       "env": {
         "PYTHONPATH": "<repo-root>"
       }
@@ -135,7 +135,7 @@ Run this only to check that the stdio server can start. A real MCP host keeps th
 这条命令只用于确认 server 能启动。真实 MCP host 会让进程保持打开，并通过标准输入输出发送 JSON-RPC 消息。
 
 ```powershell
-conda run -n afagent python -m autoform_agent.mcp_server
+conda run -n afagent python -m autoform_mcp_agent.mcp_server
 ```
 
 After connecting from a host, verify in this order:
@@ -227,9 +227,9 @@ Expected MCP_V1.1 result in this workspace:
 
 | Path | Meaning |
 | --- | --- |
-| `autoform_agent/mcp_server.py` | Stable stdio MCP entry point. |
-| `autoform_agent/mcp_tools/` | Thin MCP wrappers grouped by tool family. |
-| `autoform_agent/*.py` | Shared business functions used by MCP and CLI. |
+| `autoform_mcp_agent/mcp_server.py` | Stable stdio MCP entry point. |
+| `autoform_mcp_agent/mcp_tools/` | Thin MCP wrappers grouped by tool family. |
+| `autoform_mcp_agent/*.py` | Shared business functions used by MCP and CLI. |
 | `tests/` | Focused MCP, GUI, result-review, process, and workflow tests. |
 | `codex_mcp_config.autoform-mcp.toml` | Portable Codex/TOML MCP config template. |
 | `environment.yml` | Conda environment used by the examples above. |

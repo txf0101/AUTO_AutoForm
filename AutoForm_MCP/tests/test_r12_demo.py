@@ -5,7 +5,7 @@ This test file checks the R12 project-open and view-switch demo. Each assertion 
 
 from pathlib import Path
 
-import autoform_agent.r12_demo as r12_demo
+import autoform_mcp_agent.r12_demo as r12_demo
 
 
 def _resolved_project(path: Path) -> dict:

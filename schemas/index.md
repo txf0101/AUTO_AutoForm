@@ -34,6 +34,10 @@
 | `script_run_record_schema.json` | `ScriptRunRecord` | Script execution record with params hash, evidence directory, logs, artifacts, validation, and failure summary. |
 | `cad_measurement_result_schema.json` | `CadMeasurementResult` | CAD measurement result. STL can complete through built-in bbox parsing; STEP or IGES returns blocked when no parser is available. |
 | `script_validation_report_schema.json` | `ScriptValidationReport` | Validation checks for sandbox scripts and script outputs. |
+| `script_static_audit_schema.json` | `ScriptStaticAudit` | Static audit report for sandbox or stable Python scripts, including blocked imports, blocked calls, and suspicious writes. |
+| `script_dependency_report_schema.json` | `ScriptDependencyReport` | Dependency probe report for script imports and install hints. |
+| `script_approval_record_schema.json` | `ScriptApprovalRecord` | Center approval evidence tied to sandbox id, skill id, risk level, and validation report hash. |
+| `execution_context_schema.json` | `ExecutionContext` | Cross-turn execution state containing current project, pending approval, resumable action, script records, context patches, and evidence refs. |
 
 ## R13 至 R20 企业数据与执行器资料
 

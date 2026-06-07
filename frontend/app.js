@@ -812,8 +812,10 @@ function currentProjectDetailText(project) {
     project.example_name ? `example=${project.example_name}` : "",
     project.run_dir ? `run_dir=${project.run_dir}` : "",
     project.evidence_dir ? `evidence_dir=${project.evidence_dir}` : "",
+    project.latest_evidence_dir ? `latest_evidence_dir=${project.latest_evidence_dir}` : "",
     measurement ? `cad_measurement=${cadMeasurementSummary(measurement)}` : "",
     filenameCandidate ? `filename_candidate=${dimensionObjectText(filenameCandidate)}` : "",
+    project.last_script_run?.run_id ? `last_script_run=${project.last_script_run.run_id}` : "",
     project.last_tool_status ? `status=${project.last_tool_status}` : "",
   ].filter(Boolean);
   return parts.join("；");
@@ -982,6 +984,7 @@ function buildConversationContextForRequest() {
     material_card: compactMaterialCardForContext(context?.material_card),
     pending_user_input: context?.pending_user_input,
     shared_context_policy: context?.shared_context_policy,
+    execution_context: compactExecutionContextForContext(context?.execution_context),
     current_project: compactCurrentProjectForContext(context?.current_project),
     project_history: history,
     recent_user_prompts: history.filter((entry) => entry.source === "user").slice(-6),
@@ -1000,6 +1003,7 @@ function updateConversationContextFromReply(reply) {
   const materialCard = mergeMaterialContext(previous.material_card, extractMaterialCardFromReply(reply));
   const pendingUserInput = compactPendingUserInputForDisplay(reply.pendingUserInput) || previous.pending_user_input;
   const currentProject = extractCurrentProjectFromReply(reply) || compactCurrentProjectForContext(previous.current_project);
+  const executionContext = compactExecutionContextForContext(runtime.executionContext || reply.executionContext || previous.execution_context);
   const selectedRoleIds = Array.isArray(contextView.selected_role_ids)
     ? contextView.selected_role_ids.slice(0, 12)
     : Array.isArray(previous.selected_role_ids)
@@ -1012,6 +1016,7 @@ function updateConversationContextFromReply(reply) {
     material_card: materialCard,
     pending_user_input: pendingUserInput,
     shared_context_policy: compactSharedContextPolicy(contextView.shared_context_policy),
+    execution_context: executionContext,
     current_project: currentProject,
     last_turn: {
       task_id: centerPlan.task_card?.task_id || previous.last_turn?.task_id,
@@ -1020,6 +1025,7 @@ function updateConversationContextFromReply(reply) {
       pending_user_input: pendingUserInput,
       material_card: materialCard,
       current_project: currentProject,
+      execution_context: executionContext,
       project_history: compactProjectHistoryForContext(appState.agentMessages),
       runtime_flags: {
         multiAgentPreparation: Boolean(runtime.multiAgentPreparation),
@@ -1034,6 +1040,10 @@ function extractCurrentProjectFromReply(reply) {
   const runtimeProject = compactCurrentProjectForContext(reply?.runtime?.currentProject);
   if (runtimeProject) {
     return runtimeProject;
+  }
+  const executionProject = compactCurrentProjectForContext(reply?.runtime?.executionContext?.current_project);
+  if (executionProject) {
+    return executionProject;
   }
   const toolProject = extractCurrentProjectFromToolRuns(reply?.toolRuns);
   if (toolProject) {
@@ -1137,11 +1147,21 @@ function compactCurrentProjectForContext(project) {
   const sourceGeometryPath = String(project.source_geometry_path || "").trim();
   const outputAfdPath = String(project.output_afd_path || "").trim();
   const evidenceDir = String(project.evidence_dir || "").trim();
+  const latestEvidenceDir = String(project.latest_evidence_dir || project.latestEvidenceDir || evidenceDir || "").trim();
   const cadMeasurementResult = project.cad_measurement_result && typeof project.cad_measurement_result === "object"
     ? project.cad_measurement_result
     : undefined;
   const filenameDimensionCandidate = project.filename_dimension_candidate && typeof project.filename_dimension_candidate === "object"
     ? project.filename_dimension_candidate
+    : undefined;
+  const lastScriptRun = project.last_script_run && typeof project.last_script_run === "object"
+    ? {
+        run_id: String(project.last_script_run.run_id || "").trim(),
+        skill_id: String(project.last_script_run.skill_id || "").trim(),
+        status: String(project.last_script_run.status || "").trim(),
+        run_dir: String(project.last_script_run.run_dir || "").trim(),
+        evidence_dir: String(project.last_script_run.evidence_dir || "").trim(),
+      }
     : undefined;
   const label = String(project.label || workingProject || outputAfdPath || afdPath || exampleName || runDir || sourceGeometryPath || "").trim();
   if (!kind && !label && !workingProject && !afdPath && !exampleName && !runDir && !sourceGeometryPath && !outputAfdPath && !evidenceDir && !cadMeasurementResult) {
@@ -1158,13 +1178,62 @@ function compactCurrentProjectForContext(project) {
     source_geometry_path: sourceGeometryPath,
     output_afd_path: outputAfdPath,
     evidence_dir: evidenceDir,
+    latest_evidence_dir: latestEvidenceDir,
     cad_measurement_result: cadMeasurementResult,
     filename_dimension_candidate: filenameDimensionCandidate,
+    last_script_run: lastScriptRun,
     last_tool: String(project.last_tool || "").trim(),
     last_tool_status: String(project.last_tool_status || "").trim(),
     gui_pid: project.gui_pid === undefined || project.gui_pid === null ? undefined : project.gui_pid,
     source: String(project.source || "frontend").trim(),
     updated_at: String(project.updated_at || new Date().toISOString()),
+  };
+}
+
+function compactExecutionContextForContext(executionContext) {
+  if (!executionContext || typeof executionContext !== "object") {
+    return undefined;
+  }
+  const currentProject = compactCurrentProjectForContext(executionContext.current_project);
+  const scriptRunRecords = Array.isArray(executionContext.script_run_records)
+    ? executionContext.script_run_records.slice(-8).map((record) => ({
+        run_id: String(record.run_id || "").trim(),
+        skill_id: String(record.skill_id || "").trim(),
+        skill_version: String(record.skill_version || "").trim(),
+        status: String(record.status || "").trim(),
+        run_dir: String(record.run_dir || "").trim(),
+        evidence_dir: String(record.evidence_dir || "").trim(),
+        finished_at: String(record.finished_at || "").trim(),
+      }))
+    : [];
+  const approvedActions = Array.isArray(executionContext.approved_actions)
+    ? executionContext.approved_actions.slice(-12).filter((item) => item && typeof item === "object")
+    : [];
+  const contextPatches = Array.isArray(executionContext.context_patches)
+    ? executionContext.context_patches.slice(-8).filter((item) => item && typeof item === "object")
+    : [];
+  const evidenceRefs = Array.isArray(executionContext.evidence_refs)
+    ? executionContext.evidence_refs.map((item) => String(item || "").trim()).filter(Boolean).slice(-20)
+    : [];
+  return {
+    schema_version: "autoform.execution_context.v1",
+    task_id: String(executionContext.task_id || "").trim(),
+    conversation_id: String(executionContext.conversation_id || "").trim(),
+    current_project: currentProject,
+    pending_approval: executionContext.pending_approval && typeof executionContext.pending_approval === "object"
+      ? executionContext.pending_approval
+      : undefined,
+    resumable_action: executionContext.resumable_action && typeof executionContext.resumable_action === "object"
+      ? executionContext.resumable_action
+      : undefined,
+    approved_actions: approvedActions,
+    script_run_records: scriptRunRecords,
+    context_patches: contextPatches,
+    evidence_refs: evidenceRefs,
+    last_tool_result: executionContext.last_tool_result && typeof executionContext.last_tool_result === "object"
+      ? executionContext.last_tool_result
+      : undefined,
+    updated_at: String(executionContext.updated_at || "").trim(),
   };
 }
 
@@ -1699,6 +1768,9 @@ function trimRuntimeResponse(reply) {
     metrics: reply.metrics,
     runtime: reply.runtime,
     preview: reply.preview,
+    pendingApproval: reply.pendingApproval || reply.runtime?.pendingApproval,
+    resumableAction: reply.resumableAction || reply.runtime?.resumableAction,
+    approvedActions: reply.approvedActions || reply.runtime?.approvedActions,
     pendingUserInput: compactPendingUserInputForDisplay(reply.pendingUserInput),
     centerPlan: compactCenterPlanForDisplay(reply.centerPlan),
     toolRuns: compactToolRunsForDisplay(reply.toolRuns),

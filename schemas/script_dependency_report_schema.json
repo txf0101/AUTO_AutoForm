@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autoform-agent.schemas.script_dependency_report.v1",
+  "title": "ScriptDependencyReport",
+  "type": "object",
+  "required": ["schema_version", "object_type", "status", "created_at"],
+  "properties": {
+    "schema_version": { "const": "autoform.script_dependency_report.v1" },
+    "object_type": { "const": "ScriptDependencyReport" },
+    "status": { "enum": ["passed", "blocked", "failed"] },
+    "script_path": { "type": "string" },
+    "imports": { "type": "array", "items": { "type": "object" } },
+    "install_hint": { "type": "string" },
+    "created_at": { "type": "string" }
+  },
+  "additionalProperties": true
+}

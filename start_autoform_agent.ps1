@@ -56,6 +56,7 @@ $OutputRoot = Join-Path $WorkspaceRoot "output"
 $LogDir = Join-Path $OutputRoot "launcher_logs\$RunStamp"
 $PidDir = Join-Path $OutputRoot "launcher_pids"
 $PreferredAfagentPython = Join-Path $env:USERPROFILE ".conda\envs\afagent\python.exe"
+$PostStartupRefreshDone = $false
 
 function Show-Help {
     <#
@@ -77,6 +78,7 @@ function Show-Help {
     Write-Host "源码更新后重启本启动器管理的 HTTP bridge 和前端服务："
     Write-Host "  powershell -ExecutionPolicy Bypass -File .\start_autoform_agent.ps1 -Mode ApiWithFrontend -RestartServices"
     Write-Host ""
+    Write-Host "说明：ApiWithFrontend 会在打开页面前快速刷新一次本启动器记录的服务。"
     Write-Host "说明：前端 HTTP bridge 会调用 Python 后端 Agent API runtime。"
 }
 function Initialize-LauncherFolders {
@@ -260,7 +262,7 @@ function Write-ServiceReuseNotice {
     }
 
     if ($null -ne $referenceTime -and $latestSourceWriteTime -gt $referenceTime) {
-        Write-Host "警告：$Name 后台服务早于当前源码，页面可能仍连接旧运行时。"
+        Write-Host "警告：$Name 后台服务早于当前源码，页面可能仍连接旧版本。"
         Write-Host "服务时间: $referenceTime"
         Write-Host "源码时间: $latestSourceWriteTime"
         Write-Host "如需刷新，请运行：powershell -ExecutionPolicy Bypass -File .\start_autoform_agent.ps1 -Mode ApiWithFrontend -RestartServices"
@@ -376,6 +378,11 @@ print(f'agent_runtime_api_mode={config.api_mode}')
 }
 
 function Start-HttpBridge {
+    param(
+        # ForceRestart 用于启动后快速刷新，只作用于本启动器 PID 文件中记录的服务。
+        [switch]$ForceRestart
+    )
+
     <#
       启动浏览器前端使用的本地 HTTP bridge。
       该服务提供 /health 和 /api/agent 两个 HTTP 路由，前端在 HTTP 模式下会向
@@ -389,7 +396,7 @@ function Start-HttpBridge {
         (Join-Path $WorkspaceRoot "autoform_agent\mcp_tools\project.py")
     )
 
-    if ($RestartServices -and (Test-LocalPortListening -Port $BridgePort)) {
+    if (($RestartServices -or $ForceRestart) -and (Test-LocalPortListening -Port $BridgePort)) {
         Stop-ManagedServiceProcess -Name "HTTP bridge" -Port $BridgePort -PidFileName "http_bridge.pid"
     }
 
@@ -407,6 +414,11 @@ function Start-HttpBridge {
 }
 
 function Start-FrontendServer {
+    param(
+        # ForceRestart 用于启动后快速刷新，只作用于本启动器 PID 文件中记录的服务。
+        [switch]$ForceRestart
+    )
+
     <#
       启动静态前端服务。
       前端目录只包含 HTML、CSS 和浏览器 JavaScript，所以 Python 标准库的
@@ -418,7 +430,7 @@ function Start-FrontendServer {
         (Join-Path $WorkspaceRoot "frontend\styles.css")
     )
 
-    if ($RestartServices -and (Test-LocalPortListening -Port $FrontendPort)) {
+    if (($RestartServices -or $ForceRestart) -and (Test-LocalPortListening -Port $FrontendPort)) {
         Stop-ManagedServiceProcess -Name "可视化前端" -Port $FrontendPort -PidFileName "frontend.pid"
     }
 
@@ -438,6 +450,23 @@ function Start-FrontendServer {
         -PidFileName "frontend.pid"
 
     Wait-LocalPortListening -Port $FrontendPort -ServiceName "可视化前端"
+}
+
+function Invoke-PostStartupServiceRefresh {
+    <#
+      启动后快速刷新一次本启动器管理的 HTTP bridge 和前端服务。
+      刷新放在浏览器打开前完成，避免页面连接到即将重启的旧服务。这里复用
+      PID 文件边界，不停止脚本没有记录的 Python、AutoForm 或浏览器进程。
+    #>
+    if ($script:PostStartupRefreshDone) {
+        return
+    }
+    $script:PostStartupRefreshDone = $true
+
+    Write-Host ""
+    Write-Host "正在执行启动后快速刷新，完成后再打开页面。"
+    Start-HttpBridge -ForceRestart
+    Start-FrontendServer -ForceRestart
 }
 
 function Open-FrontendPage {
@@ -493,6 +522,7 @@ switch ($Mode) {
         Test-AgentRuntimeEntrypoint
         Start-HttpBridge
         Start-FrontendServer
+        Invoke-PostStartupServiceRefresh
         Open-FrontendPage
         Write-Host ""
         Write-Host "后端 Agent API runtime 已检查，可视化前端已处理完成。关闭本启动器窗口不会停止 HTTP bridge 或前端服务。"

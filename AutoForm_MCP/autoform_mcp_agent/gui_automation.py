@@ -452,7 +452,7 @@ def visible_window_control_demo(
                 "fact": "Visible GUI primitives are used for explicit user-visible AutoForm result-review actions.",
             },
             {
-                "path": "autoform_agent/gui_automation.py",
+                "path": "autoform_mcp_agent/gui_automation.py",
                 "fact": "Win32 window snapshot, restore, focus, screenshot, click, drag and keystroke primitives share one implementation layer.",
             },
         ],

@@ -35,6 +35,13 @@ VIEW_CONTROL_VALIDATION = {
 }
 
 
+# 小白读法：
+# 后处理窗口控制分两类：
+# 1. 已经验证过的快捷键路径，例如 E、Z、X、Shift+Y。
+# 2. 还没有形成稳定自动化证据的工具栏或坐标路径。
+# 本文件只把第一类作为稳定自动执行路径；第二类会返回计划或证据边界。
+
+
 ANIMATION_CONTROL_PROFILES: dict[str, dict] = {
     "autocomp_r13_bottom_strip": {
         "status": "guarded_profile_confirmed_for_autocomp_r13_20260602",
@@ -558,6 +565,9 @@ RESULT_VARIABLES: tuple[ResultVariableSpec, ...] = (
 
 
 RESULT_VIEWS: tuple[ResultViewSpec, ...] = (
+    # 这里是 result-set-view 的“字典”。
+    # 每个 ResultViewSpec 告诉系统：用户可能怎么说这个视角、AutoForm R13 里叫什么、
+    # 是否有已验证快捷键。只有带 r13_shortcut 的视角才能自动发送快捷键。
     ResultViewSpec(
         "isometric",
         "等轴测",
@@ -1377,8 +1387,11 @@ def set_result_view(
 ) -> dict:
     """Prepare a view change and capture evidence when requested."""
 
+    # 第一步：把用户输入的 view 解析成规范视角。
+    # 例如“等轴测”“iso”“E”都会解析到 isometric。
     resolution = resolve_result_view(view)
     if not resolution["matched"]:
+        # 解析失败时只返回失败原因，不猜测用户要什么视角。
         return {
             "status": "failed",
             "executed": False,
@@ -1387,6 +1400,7 @@ def set_result_view(
         }
     selected_view = resolution["view"]
     shortcut = selected_view.get("r13_shortcut")
+    # 先构造统一返回体。无论后面是否执行，调用者都能看到映射结果和计划步骤。
     result = {
         "status": "planned" if not execute else "shortcut_profile_pending",
         "executed": False,
@@ -1410,6 +1424,8 @@ def set_result_view(
         ),
     }
     if execute and shortcut:
+        # execute=True 且存在已验证快捷键时，才进入真实窗口控制流程。
+        # 真实执行前先检查有没有可交互的 AutoForm 窗口，避免把按键发到错误窗口。
         window_snapshot = (
             autoform_window_snapshot(title_contains=title_contains, pid=target_pid)
             if title_contains or target_pid is not None
@@ -1417,6 +1433,7 @@ def set_result_view(
         )
         result["window_snapshot"] = window_snapshot
         if window_snapshot.get("interaction_ready_window_count", 0) < 1:
+            # 没有可交互窗口就阻断。这里不尝试盲按键，因为风险不可控。
             result["status"] = "blocked_no_interaction_ready_autoform_window"
             result["failure_reason"] = "no_interaction_ready_autoform_window"
             result["evidence_boundary"] = (
@@ -1426,6 +1443,7 @@ def set_result_view(
         before = None
         after = None
         if verify_screenshot:
+            # 截图校验打开时，先抓一张 before，后面发送快捷键后再抓 after。
             before = capture_result_evidence(
                 view=selected_view["key"],
                 output_dir=output_dir,
@@ -1450,6 +1468,7 @@ def set_result_view(
         result["executed"] = bool(keystroke.get("sent"))
         result["keystroke"] = keystroke
         if verify_screenshot:
+            # 给 AutoForm 半秒刷新时间，再抓 after 图片。
             time.sleep(0.5)
             after = capture_result_evidence(
                 view=selected_view["key"],
@@ -1466,6 +1485,8 @@ def set_result_view(
                 target_pid=target_pid,
             )
             result["evidence"] = {"before": before, "after": after}
+            # 比较 before/after 的结果视图区，而不是整张桌面。
+            # 这样可以减少任务栏、鼠标、窗口边框等无关变化造成的误判。
             visual_validation = _animation_visual_change_check(before, after, {"visual_validation": VIEW_CONTROL_VALIDATION})
             result["visual_validation"] = visual_validation
             if result["executed"] and visual_validation["status"] == "pass":
@@ -1484,6 +1505,8 @@ def set_result_view(
             result["failure_reason"] = keystroke.get("reason", "shortcut_send_failed")
         return result
     if execute and not shortcut:
+        # execute=True 但没有已验证快捷键时，只标记为控制路径未验证。
+        # 这里不走坐标点击，因为不同机器窗口布局可能不同。
         result["status"] = "control_path_unverified"
     if verify_screenshot:
         result["evidence"] = capture_result_evidence(
@@ -2568,6 +2591,8 @@ def _animation_visual_change_check(before: dict, after: dict, profile: dict) -> 
     validation_config = profile.get("visual_validation", {})
     min_ratio = float(validation_config.get("min_result_view_changed_pixel_ratio", 0.005))
     min_mean = float(validation_config.get("min_result_view_mean_delta", 0.10))
+    # changed_pixel_ratio 看有多少像素变了，mean_delta 看平均变化强度。
+    # 两个指标任意一个达到阈值，就认为结果视图区发生了可见变化。
     result_changed = (
         result_view_metrics["changed_pixel_ratio"] >= min_ratio
         or result_view_metrics["mean_delta"] >= min_mean

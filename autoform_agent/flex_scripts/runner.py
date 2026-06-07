@@ -9,17 +9,21 @@ from typing import Any
 
 from .contracts import (
     DEFAULT_TIMEOUT_SECONDS,
+    MAX_CAPTURE_CHARS,
     ROOT,
     SCRIPT_RUN_OUTPUT_ROOT,
     SCRIPT_RUN_SCHEMA_VERSION,
     SkillRecord,
     ensure_under,
+    file_sha256,
     params_hash,
     timestamp_id,
     truncate_text,
     utc_now,
     write_json,
 )
+from .dependencies import probe_script_dependencies
+from .security import audit_python_file
 from .validators import build_validation_report, validate_result_payload
 
 
@@ -29,6 +33,8 @@ def run_python_skill(
     *,
     caller_agent: str = "script_agent",
     timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS,
+    sandbox_dir: str | Path | None = None,
+    approval_record: str | Path | None = None,
 ) -> dict[str, Any]:
     """Execute a registered Python skill and return a ScriptRunRecord."""
 
@@ -48,7 +54,14 @@ def run_python_skill(
     result_path = run_dir / "result.json"
     stdout_path = run_dir / "stdout.txt"
     stderr_path = run_dir / "stderr.txt"
+    dependency_report_path = run_dir / "dependency_report.json"
+    static_audit_path = run_dir / "static_audit.json"
     write_json(params_path, params)
+    dependency_report = probe_script_dependencies(entrypoint)
+    static_audit = audit_python_file(entrypoint)
+    input_files = _input_file_records(params)
+    write_json(dependency_report_path, dependency_report)
+    write_json(static_audit_path, static_audit)
 
     started_at = utc_now()
     command = [
@@ -62,6 +75,39 @@ def run_python_skill(
         str(evidence_dir),
     ]
     try:
+        if static_audit.get("status") == "failed":
+            record_payload = _record_payload(
+                record,
+                params,
+                caller_agent=caller_agent,
+                run_id=run_id,
+                status="rejected",
+                started_at=started_at,
+                finished_at=utc_now(),
+                run_dir=run_dir,
+                evidence_dir=evidence_dir,
+                params_path=params_path,
+                stdout_path=stdout_path,
+                stderr_path=stderr_path,
+                result_path=result_path,
+                command=command,
+                validation_report=build_validation_report(
+                    status="failed",
+                    checks=[{"name": "static_audit", "status": "failed", "audit": static_audit}],
+                    summary="static audit blocked script execution",
+                ),
+                result={},
+                failure_summary={"reason": "static_audit_failed"},
+                dependency_report=dependency_report,
+                static_audit=static_audit,
+                input_files=input_files,
+                resource_limits=_resource_limits(timeout_seconds),
+                sandbox_dir=sandbox_dir,
+                approval_record=approval_record,
+                extra_artifacts=[dependency_report_path, static_audit_path],
+            )
+            write_json(run_dir / "script_run_record.json", record_payload)
+            return record_payload
         completed = subprocess.run(
             command,
             cwd=str(ROOT),
@@ -105,6 +151,13 @@ def run_python_skill(
             validation_report=validation_report,
             result=result,
             failure_summary=_failure_summary(completed.returncode, status, stderr, result),
+            dependency_report=dependency_report,
+            static_audit=static_audit,
+            input_files=input_files,
+            resource_limits=_resource_limits(timeout_seconds),
+            sandbox_dir=sandbox_dir,
+            approval_record=approval_record,
+            extra_artifacts=[dependency_report_path, static_audit_path],
         )
     except subprocess.TimeoutExpired as exc:
         stdout_path.write_text(truncate_text(exc.stdout or ""), encoding="utf-8")
@@ -131,6 +184,13 @@ def run_python_skill(
             ),
             result={},
             failure_summary={"reason": "timeout", "timeout_seconds": timeout_seconds},
+            dependency_report=dependency_report,
+            static_audit=static_audit,
+            input_files=input_files,
+            resource_limits=_resource_limits(timeout_seconds),
+            sandbox_dir=sandbox_dir,
+            approval_record=approval_record,
+            extra_artifacts=[dependency_report_path, static_audit_path],
         )
     write_json(run_dir / "script_run_record.json", record_payload)
     return record_payload
@@ -167,8 +227,16 @@ def _record_payload(
     validation_report: dict[str, Any],
     result: dict[str, Any],
     failure_summary: dict[str, Any] | None,
+    dependency_report: dict[str, Any] | None = None,
+    static_audit: dict[str, Any] | None = None,
+    input_files: list[dict[str, Any]] | None = None,
+    resource_limits: dict[str, Any] | None = None,
+    sandbox_dir: str | Path | None = None,
+    approval_record: str | Path | None = None,
+    extra_artifacts: list[Path] | None = None,
 ) -> dict[str, Any]:
     artifacts = [str(path.resolve()) for path in (params_path, stdout_path, stderr_path, result_path) if path.exists()]
+    artifacts.extend(str(path.resolve()) for path in (extra_artifacts or []) if path.exists())
     result_artifacts = result.get("artifacts") if isinstance(result.get("artifacts"), list) else []
     artifacts.extend(str(item) for item in result_artifacts)
     return {
@@ -183,7 +251,7 @@ def _record_payload(
         "status": status,
         "started_at": started_at,
         "finished_at": finished_at,
-        "sandbox_dir": "",
+        "sandbox_dir": str(Path(sandbox_dir).resolve()) if sandbox_dir else "",
         "run_dir": str(run_dir.resolve()),
         "evidence_dir": str(evidence_dir.resolve()),
         "logs": [str(stdout_path.resolve()), str(stderr_path.resolve())],
@@ -192,6 +260,11 @@ def _record_payload(
         "failure_summary": failure_summary,
         "command": command,
         "result": result,
+        "dependency_report": dependency_report or {},
+        "static_audit": static_audit or {},
+        "input_files": input_files or [],
+        "resource_limits": resource_limits or {},
+        "approval_record": str(Path(approval_record).resolve()) if approval_record else "",
     }
 
 
@@ -232,4 +305,35 @@ def _failed_record(record: SkillRecord, params: dict[str, Any], *, caller_agent:
         ),
         "failure_summary": {"reason": failure},
         "result": {},
+        "dependency_report": {},
+        "static_audit": {},
+        "input_files": [],
+        "resource_limits": {},
+        "approval_record": "",
+    }
+
+
+def _input_file_records(params: dict[str, Any]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for key, value in sorted((params or {}).items()):
+        if "path" not in str(key).casefold() and "file" not in str(key).casefold():
+            continue
+        path = Path(str(value)).expanduser()
+        try:
+            resolved = path.resolve()
+            if resolved.exists() and resolved.is_file():
+                rows.append({"param": key, "path": str(resolved), "sha256": file_sha256(resolved), "exists": True})
+            else:
+                rows.append({"param": key, "path": str(resolved), "sha256": "", "exists": False})
+        except Exception as exc:
+            rows.append({"param": key, "path": str(value), "sha256": "", "exists": False, "error": str(exc)})
+    return rows
+
+
+def _resource_limits(timeout_seconds: int) -> dict[str, Any]:
+    return {
+        "timeout_seconds": timeout_seconds,
+        "max_stdout_chars": MAX_CAPTURE_CHARS,
+        "max_stderr_chars": MAX_CAPTURE_CHARS,
+        "execution_model": "subprocess",
     }

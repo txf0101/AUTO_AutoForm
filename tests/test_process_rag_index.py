@@ -12,7 +12,7 @@ from autoform_agent.process_rag_index import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SNAPSHOT_PATH = ROOT / "enterprise_data" / "r24_process_rag_candidate_index.sample.json"
+SNAPSHOT_PATH = ROOT / "data" / "rag" / "enterprise" / "r24_process_rag_candidate_index.sample.json"
 SCHEMA_PATH = ROOT / "schemas" / "process_rag_candidate_index.schema.json"
 DOC_PATH = ROOT / "docs" / "enterprise_rag_index.md"
 

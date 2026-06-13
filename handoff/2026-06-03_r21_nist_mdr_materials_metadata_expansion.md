@@ -11,11 +11,11 @@
 - `AGENTS.md`
 - `docs/enterprise_data_contract.md`
 - `docs/retrieval_api.md`
-- `enterprise_data/README.md`
-- `enterprise_data/raw_data/README.md`
-- `enterprise_data/source_whitelist.csv`
-- `enterprise_data/source_review_registry.csv`
-- `enterprise_data/raw_data/source_manifest.template.csv`
+- `data/rag/enterprise/README.md`
+- `data/rag/enterprise/raw_data/README.md`
+- `data/rag/enterprise/source_whitelist.csv`
+- `data/rag/enterprise/source_review_registry.csv`
+- `data/rag/enterprise/raw_data/source_manifest.template.csv`
 - `schemas/enterprise_source_whitelist.schema.json`
 - `schemas/enterprise_ingestion_record.schema.json`
 - `schemas/process_knowledge_card.schema.json`
@@ -52,21 +52,21 @@
 
 ## 原始响应与 checksum
 
-真实原始响应保存在 `enterprise_data/raw_data/manual_samples/r21_materials_metadata_expansion_20260603/`，该目录被 raw_data `.gitignore` 忽略。
+真实原始响应保存在 `data/rag/enterprise/raw_data/manual_samples/r21_materials_metadata_expansion_20260603/`，该目录被 raw_data `.gitignore` 忽略。
 
 | 本地原始文件 | 标题 | SHA256 checksum |
 | --- | --- | --- |
-| `enterprise_data/raw_data/manual_samples/r21_materials_metadata_expansion_20260603/nist_mdr_oai_11256_511_virtual_welding_20260603.xml` | `Virtual Welding and Assembly Suite` | `44486a69e0740c53c05f8a39734a3c38bde31d36459a1b7b1129fc6a1be4154e` |
-| `enterprise_data/raw_data/manual_samples/r21_materials_metadata_expansion_20260603/nist_mdr_oai_11115_112_zrox_20260603.xml` | `ZrO-X` | `5332d8207b904167dcdcf85bc9ec72bdabca1bce0e77d256c6616d612a60cc06` |
-| `enterprise_data/raw_data/manual_samples/r21_materials_metadata_expansion_20260603/nist_mdr_oai_11256_446_adf_modeling_20260603.xml` | `ADF - molecular modeling suite` | `dff9b256115e80fdd4ff6756c6dd4c84f3d88db394f25862dca50330ac578de1` |
+| `data/rag/enterprise/raw_data/manual_samples/r21_materials_metadata_expansion_20260603/nist_mdr_oai_11256_511_virtual_welding_20260603.xml` | `Virtual Welding and Assembly Suite` | `44486a69e0740c53c05f8a39734a3c38bde31d36459a1b7b1129fc6a1be4154e` |
+| `data/rag/enterprise/raw_data/manual_samples/r21_materials_metadata_expansion_20260603/nist_mdr_oai_11115_112_zrox_20260603.xml` | `ZrO-X` | `5332d8207b904167dcdcf85bc9ec72bdabca1bce0e77d256c6616d612a60cc06` |
+| `data/rag/enterprise/raw_data/manual_samples/r21_materials_metadata_expansion_20260603/nist_mdr_oai_11256_446_adf_modeling_20260603.xml` | `ADF - molecular modeling suite` | `dff9b256115e80fdd4ff6756c6dd4c84f3d88db394f25862dca50330ac578de1` |
 
-Manifest 写入：`enterprise_data/raw_data/manifests/2026-06-03_r21_nist_mdr_materials_oai_manifest.csv`。每行保留 `accessed_at`、`checksum`、`local_file_relpath`、`collection_status=sampled_once_metadata_only` 和限制说明。
+Manifest 写入：`data/rag/enterprise/raw_data/manifests/2026-06-03_r21_nist_mdr_materials_oai_manifest.csv`。每行保留 `accessed_at`、`checksum`、`local_file_relpath`、`collection_status=sampled_once_metadata_only` 和限制说明。
 
 ## R14 清洗结果
 
-R14 小样本文件：`enterprise_data/r21_nist_mdr_materials_metadata_samples.jsonl`。
+R14 小样本文件：`data/rag/enterprise/r21_nist_mdr_materials_metadata_samples.jsonl`。
 
-清洗报告：`enterprise_data/r14_cleaning_reports/r21_nist_mdr_materials_metadata_cleaning_report.json`。
+清洗报告：`data/rag/enterprise/r14_cleaning_reports/r21_nist_mdr_materials_metadata_cleaning_report.json`。
 
 | record_id | rights 字段 | source_hash |
 | --- | --- | --- |
@@ -78,7 +78,7 @@ R14 小样本文件：`enterprise_data/r21_nist_mdr_materials_metadata_samples.j
 
 ## R15 与 R16 转换
 
-R15 候选卡：`enterprise_data/r21_nist_mdr_materials_cards.candidate.json`。
+R15 候选卡：`data/rag/enterprise/r21_nist_mdr_materials_cards.candidate.json`。
 
 - 共 3 张 `ProcessCase` 候选卡。
 - `review_status=needs_license_review`。
@@ -86,7 +86,7 @@ R15 候选卡：`enterprise_data/r21_nist_mdr_materials_cards.candidate.json`。
 - `payload.formal_index_allowed=false`。
 - `human_confirmation.status=pending`。
 
-R16 EvidenceBundle：`enterprise_data/r21_nist_mdr_materials_evidence_bundle.sample.json`。
+R16 EvidenceBundle：`data/rag/enterprise/r21_nist_mdr_materials_evidence_bundle.sample.json`。
 
 - `collection_phase=R21`。
 - `conflict_status=blocked_evidence_present`。
@@ -96,7 +96,7 @@ R16 EvidenceBundle：`enterprise_data/r21_nist_mdr_materials_evidence_bundle.sam
 
 ## 来源白名单与复核记录
 
-已更新 `enterprise_data/source_whitelist.csv` 中 `source_nist_materials_data_repository`：
+已更新 `data/rag/enterprise/source_whitelist.csv` 中 `source_nist_materials_data_repository`：
 
 - `license_status=record_license_varies_terms_reviewed_oai_metadata_sampled`
 - `review_status=candidate`
@@ -104,7 +104,7 @@ R16 EvidenceBundle：`enterprise_data/r21_nist_mdr_materials_evidence_bundle.sam
 - `prohibited_actions=bulk_crawl;bulk_download;auto_ingest`
 - `limitation` 记录 DSpace JSON 响应为空、`ListRecords` 过大、未下载数据文件或落地页。
 
-已更新 `enterprise_data/source_review_registry.csv`：
+已更新 `data/rag/enterprise/source_review_registry.csv`：
 
 - `robots_status=available_disallows_discover_and_search_filter_allows_oai_request`
 - `terms_status=terms_reviewed_page_accessible_body_empty_in_current_fetch`

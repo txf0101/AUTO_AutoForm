@@ -1,0 +1,181 @@
+{
+  "applicability": "materials=partner_enterprise_material_pending_review; process_actions=partner_material_curve_metadata_review;partner_process_route_metadata_review;partner_submission_quality_gate_review",
+  "card_refs": [
+    {
+      "allowed_usage": "catalog_only",
+      "applicability": {
+        "applicable_lines": [
+          "pending_partner_line_review"
+        ],
+        "applicable_materials": [
+          "partner_enterprise_material_pending_review"
+        ],
+        "conflict_status": "none",
+        "part_features": [
+          "sheet_metal_material_data_pending"
+        ],
+        "process_actions": [
+          "partner_material_curve_metadata_review"
+        ]
+      },
+      "card_id": "pkc_r22_partner_material_curve_gate_001",
+      "card_type": "ProcessCase",
+      "formal_index_allowed": false,
+      "license_status": "pending_partner_data_agreement",
+      "limitation": "Partner metadata envelope only. Agreement owner confidentiality withdrawal and engineering scope are pending so formal index use is blocked.",
+      "ranking_reasons": [
+        "source_match:partner_submission_pending",
+        "gate_match:metadata_envelope_only",
+        "blocked_gate:formal_index_false"
+      ],
+      "review_status": "needs_license_review",
+      "score": 3,
+      "source_id": "source_enterprise_partner_submission_pending",
+      "source_permission_level": "P3",
+      "version": "2026-06-03T18:29:14+08:00"
+    },
+    {
+      "allowed_usage": "catalog_only",
+      "applicability": {
+        "applicable_lines": [
+          "pending_partner_line_review"
+        ],
+        "applicable_materials": [
+          "partner_enterprise_material_pending_review"
+        ],
+        "conflict_status": "none",
+        "part_features": [
+          "process_route_table_pending"
+        ],
+        "process_actions": [
+          "partner_process_route_metadata_review"
+        ]
+      },
+      "card_id": "pkc_r22_partner_process_route_gate_001",
+      "card_type": "OperationRoute",
+      "formal_index_allowed": false,
+      "license_status": "pending_partner_data_agreement",
+      "limitation": "Partner metadata envelope only. Agreement owner confidentiality withdrawal and engineering scope are pending so formal index use is blocked.",
+      "ranking_reasons": [
+        "source_match:partner_submission_pending",
+        "gate_match:metadata_envelope_only",
+        "blocked_gate:formal_index_false"
+      ],
+      "review_status": "needs_license_review",
+      "score": 2,
+      "source_id": "source_enterprise_partner_submission_pending",
+      "source_permission_level": "P3",
+      "version": "2026-06-03T18:29:14+08:00"
+    },
+    {
+      "allowed_usage": "catalog_only",
+      "applicability": {
+        "applicable_lines": [
+          "pending_partner_line_review"
+        ],
+        "applicable_materials": [
+          "partner_enterprise_material_pending_review"
+        ],
+        "conflict_status": "none",
+        "part_features": [
+          "historical_case_summary_pending"
+        ],
+        "process_actions": [
+          "partner_submission_quality_gate_review"
+        ]
+      },
+      "card_id": "pkc_r22_partner_withdrawal_quality_gate_001",
+      "card_type": "QualityCriteria",
+      "formal_index_allowed": false,
+      "license_status": "pending_partner_data_agreement",
+      "limitation": "Partner metadata envelope only. Agreement owner confidentiality withdrawal and engineering scope are pending so formal index use is blocked.",
+      "ranking_reasons": [
+        "source_match:partner_submission_pending",
+        "gate_match:metadata_envelope_only",
+        "blocked_gate:formal_index_false"
+      ],
+      "review_status": "needs_license_review",
+      "score": 1,
+      "source_id": "source_enterprise_partner_submission_pending",
+      "source_permission_level": "P3",
+      "version": "2026-06-03T18:29:14+08:00"
+    }
+  ],
+  "collection_phase": "R22",
+  "confidence": "low",
+  "conflict_status": "blocked_evidence_present",
+  "created_at": "2026-06-03T10:29:14+00:00",
+  "evidence_bundle_id": "evidence_r22_partner_submission_intake",
+  "evidence_refs": [
+    {
+      "artifact_uri": "data/rag/enterprise/r22_partner_submission_metadata_samples.jsonl",
+      "evidence_id": "record_r22_partner_material_gate_001",
+      "evidence_type": "cleaned_record",
+      "source_hash": "d8cc48e0994341d5ebf909f0b30bff925297f395991274c54a79abbb43dd9705",
+      "source_id": "source_enterprise_partner_submission_pending"
+    },
+    {
+      "artifact_uri": "data/rag/enterprise/r22_partner_submission_metadata_samples.jsonl",
+      "evidence_id": "record_r22_partner_process_route_gate_001",
+      "evidence_type": "cleaned_record",
+      "source_hash": "6ecbaf1a5f1e0c79bfd1b22dfcd41e56bc3a970eed9bf8012c51f503adcf180c",
+      "source_id": "source_enterprise_partner_submission_pending"
+    },
+    {
+      "artifact_uri": "data/rag/enterprise/r22_partner_submission_metadata_samples.jsonl",
+      "evidence_id": "record_r22_partner_historical_case_gate_001",
+      "evidence_type": "cleaned_record",
+      "source_hash": "58830ebbb32bffe2d8750d8bcdc833563e32b055fca650bdaf0aa78353b47f2c",
+      "source_id": "source_enterprise_partner_submission_pending"
+    }
+  ],
+  "filters": {
+    "allowed_usage": "catalog_only",
+    "collection_phase": "R22",
+    "formal_index_allowed": false,
+    "source_id": "source_enterprise_partner_submission_pending"
+  },
+  "human_review_status": "required",
+  "limitation": "Candidate metadata envelope only. Partner agreement owner confidentiality withdrawal and engineering scope must be reviewed before any formal retrieval index or process recommendation use.",
+  "object_type": "EvidenceBundle",
+  "phase": "R16",
+  "query": "partner enterprise process content intake gate metadata candidates",
+  "retrieval_run": {
+    "blocked_actions": [
+      "write_formal_engineering_state",
+      "submit_solver",
+      "control_gui"
+    ],
+    "candidate_card_count": 3,
+    "excluded_cards": [],
+    "filters_applied": [
+      "source_id",
+      "collection_phase",
+      "allowed_usage",
+      "formal_index_allowed"
+    ],
+    "formal_index_allowed_count": 0,
+    "index_version": "autoform.process_rag.r16.v1",
+    "matched_card_count": 3,
+    "ranking_explanation": "Manual R22 sample ranking uses gate coverage only because no partner engineering content is retained.",
+    "retrieval_run_id": "retrieval_r22_partner_submission_intake_sample"
+  },
+  "review_status": "candidate",
+  "schema_version": "autoform.process_rag_evidence_bundle.r16.v1",
+  "source_refs": [
+    {
+      "applicability": "R22 partner enterprise process content intake metadata envelopes only",
+      "captured_at": "2026-06-03T18:29:14+08:00",
+      "license_status": "pending_partner_data_agreement",
+      "limitation": "Metadata envelope only; no confidential partner body and no formal index write before owner agreement confidentiality withdrawal and engineering scope gates pass",
+      "path_or_url": "pending_partner_submission_envelope",
+      "permission_level": "P3",
+      "review_status": "candidate",
+      "reviewed": false,
+      "source_id": "source_enterprise_partner_submission_pending",
+      "source_type": "partner_enterprise_submission",
+      "title": "Partner enterprise manual submission gate"
+    }
+  ],
+  "summary": "R22 partner intake EvidenceBundle lists metadata envelope gates for material curve process route and historical case submissions. All records remain catalog-only candidates."
+}

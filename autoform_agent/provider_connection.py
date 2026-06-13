@@ -24,7 +24,7 @@ def call_provider_chat_completion(
     timeout: float = 60.0,
 ) -> dict[str, Any]:
     """Call one chat completions endpoint directly."""
-
+    # 这个函数直接调用模型 provider 的 chat completions 接口，验证 API key 是否有效并能成功调用。它会返回一个结构化的结果对象，包含调用状态、HTTP 状态码、响应时间、响应文本摘要，以及任何错误信息。这个函数的设计目标是安全地验证连接状态，同时避免在日志或状态对象中泄露敏感的 API key 信息。
     started = time.perf_counter()
     result = {
         "object_type": "DirectApiCallResult",
@@ -44,7 +44,7 @@ def call_provider_chat_completion(
         "checkedAt": utc_now(),
     }
     if not config.api_key_configured or not config.api_key:
-        return result
+        return result # 直接 API 调用的结果对象初始状态，默认是跳过状态。如果没有配置 API key 或者 API key 为空，就直接返回这个结果对象，表示跳过调用并提供相关信息。
 
     try:
         parsed = _post_chat_completion(
@@ -84,7 +84,7 @@ def call_provider_chat_completion(
                 "status": "failed",
                 "latencyMs": int((time.perf_counter() - started) * 1000),
                 "summary": "直接 API 调用失败。",
-                "error": redact_secret_text(exc, (config.api_key,))[:500],
+                "error": redact_secret_text(exc, (config.api_key,))[:2000],
             }
         )
         return result
@@ -178,11 +178,11 @@ def _post_chat_completion(
             "Content-Type": "application/json",
         },
         method="POST",
-    )
+    ) # 构造一个 HTTP POST 请求，目标 URL 是根据配置的基础 URL 拼接 "/chat/completions" 路径。请求体是一个 JSON 对象，包含模型名称、消息列表、最大 token 数量和温度参数。请求头包括授权信息（使用 Bearer token 方式）和内容类型声明。
     with urllib.request.urlopen(request, timeout=timeout) as response:
         body = response.read().decode("utf-8")
         parsed = json.loads(body)
-    return parsed if isinstance(parsed, dict) else {}
+    return parsed if isinstance(parsed, dict) else {} # 发送 HTTP 请求并读取响应。使用 urllib.request.urlopen 发送请求，并设置超时时间。成功响应后，读取响应体并解析为 JSON 对象
 
 
 def _extract_assistant_text(parsed: dict[str, Any]) -> str:

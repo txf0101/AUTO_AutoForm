@@ -1,6 +1,6 @@
 # AutoForm Agent 多 Agent 项目结构预留说明
 
-本文档说明本项目后续扩展为完整 AutoForm 多 Agent 系统时的文件区域、接口契约和维护边界。本文依据当前仓库中的 `autoform_agent/agent_runtime.py`、`autoform_agent/agent_system/`、`autoform_agent/mcp_server.py`、`autoform_agent/mcp_tools/`、`autoform_agent/cli.py`、`DEVELOPERS.md` 和 `docs/api_runtime_call_chain.md` 编写。
+本文档说明本项目后续扩展为完整 AutoForm 多 Agent 系统时的文件区域、接口契约和维护边界。本文依据当前仓库中的 `autoform_agent/agent_runtime.py`、`autoform_agent/agent_system/`、`AutoForm_MCP/autoform_mcp_agent/mcp_server.py`、`autoform_core/tool_registry/`、`autoform_agent/cli.py`、`DEVELOPERS.md` 和 `docs/api_runtime_call_chain.md` 编写。
 
 ## 一、总体定位
 
@@ -10,7 +10,7 @@
 autoform_agent/agent_system/
 ```
 
-该目录保存多 Agent 系统的稳定契约、默认角色注册表、R5 中心 Agent 内核和 Agent 工具网关。MCP 既是外部 host 调用工具的 gateway 入口，也作为内部 Agent 复用 MCP 同源工具的受控边界；具体 MCP wrapper 继续放在 `autoform_agent/mcp_tools/`。R6 至 R11 的低风险准备链路由 `autoform_agent/preparation_agents.py` 承担，包含需求分诊、几何数据、RAG 证据、材料候选、工艺候选、低风险脚本和端到端回放。
+该目录保存多 Agent 系统的稳定契约、默认角色注册表、R5 中心 Agent 内核和 Agent 工具网关。MCP 既是外部 host 调用工具的 gateway 入口，也作为内部 Agent 复用 MCP 同源工具的受控边界；具体 MCP wrapper 继续放在 `autoform_core/tool_registry/`。R6 至 R11 的低风险准备链路由 `autoform_agent/preparation_agents.py` 承担，包含需求分诊、几何数据、RAG 证据、材料候选、工艺候选、低风险脚本和端到端回放。
 
 ## 二、已预留文件
 
@@ -36,7 +36,7 @@ autoform_agent/agent_system/
 | `rag_evidence_agent` | source registry、最小检索评测和 EvidenceBundle | `preparation_agents.py`、`source_registry.csv`、`eval_queries.jsonl` |
 | `material_agent` | MaterialCard、MaterialGapList、MaterialPatch 和 ReviewRequest | `preparation_agents.py`、`tests/test_preparation_agents.py` |
 | `process_planning_agent` | ProcessPlanCard、OperationRoute、ParameterCandidate 和 SimulationPlan | `preparation_agents.py`、`tests/test_preparation_agents.py` |
-| `script_agent` | L0 至 L2 低风险脚本登记、运行记录和失败摘要 | `preparation_agents.py`、`script_registry.yaml` |
+| `script_agent` | L0 至 L2 低风险脚本登记、运行记录和失败摘要 | `preparation_agents.py`、`script_library/flex/registry.yaml` |
 | `reporting` | 结果证据、报告模板、发布检查和交付包计划 | `results.py`、`report.py`、`release.py`、`safety.py` |
 | `mcp_gateway` | 外部 MCP host 请求和内部 Agent 工具意图与 MCP 同源工具层之间的映射 | `mcp_server.py`、`mcp_tools/__init__.py`、`agent_system/tool_gateway.py`、`tests/test_mcp_tools.py` |
 
@@ -46,7 +46,7 @@ autoform_agent/agent_system/
 
 `autoform_agent/agent_system/kernel.py` 提供 `build_center_agent_plan()` 和 `validate_context_patch()`。该内核会为一次 prompt 生成 `TaskCard`、任务 DAG、标记为 `C0` 的中心上下文视图、候选 `ContextPatch`、补丁审查结果和 `AuditEvent`。它满足 R5 对中心 Agent、Task DAG、Agent Router、Context View Builder、ContextPatch Validator 和 AuditEvent 的最低可执行契约要求。
 
-`autoform_agent/agent_system/tool_gateway.py` 提供 `AgentToolGateway`。该网关把中心 Agent 或专业子 Agent 的工具意图映射到 `autoform_agent.mcp_tools` 中的 MCP 同源 wrapper，并统一检查调用角色、工具白名单、受控参数和显式批准状态。R5 默认允许只读和规划工具；涉及 AutoForm 窗口控制、截图、打开工程或真实求解的参数会返回 `blocked_requires_approval`。
+`autoform_agent/agent_system/tool_gateway.py` 提供 `AgentToolGateway`。该网关把中心 Agent 或专业子 Agent 的工具意图映射到 `autoform_core.tool_registry` 中的 MCP 同源 wrapper，并统一检查调用角色、工具白名单、受控参数和显式批准状态。R5 默认允许只读和规划工具；涉及 AutoForm 窗口控制、截图、打开工程或真实求解的参数会返回 `blocked_requires_approval`。
 
 ## 三、命令行检查入口
 
@@ -93,7 +93,7 @@ python -m autoform_agent.cli prepare-r11-replay "低风险准备：DC04，板厚
 
 新增真实多 Agent 执行器时，建议先复用 `build_center_agent_plan()` 的输出对象，再按需要扩展独立运行模块，例如 `autoform_agent/agent_system/runtime.py`。该模块应接收 `AgentSystemRequest`，读取 `AgentRoleRegistry`，并返回 `AgentSystemPlan` 或后续扩展后的结果对象。执行器可以调用 `autoform_agent.agent_runtime`、`AgentToolGateway` 或业务模块函数，但应保留 dry run、受控参数和显式批准状态。
 
-新增外部 MCP 能力时，继续在 `autoform_agent/mcp_tools/` 中维护工具 wrapper，并同步更新 `mcp_gateway` 角色的 `source_files` 或 `default_tools`。如果该工具需要被中心 Agent 或子 Agent 调用，还应在 `AgentToolGateway` 中增加 `GatewayToolSpec`，写明 owner agent、风险等级、默认参数、受控参数和是否需要批准。
+新增外部 MCP 能力时，继续在 `autoform_core/tool_registry/` 中维护工具 wrapper，并同步更新 `mcp_gateway` 角色的 `source_files` 或 `default_tools`。如果该工具需要被中心 Agent 或子 Agent 调用，还应在 `AgentToolGateway` 中增加 `GatewayToolSpec`，写明 owner agent、风险等级、默认参数、受控参数和是否需要批准。
 
 ## 五、R13 至 R20 规划与验收标准
 
@@ -101,19 +101,19 @@ python -m autoform_agent.cli prepare-r11-replay "低风险准备：DC04，板厚
 
 R13 至 R17 固定为企业工艺数据和工艺 RAG 规划阶段。该阶段只允许生成结构化数据、证据包、候选卡片和候选补丁；进入正式工程字段、真实 AutoForm 求解或真实 GUI 操作时，仍然必须经过中心 Agent 审查、`ContextPatch` 审批和 `AgentToolGateway` 执行边界。
 
-2026-06-03 起，R13 按“数据目录和来源白名单”模式启动。当前只登记来源元数据、企业数据接口契约、小批量清洗样本和校验函数；批量网页爬取、批量文件下载和自动入库暂不开放。对应物理资产为 `enterprise_data/`、`schemas/enterprise_data_contract.schema.json`、`schemas/enterprise_source_whitelist.schema.json`、`schemas/enterprise_ingestion_record.schema.json` 和 `autoform_agent/enterprise_data.py`。
+2026-06-03 起，R13 按“数据目录和来源白名单”模式启动。当前只登记来源元数据、企业数据接口契约、小批量清洗样本和校验函数；批量网页爬取、批量文件下载和自动入库暂不开放。对应物理资产为 `data/rag/enterprise/`、`schemas/enterprise_data_contract.schema.json`、`schemas/enterprise_source_whitelist.schema.json`、`schemas/enterprise_ingestion_record.schema.json` 和 `autoform_agent/enterprise_data.py`。
 
-2026-06-03 同日，R15 已补最小结构化知识卡契约。对应物理资产为 `schemas/process_knowledge_card.schema.json`、`enterprise_data/r15_process_knowledge_cards.sample.json`、`autoform_agent/process_knowledge.py` 和 `tests/test_process_knowledge_cards.py`。当前卡片均保持候选、人工确认或许可证复核状态，正式检索索引准入数量为 0；R16 只能在许可证、负责人、适用范围和证据评测补齐后使用这些卡片扩展 EvidenceBundle。
+2026-06-03 同日，R15 已补最小结构化知识卡契约。对应物理资产为 `schemas/process_knowledge_card.schema.json`、`data/rag/enterprise/r15_process_knowledge_cards.sample.json`、`autoform_agent/process_knowledge.py` 和 `tests/test_process_knowledge_cards.py`。当前卡片均保持候选、人工确认或许可证复核状态，正式检索索引准入数量为 0；R16 只能在许可证、负责人、适用范围和证据评测补齐后使用这些卡片扩展 EvidenceBundle。
 
-2026-06-03 同日，R16 已补最小工艺 RAG 检索和证据包闭环。对应物理资产为 `autoform_agent/process_rag.py`、`schemas/process_rag_evidence_bundle.schema.json`、`enterprise_data/r16_process_rag_eval_queries.jsonl`、`enterprise_data/r16_process_rag_evidence_bundle.sample.json`、`docs/retrieval_api.md` 和 `tests/test_process_rag.py`。当前检索支持文字、材料、板厚、工序、零件特征、产线、风险、来源、权限、审核状态和有效期过滤；输出仍保持 `review_status=candidate`、`human_review_status=required`，并阻断正式工程写入、真实求解和 GUI 控制。
+2026-06-03 同日，R16 已补最小工艺 RAG 检索和证据包闭环。对应物理资产为 `autoform_agent/process_rag.py`、`schemas/process_rag_evidence_bundle.schema.json`、`data/rag/enterprise/r16_process_rag_eval_queries.jsonl`、`data/rag/enterprise/r16_process_rag_evidence_bundle.sample.json`、`docs/retrieval_api.md` 和 `tests/test_process_rag.py`。当前检索支持文字、材料、板厚、工序、零件特征、产线、风险、来源、权限、审核状态和有效期过滤；输出仍保持 `review_status=candidate`、`human_review_status=required`，并阻断正式工程写入、真实求解和 GUI 控制。
 
-2026-06-03 同日，R17 已补最小企业证据驱动工艺规划候选闭环。对应物理资产为 `autoform_agent/enterprise_process_planning.py`、`schemas/enterprise_process_planning_result.schema.json`、`enterprise_data/r17_enterprise_process_plan_candidate.sample.json`、`docs/enterprise_process_planning.md` 和 `tests/test_enterprise_process_planning.py`。当前输出包含候选 `ProcessPlanCard`、候选 `ContextPatch` 和 `ReviewRequest`，保持 `will_submit_solver=false`、`will_control_gui=false`；证据冲突、缺材料曲线、缺产线适用范围和人工拒绝均会阻断合并或进入回滚记录。
+2026-06-03 同日，R17 已补最小企业证据驱动工艺规划候选闭环。对应物理资产为 `autoform_agent/enterprise_process_planning.py`、`schemas/enterprise_process_planning_result.schema.json`、`data/rag/enterprise/r17_enterprise_process_plan_candidate.sample.json`、`docs/enterprise_process_planning.md` 和 `tests/test_enterprise_process_planning.py`。当前输出包含候选 `ProcessPlanCard`、候选 `ContextPatch` 和 `ReviewRequest`，保持 `will_submit_solver=false`、`will_control_gui=false`；证据冲突、缺材料曲线、缺产线适用范围和人工拒绝均会阻断合并或进入回滚记录。
 
 2026-06-03 同日，R18 已补最小实时执行器骨架。对应物理资产为 `autoform_agent/agent_system/runtime.py`、`schemas/realtime_executor_run.schema.json`、`fixtures/r18_realtime_executor_events.jsonl`、`docs/realtime_executor.md` 和 `tests/test_agent_system_runtime.py`。当前执行器接收 `AgentSystemRequest` 或中心计划，按 DAG 逐步输出 `RunEvent`，支持成功、失败、暂停、恢复、人工确认等待和事件顺序校验；执行边界保持 `will_submit_solver=false`、`will_control_gui=false`。
 
-2026-06-03 同日，R19 已补可用实时多 Agent 执行器的最小工具联动切片。对应物理资产为 `autoform_agent/agent_system/runtime.py`、`schemas/realtime_multi_agent_executor_run.schema.json`、`fixtures/r19_realtime_multi_agent_executor_events.jsonl`、`frontend/app.js`、`docs/realtime_executor.md` 和 `tests/test_agent_system_runtime.py`。当前执行器能把节点工具意图交给 `AgentToolGateway`，保留工具名、参数摘要、审批状态、结果摘要和错误边界；前端能消费 `tool_requested`、`tool_completed`、`tool_blocked` 和审批事件，图谱状态来自事件流。
+2026-06-03 同日，R19 已补可用实时多 Agent 执行器的最小工具联动切片。对应物理资产为 `autoform_agent/agent_system/runtime.py`、`schemas/realtime_multi_agent_executor_run.schema.json`、`fixtures/r19_realtime_multi_agent_executor_events.jsonl`、`apps/workbench/app.js`、`docs/realtime_executor.md` 和 `tests/test_agent_system_runtime.py`。当前执行器能把节点工具意图交给 `AgentToolGateway`，保留工具名、参数摘要、审批状态、结果摘要和错误边界；前端能消费 `tool_requested`、`tool_completed`、`tool_blocked` 和审批事件，图谱状态来自事件流。
 
-2026-06-03 同日，R20 已补企业工艺数据接入后的完整执行器闭环。对应物理资产为 `autoform_agent/enterprise_process_executor.py`、`schemas/enterprise_process_executor_run.schema.json`、`enterprise_data/r20_enterprise_process_executor_run.sample.json`、`fixtures/r20_enterprise_process_executor_events.jsonl`、`docs/enterprise_process_executor.md` 和 `tests/test_enterprise_process_executor.py`。当前执行器把 R16 `EvidenceBundle`、R17 候选工艺规划、中心补丁审查、人工确认、R19 工具事件、结果证据包和报告草案串为 `EnterpriseProcessExecutorRun`；默认保持 `will_submit_solver=false`、`will_control_gui=false` 和报告草案不发布正式工程结论。测试覆盖成功闭环、无企业数据、证据冲突、人工拒绝、执行审批缺失和前端回放 fixture。
+2026-06-03 同日，R20 已补企业工艺数据接入后的完整执行器闭环。对应物理资产为 `autoform_agent/enterprise_process_executor.py`、`schemas/enterprise_process_executor_run.schema.json`、`data/rag/enterprise/r20_enterprise_process_executor_run.sample.json`、`fixtures/r20_enterprise_process_executor_events.jsonl`、`docs/enterprise_process_executor.md` 和 `tests/test_enterprise_process_executor.py`。当前执行器把 R16 `EvidenceBundle`、R17 候选工艺规划、中心补丁审查、人工确认、R19 工具事件、结果证据包和报告草案串为 `EnterpriseProcessExecutorRun`；默认保持 `will_submit_solver=false`、`will_control_gui=false` 和报告草案不发布正式工程结论。测试覆盖成功闭环、无企业数据、证据冲突、人工拒绝、执行审批缺失和前端回放 fixture。
 
 | 阶段 | 目标 | 必交物 | 严格验收标准 | 禁止通过条件 |
 | --- | --- | --- | --- | --- |

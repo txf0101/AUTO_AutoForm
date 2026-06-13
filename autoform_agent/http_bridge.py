@@ -26,7 +26,7 @@ def build_agent_runtime_reply(
     payload: dict[str, Any],
     snapshot: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Build the response contract consumed by `frontend/app.js`.
+    """Build the response contract consumed by `apps/workbench/app.js`.
 
     The implementation delegates to the backend AutoForm Agent runtime, which
     calls the configured provider API when a key is available and otherwise
@@ -85,6 +85,9 @@ class AgentRuntimeRequestHandler(BaseHTTPRequestHandler):
             self._send_json({"error": "unknown endpoint"}, status=404)
             return
 
+        # 前端真正提交 prompt 时会进入这里。处理顺序固定为：
+        # 读取 JSON -> 找出可能的密钥字段 -> 调用 Agent runtime -> 返回脱敏结果。
+        # 这里不判断材料、几何或求解逻辑，只负责把网页请求可靠交给后端运行时。
         payload: dict[str, Any] = {}
         secret_values: tuple[str, ...] = ()
         try:
@@ -102,6 +105,8 @@ class AgentRuntimeRequestHandler(BaseHTTPRequestHandler):
         """Keep the bridge quiet during tests and local frontend demos."""
 
     def _read_json_payload(self) -> dict[str, Any]:
+        # 浏览器 POST 过来的 body 是一段 UTF-8 JSON。限制大小可以避免用户误把
+        # 大文件直接粘到请求体里，真正的文件资料后续应走受控附件或工程路径。
         length_header = self.headers.get("Content-Length")
         if length_header is None:
             return {}

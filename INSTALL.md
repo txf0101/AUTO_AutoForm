@@ -28,9 +28,9 @@ conda activate afagent
 Copy-Item .env.example .env
 ```
 
-`.env.example` 是当前配置模板。页面也可以传入当次请求的临时 API key，该行为依据 `autoform_agent/agent_runtime.py` 与 `frontend/app.js`。
+`.env.example` 是当前配置模板。页面也可以传入当次请求的临时 API key，该行为依据 `autoform_agent/agent_runtime.py` 与 `apps/workbench/app.js`。
 
-如果 AutoForm 安装路径不同，可在 `.env` 中填写 `AUTOFORM_INSTALL_DIR`、`AUTOFORM_PROGRAM_DATA_DIR`、`AUTOFORM_TEST_DIR`、`AUTOFORM_MATERIALS_DIR`、`AUTOFORM_SCRIPTS_DIR` 等覆盖项。这些覆盖项依据 `autoform_agent/paths.py`。
+如果 AutoForm 安装路径不同，可在 `.env` 中填写 `AUTOFORM_INSTALL_DIR`、`AUTOFORM_PROGRAM_DATA_DIR`、`AUTOFORM_TEST_DIR`、`AUTOFORM_MATERIALS_DIR`、`AUTOFORM_SCRIPTS_DIR` 等覆盖项。这些覆盖项依据 `autoform_core/paths.py`。
 
 ## 安装后检查
 
@@ -83,7 +83,7 @@ http://127.0.0.1:8765/index.html?bridge=http
 支持 MCP 的外部客户端可以独立启动：
 
 ```powershell
-python -m autoform_agent.mcp_server
+python -m autoform_mcp_agent.mcp_server
 ```
 
 上面的命令用于完整 `AUTO_AutoForm` 工作区，包名是 `autoform_agent`。如果只使用独立 `AutoForm_MCP` 子项目，进入该子目录后运行：
@@ -92,7 +92,7 @@ python -m autoform_agent.mcp_server
 python -m autoform_mcp_agent.mcp_server
 ```
 
-如果希望 MCP host 自动启动完整工作区服务，请把根目录的 `codex_mcp_config.autoform-agent.toml` 内容加入客户端配置。模板中的 `<path-to-cloned-repo>` 需要替换为当前电脑上的完整仓库绝对路径。独立 `AutoForm_MCP` 子项目使用 `AutoForm_MCP/codex_mcp_config.autoform-mcp.toml`，其中启动模块是 `autoform_mcp_agent.mcp_server`。如果客户端找不到 `conda`，把对应模板里的 `command` 改成 `afagent` 环境中 `python.exe` 的绝对路径。
+如果希望 MCP host 自动启动完整工作区服务，请把根目录的 `AutoForm_MCP/codex_mcp_config.autoform-mcp.toml` 内容加入客户端配置。模板中的 `<repo-root>` 需要替换为当前电脑上的完整仓库绝对路径。独立 `AutoForm_MCP` 子项目使用 `AutoForm_MCP/codex_mcp_config.autoform-mcp.toml`，其中启动模块是 `autoform_mcp_agent.mcp_server`。如果客户端找不到 `conda`，把对应模板里的 `command` 改成 `afagent` 环境中 `python.exe` 的绝对路径。
 
 支持 resources 的 MCP host 可读取 `autoform://status`。只显示工具列表的客户端可调用 `autoform_status_snapshot`。
 

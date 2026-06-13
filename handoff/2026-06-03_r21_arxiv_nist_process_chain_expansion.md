@@ -42,19 +42,19 @@
 
 ## 原始响应与 manifest
 
-原始响应均在 `.gitignore` 覆盖的 `enterprise_data/raw_data/manual_samples/` 下保留，版本库只进入 manifest 与清洗产物。
+原始响应均在 `.gitignore` 覆盖的 `data/rag/enterprise/raw_data/manual_samples/` 下保留，版本库只进入 manifest 与清洗产物。
 
 | 来源 | 原始文件 | SHA256 | manifest | 状态 |
 |---|---|---|---|---|
-| arXiv | `enterprise_data/raw_data/manual_samples/r21_arxiv_api_metadata_expansion_20260603/arxiv_api_metadata_stamping_forming_max3_20260603.atom` | `aee9234f97a574f6d75d33f31ee4d077f6d903333db4aade29aa7026061e21fe` | `enterprise_data/raw_data/manifests/2026-06-03_r21_arxiv_api_metadata_expansion_blocked_manifest.csv` | HTTP 429，阻断 |
-| NIST PDR | `enterprise_data/raw_data/manual_samples/r21_nist_pdr_process_chain_expansion_20260603/nist_pdr_process_chain_limit5_20260603.json` | `5858211ae960bced06a4eac69da72d18c319bec04db42ccca16cdf47caed1235` | `enterprise_data/raw_data/manifests/2026-06-03_r21_nist_pdr_process_chain_manifest.csv` | 选择 2 条 |
-| NIST PDR | `enterprise_data/raw_data/manual_samples/r21_nist_pdr_process_chain_expansion_20260603/nist_pdr_manufacturing_systems_design_limit5_20260603.json` | `6228e27cc89f5a223e89b3d606ffb710b6a0dacae962eef951b929b8b082c44c` | 同上 | 保留供追溯，未选新增样本 |
-| NIST PDR | `enterprise_data/raw_data/manual_samples/r21_nist_pdr_process_chain_expansion_20260603/nist_pdr_manufacturing_supply_chain_limit5_20260603.json` | `e12dc0008741a72da13ba7f5073b9394f2e7430f749c121300e787882b724c05` | 同上 | 保留供追溯，候选与第一响应重复 |
-| NIST PDR | `enterprise_data/raw_data/manual_samples/r21_nist_pdr_process_chain_expansion_20260603/nist_pdr_production_logistics_systems_limit5_20260603.json` | `fff90fb1b270bee1626fb02504a6e7a9152f3925a9b6aeb91a744fd70fd8f1b7` | 同上 | 选择 1 条 |
+| arXiv | `data/rag/enterprise/raw_data/manual_samples/r21_arxiv_api_metadata_expansion_20260603/arxiv_api_metadata_stamping_forming_max3_20260603.atom` | `aee9234f97a574f6d75d33f31ee4d077f6d903333db4aade29aa7026061e21fe` | `data/rag/enterprise/raw_data/manifests/2026-06-03_r21_arxiv_api_metadata_expansion_blocked_manifest.csv` | HTTP 429，阻断 |
+| NIST PDR | `data/rag/enterprise/raw_data/manual_samples/r21_nist_pdr_process_chain_expansion_20260603/nist_pdr_process_chain_limit5_20260603.json` | `5858211ae960bced06a4eac69da72d18c319bec04db42ccca16cdf47caed1235` | `data/rag/enterprise/raw_data/manifests/2026-06-03_r21_nist_pdr_process_chain_manifest.csv` | 选择 2 条 |
+| NIST PDR | `data/rag/enterprise/raw_data/manual_samples/r21_nist_pdr_process_chain_expansion_20260603/nist_pdr_manufacturing_systems_design_limit5_20260603.json` | `6228e27cc89f5a223e89b3d606ffb710b6a0dacae962eef951b929b8b082c44c` | 同上 | 保留供追溯，未选新增样本 |
+| NIST PDR | `data/rag/enterprise/raw_data/manual_samples/r21_nist_pdr_process_chain_expansion_20260603/nist_pdr_manufacturing_supply_chain_limit5_20260603.json` | `e12dc0008741a72da13ba7f5073b9394f2e7430f749c121300e787882b724c05` | 同上 | 保留供追溯，候选与第一响应重复 |
+| NIST PDR | `data/rag/enterprise/raw_data/manual_samples/r21_nist_pdr_process_chain_expansion_20260603/nist_pdr_production_logistics_systems_limit5_20260603.json` | `fff90fb1b270bee1626fb02504a6e7a9152f3925a9b6aeb91a744fd70fd8f1b7` | 同上 | 选择 1 条 |
 
 ## R14/R15/R16 转换结果
 
-R14 文件：`enterprise_data/r21_nist_pdr_process_chain_metadata_samples.jsonl`
+R14 文件：`data/rag/enterprise/r21_nist_pdr_process_chain_metadata_samples.jsonl`
 
 | record_id | DOI | source_hash | 处理动作 |
 |---|---|---|---|
@@ -64,17 +64,17 @@ R14 文件：`enterprise_data/r21_nist_pdr_process_chain_metadata_samples.jsonl`
 
 清洗报告：
 
-- `enterprise_data/r14_cleaning_reports/r21_arxiv_api_metadata_expansion_blocked_report.json`，状态 `blocked`，样本数 0。
-- `enterprise_data/r14_cleaning_reports/r21_nist_pdr_process_chain_cleaning_report.json`，状态 `pass`，清洗样本 3 条，隔离样本 0。
+- `data/rag/enterprise/r14_cleaning_reports/r21_arxiv_api_metadata_expansion_blocked_report.json`，状态 `blocked`，样本数 0。
+- `data/rag/enterprise/r14_cleaning_reports/r21_nist_pdr_process_chain_cleaning_report.json`，状态 `pass`，清洗样本 3 条，隔离样本 0。
 
 R15 候选卡：
 
-- `enterprise_data/r21_nist_pdr_process_chain_cards.candidate.json`
+- `data/rag/enterprise/r21_nist_pdr_process_chain_cards.candidate.json`
 - 3 张卡均为 `needs_license_review`、`allowed_usage=catalog_only`、`formal_index_allowed=false`。
 
 R16 EvidenceBundle：
 
-- `enterprise_data/r21_nist_pdr_process_chain_evidence_bundle.sample.json`
+- `data/rag/enterprise/r21_nist_pdr_process_chain_evidence_bundle.sample.json`
 - `collection_phase=R21`，`conflict_status=blocked_evidence_present`，`formal_index_allowed_count=0`。
 - 阻断动作保持 `write_formal_engineering_state`、`submit_solver`、`control_gui`。
 

@@ -27,16 +27,16 @@
 - `autoform_agent/agent_runtime.py` 增加否定意图识别，窗口、GUI、复制、求解等动作必须由未被否定的正向表达触发。
 - `autoform_agent/agent_runtime.py` 按 CenterAgentPlan 的任务类型、领域角色和准备意图进入本地多 Agent 准备链路，避免使用演示专用触发条件。
 - `autoform_agent/preparation_agents.py` 支持从 `20*20*3` 提取长宽厚候选，从 `6061铝合金` 规范到 `AA6061`，并检索本机 `C:\ProgramData\AutoForm\AFplus\R13F\materials` 中的 AutoForm 材料库候选。
-- `script_registry.yaml` 增加 `skill_material_aa6061_candidate_check`，材料 Agent 可记录领域脚本调用，运行边界保持 L1、dry run。
+- `script_library/flex/registry.yaml` 增加 `skill_material_aa6061_candidate_check`，材料 Agent 可记录领域脚本调用，运行边界保持 L1、dry run。
 - `autoform_agent/runtime_events.py` 和 `schemas/ui_event_schema.json` 增加 `agent_message` 事件，前端可把简洁 Agent 发言和完整日志分开展示。
-- `frontend/index.html`、`frontend/app.js`、`frontend/styles.css` 增加 Agent 协作消息窗口，把原命令输出移到 Runtime response 下方，并添加内联 favicon 消除本地浏览器 404 控制台错误。
-- `docs/beginner_onboarding_zh.md`、`frontend/README.md`、`docs/api_runtime_call_chain.md` 已同步新手入口和运行边界说明。
+- `apps/workbench/index.html`、`apps/workbench/app.js`、`apps/workbench/styles.css` 增加 Agent 协作消息窗口，把原命令输出移到 Runtime response 下方，并添加内联 favicon 消除本地浏览器 404 控制台错误。
+- `docs/beginner_onboarding_zh.md`、`apps/workbench/README.md`、`docs/api_runtime_call_chain.md` 已同步新手入口和运行边界说明。
 
 ## 验证记录
 
 - `python -m py_compile autoform_agent\agent_runtime.py autoform_agent\runtime_events.py autoform_agent\preparation_agents.py autoform_agent\agent_system\orchestrator.py` 通过。
-- `python -m pytest -q tests\test_agent_runtime.py tests\test_runtime_events.py tests\test_preparation_agents.py tests\test_agent_system.py frontend\tests\smoke_test.py tests\test_p0_contracts.py tests\test_agent_system_runtime.py` 通过，合计 65 项。
-- `node frontend\tests\smoke-test.mjs` 通过；HTML favicon 调整后，`python -m pytest -q frontend\tests\smoke_test.py` 和 Node smoke 再次通过。
+- `python -m pytest -q tests\test_agent_runtime.py tests\test_runtime_events.py tests\test_preparation_agents.py tests\test_agent_system.py apps\workbench\tests\smoke_test.py tests\test_p0_contracts.py tests\test_agent_system_runtime.py` 通过，合计 65 项。
+- `node apps\workbench\tests\smoke-test.mjs` 通过；HTML favicon 调整后，`python -m pytest -q apps\workbench\tests\smoke_test.py` 和 Node smoke 再次通过。
 - HTTP bridge 发送目标 prompt 后返回：`directApiCalled=false`、`localToolRunCount=0`、`willSubmitSolver=false`、`willControlGui=false`、无 `toolRuns`，材料候选 `AA6061`，脚本 `skill_material_aa6061_candidate_check`。
 - HTTP bridge 发送否定句状态检查后返回：仅 `autoform_status_snapshot:completed`，文本包含 `autoform_status_snapshot 已返回状态快照`，不含 `autoform_project_run 已返回`。
 - Playwright CLI 通过前端页面发送目标 prompt，勾选“允许本机 MCP 工具控制”后页面显示 `API Call=false`，Agent 协作消息包含中心 Agent、需求与工艺规划 Agent、几何与数据 Agent、材料 Agent 的 8 条简洁发言，Runtime response 在下方，命令输出位于 Runtime response 下方，控制台 `0 errors, 0 warnings`。
@@ -59,22 +59,22 @@
 新增实现：
 
 - `autoform_agent/preparation_agents.py` 增加 `build_material_user_response_review()`，材料 Agent 可以解析用户补充中的 `AA6061-T4`、`.mtb` 文件、杨氏模量和泊松比，输出 `MaterialUserResponseReview`、候选 `MaterialCard`、候选 `ContextPatch`、缺失字段和脚本记录。
-- `script_registry.yaml` 增加 `skill_material_elastic_constants_candidate_set`。该脚本只记录用户补充的弹性常数候选，风险级别为 L1，不编辑 AutoForm 工程。
+- `script_library/flex/registry.yaml` 增加 `skill_material_elastic_constants_candidate_set`。该脚本只记录用户补充的弹性常数候选，风险级别为 L1，不编辑 AutoForm 工程。
 - `autoform_agent/agent_runtime.py` 增加材料补参续接路径。前端第二轮输入“材料补充：AA6061-T4，使用 AA6061-T4.mtb，杨氏模量 69 GPa，泊松比 0.33”时，中心 Agent 会把补参转交材料 Agent，材料 Agent 调用领域脚本并把候选 ContextPatch 反馈给中心 Agent。
 - `autoform_agent/intent_utils.py` 抽出共享否定判断。运行时工具边界、路由预览和中心 Agent 风险分级共用同一套“未被否定动作词”判断，避免工具层保持安全但图谱层误显示求解 Agent。
 - `autoform_agent/agent_system/orchestrator.py` 收紧路由：被“不要、不得、do not”等局部否定覆盖的关键词不再选中对应角色；材料关键词只选 `material_agent`，不再因 legacy `materials` 节点让前端出现重复材料路线。
-- `docs/api_runtime_call_chain.md`、`docs/beginner_onboarding_zh.md`、`frontend/README.md` 已同步材料续接、`pendingUserInput`、`user_input_requested`、弹性常数脚本和 GUI/window 对象词边界。
+- `docs/api_runtime_call_chain.md`、`docs/beginner_onboarding_zh.md`、`apps/workbench/README.md` 已同步材料续接、`pendingUserInput`、`user_input_requested`、弹性常数脚本和 GUI/window 对象词边界。
 
 本次验证中先暴露出一个真实缺陷：材料补参 prompt 写了“不要启动 GUI、不打开工程、不执行求解”，但旧逻辑把 `GUI` 对象词当成开窗动作，结合前端默认 `Solver_R13` 示例提示后触发 `autoform_project_run` 并启动 AutoForm Forming。已关闭该误启动进程，清理误生成的 `output/project_runs/20260605_141703_Solver_R13_kinematic` 副本，并通过共享否定判断和动作词收紧修复。
 
 最终验证记录：
 
 - `python -m py_compile autoform_agent\intent_utils.py autoform_agent\agent_runtime.py autoform_agent\runtime_events.py autoform_agent\preparation_agents.py autoform_agent\agent_system\orchestrator.py autoform_agent\agent_system\kernel.py` 通过。
-- `python -m pytest -q tests\test_agent_runtime.py tests\test_runtime_events.py tests\test_preparation_agents.py tests\test_agent_system.py frontend\tests\smoke_test.py tests\test_p0_contracts.py tests\test_agent_system_runtime.py` 通过，合计 70 项。
-- `node frontend\tests\smoke-test.mjs` 通过。
+- `python -m pytest -q tests\test_agent_runtime.py tests\test_runtime_events.py tests\test_preparation_agents.py tests\test_agent_system.py apps\workbench\tests\smoke_test.py tests\test_p0_contracts.py tests\test_agent_system_runtime.py` 通过，合计 70 项。
+- `node apps\workbench\tests\smoke-test.mjs` 通过。
 - `git diff --check` 通过。
 - 禁止句式扫描按项目规则执行，无命中。
-- Playwright CLI 使用 `npx 11.6.4` 访问 `http://127.0.0.1:8765/frontend/index.html?bridge=http`，勾选“允许本机 MCP 工具控制”后发送“新建一个工程，创建一个20*20*3的6061铝合金薄板”，页面显示中心 Agent 分发到需求与工艺规划 Agent、几何与数据 Agent、材料 Agent，材料 Agent 命中 4 个本机 AutoForm 材料库候选并返回 3 个用户问题；Runtime response 显示 `localToolRunCount=0`、`willControlGui=false`、`willSubmitSolver=false`。
+- Playwright CLI 使用 `npx 11.6.4` 访问 `http://127.0.0.1:8765/apps/workbench/index.html?bridge=http`，勾选“允许本机 MCP 工具控制”后发送“新建一个工程，创建一个20*20*3的6061铝合金薄板”，页面显示中心 Agent 分发到需求与工艺规划 Agent、几何与数据 Agent、材料 Agent，材料 Agent 命中 4 个本机 AutoForm 材料库候选并返回 3 个用户问题；Runtime response 显示 `localToolRunCount=0`、`willControlGui=false`、`willSubmitSolver=false`。
 - Playwright CLI 继续发送“材料补充：AA6061-T4，使用 AA6061-T4.mtb，杨氏模量 69 GPa，泊松比 0.33；不要启动 GUI，不打开工程，不执行求解。”，页面显示路由为“中心Agent -> 材料Agent”，材料 Agent 输出“已调用 skill_material_elastic_constants_candidate_set 材料弹性常数候选设置脚本”，Runtime response 显示 `materialUserResponse.elastic_constants`、`script_run.status=completed`、`localToolRunCount=0`、`willControlGui=false`、`willSubmitSolver=false`。
 - Playwright 控制台 `Total messages: 0 (Errors: 0, Warnings: 0)`。
 - `Get-Process AFFormingUI` 无输出。
@@ -103,18 +103,18 @@
 
 新增实现：
 
-- `script_registry.yaml` 增加 `skill_material_database_query` 和 `skill_material_source_candidate_set`。前者用于只读检索本机 AutoForm 材料库候选，后者用于记录用户选择的本机材料卡路径候选；两者均为 L1，不编辑 AutoForm 工程。
+- `script_library/flex/registry.yaml` 增加 `skill_material_database_query` 和 `skill_material_source_candidate_set`。前者用于只读检索本机 AutoForm 材料库候选，后者用于记录用户选择的本机材料卡路径候选；两者均为 L1，不编辑 AutoForm 工程。
 - `autoform_agent/preparation_agents.py` 增加 `run_material_database_query_script()`。该脚本包装原有材料候选查找，输出 `ScriptRunRecord`、`MaterialDatabaseQuerySummary`、候选文件路径、文件大小、修改时间和二进制材料卡提示。
 - `autoform_agent/agent_runtime.py` 增加 `Material Agent Lookup` 本地分支。用户单独询问本机 6061 材料配置时，后端不再进入直接 API，改由中心 Agent 分发到材料 Agent，材料 Agent 调用 `skill_material_database_query` 并返回候选材料卡和缺失字段。
 - `autoform_agent/agent_runtime.py` 增加 `conversationContext` 读取。前端可以把上一轮 `MaterialCard`、`pendingUserInput`、选中角色和共享上下文策略压缩后带回后端；用户回答“全都使用本机的配置，默认配置”时，材料 Agent 可以从上一轮候选材料卡继续形成材料来源候选。
 - `autoform_agent/agent_system/kernel.py` 的 `ContextView` 增加 `shared_context_policy` 和 `role_context_permissions`。该结构记录 C0 至 C6 的读取范围、压缩策略、扩展申请机制和 ContextPatch 写入权限。
-- `frontend/app.js` 增加 `conversationContext` 构造和回写，只保存材料卡、待确认问题、角色和共享上下文策略摘要。前端兜底消息改为 Runtime response 路径摘要，避免空泛等待式提示。
+- `apps/workbench/app.js` 增加 `conversationContext` 构造和回写，只保存材料卡、待确认问题、角色和共享上下文策略摘要。前端兜底消息改为 Runtime response 路径摘要，避免空泛等待式提示。
 - Agent 协作消息新增链路式 speaker，例如“中心Agent -> 材料Agent”“材料Agent -> 中心Agent -> 用户”。准备链路、材料查询链路和材料补参续接均采用该格式展示任务分发、领域反馈和中心转问。
 
 验证记录：
 
 - `python -m py_compile autoform_agent\agent_runtime.py autoform_agent\preparation_agents.py autoform_agent\agent_system\kernel.py` 通过。
-- `C:\Users\Tang Xufeng\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe --check frontend\app.js` 通过。系统 `node.exe` 来自 WindowsApps 路径，PowerShell 直接执行被拒绝，因此使用 Codex bundled Node。
+- `C:\Users\Tang Xufeng\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe --check apps\workbench\app.js` 通过。系统 `node.exe` 来自 WindowsApps 路径，PowerShell 直接执行被拒绝，因此使用 Codex bundled Node。
 - `python -m pytest tests/test_preparation_agents.py tests/test_agent_system.py tests/test_agent_runtime.py -q --basetemp .\tmp\pytest-current` 通过，合计 49 项。默认 pytest 临时目录 `C:\Users\Tang Xufeng\AppData\Local\Temp\pytest-of-Tang Xufeng` 当前存在权限问题，使用项目内 basetemp 后测试通过。
 
 当前仍需验证的问题：

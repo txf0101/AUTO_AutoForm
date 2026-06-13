@@ -26,10 +26,10 @@
 ## 根因判断
 
 1. 文档设计边界明确：第一阶段网页主链路采用 `frontend -> http_bridge -> agent_runtime -> AgentToolGateway -> autoform_agent.mcp_tools`，MCP server 是外部 MCP host 的可选入口。网页不会直接启动外部 MCP stdio server。
-2. 当前源码已经具备前端授权到 `AgentToolGateway` 的映射。该轮前端开关仍偏向示例工程执行语义；后续已统一为本机 MCP 工具控制批准。`frontend/app.js` 会发送 `uiContext.localExecution` 和 `agentToolExecutionApproved=true`；`agent_runtime.py` 会在 prompt 同时包含工程语义和打开、运行、求解等动作语义时生成受控工具请求。
+2. 当前源码已经具备前端授权到 `AgentToolGateway` 的映射。该轮前端开关仍偏向示例工程执行语义；后续已统一为本机 MCP 工具控制批准。`apps/workbench/app.js` 会发送 `uiContext.localExecution` 和 `agentToolExecutionApproved=true`；`agent_runtime.py` 会在 prompt 同时包含工程语义和打开、运行、求解等动作语义时生成受控工具请求。
 3. 实际运行中的 4317 旧 bridge 进程早于关键源码文件。证据如下：
    - 旧 PID：`39040`，监听 `127.0.0.1:4317`，启动时间约为 `2026-06-04 14:39:01`。
-   - 关键源码时间：`agent_runtime.py` 为 `2026-06-04 16:02:21`，`tool_gateway.py` 为 `2026-06-04 15:58:05`，`frontend/app.js` 为 `2026-06-04 16:26:24`。
+   - 关键源码时间：`agent_runtime.py` 为 `2026-06-04 16:02:21`，`tool_gateway.py` 为 `2026-06-04 15:58:05`，`apps/workbench/app.js` 为 `2026-06-04 16:26:24`。
    - 对旧 bridge 发送安全 `execute=false` 工具请求时，返回 `toolRuns=[]`，并走 DeepSeek 直接 API 工具意图解析。
    - 使用当前源码新 Python 进程跑同一安全请求时，返回 `toolRuns_len=1`、`tool=autoform_project_run`、`status=completed`、`result_status=planned`。
 4. 直接原因是启动器默认复用已有 4317 和 8765 服务，旧后台进程不会自动加载后续源码修改。启动脚本原有行为避免误杀服务，但缺少源码时间戳提示和受控重启入口。
@@ -42,7 +42,7 @@
   - 当源码晚于服务启动时间时，明确提示旧进程风险和刷新命令。
   - `-RestartServices` 只停止 `output/launcher_pids` 中记录的 HTTP bridge 和前端服务，再用当前源码重新启动。
 - `README.md`
-  - 修正本地页面地址为 `http://127.0.0.1:8765/frontend/index.html?bridge=http`。
+  - 修正本地页面地址为 `http://127.0.0.1:8765/apps/workbench/index.html?bridge=http`。
   - 增加源码更新后使用 `-RestartServices` 刷新 bridge 和前端服务的说明。
 - `docs/beginner_onboarding_zh.md`
   - 补充端口复用、旧服务风险和 `-RestartServices` 排查方法。
@@ -81,7 +81,7 @@
 可复用方法：
 
 1. 先读阶段文档，明确网页是否应该直接调用外部 MCP server、是否允许真实求解。
-2. 查 `frontend/app.js` 的请求体，确认页面是否发送批准信号和本机执行上下文。
+2. 查 `apps/workbench/app.js` 的请求体，确认页面是否发送批准信号和本机执行上下文。
 3. 查 `agent_runtime.py` 的触发条件，确认 prompt 语义和 UI context 是否能生成工具请求。
 4. 查 `AgentToolGateway` 白名单，确认工具名、owner agent、受控参数和审批边界。
 5. 用 `execute=false` 的 HTTP 请求验证正在监听的 bridge，避免排查过程触发真实求解。

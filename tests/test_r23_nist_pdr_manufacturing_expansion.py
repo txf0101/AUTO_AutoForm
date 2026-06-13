@@ -19,7 +19,7 @@ def _read_json(path: Path) -> dict:
 
 
 def test_r23_nist_pdr_whitelist_and_review_registry_keep_bulk_gate_closed() -> None:
-    sources = load_source_whitelist(ROOT / "enterprise_data" / "source_whitelist.csv")
+    sources = load_source_whitelist(ROOT / "data" / "rag" / "enterprise" / "source_whitelist.csv")
     validation = validate_source_whitelist(sources)
     source = next(item for item in sources if item.source_id == SOURCE_ID)
 
@@ -30,7 +30,7 @@ def test_r23_nist_pdr_whitelist_and_review_registry_keep_bulk_gate_closed() -> N
     assert {"bulk_crawl", "bulk_download", "auto_ingest"} <= set(source.prohibited_actions)
     assert not any("bulk" in action for action in source.allowed_actions)
 
-    with (ROOT / "enterprise_data" / "source_review_registry.csv").open("r", encoding="utf-8-sig", newline="") as handle:
+    with (ROOT / "data" / "rag" / "enterprise" / "source_review_registry.csv").open("r", encoding="utf-8-sig", newline="") as handle:
         rows = list(csv.DictReader(handle))
     row = next(item for item in rows if item["source_id"] == SOURCE_ID)
 
@@ -41,8 +41,8 @@ def test_r23_nist_pdr_whitelist_and_review_registry_keep_bulk_gate_closed() -> N
 
 
 def test_r23_nist_pdr_manifest_and_samples_are_metadata_only_and_hashed() -> None:
-    manifest_path = ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_r23_nist_pdr_manufacturing_metadata_manifest.csv"
-    sample_path = ROOT / "enterprise_data" / "r23_nist_pdr_manufacturing_metadata_samples.jsonl"
+    manifest_path = ROOT / "data" / "rag" / "enterprise" / "raw_data" / "manifests" / "2026-06-03_r23_nist_pdr_manufacturing_metadata_manifest.csv"
+    sample_path = ROOT / "data" / "rag" / "enterprise" / "r23_nist_pdr_manufacturing_metadata_samples.jsonl"
 
     with manifest_path.open("r", encoding="utf-8-sig", newline="") as handle:
         manifest_rows = list(csv.DictReader(handle))
@@ -56,7 +56,7 @@ def test_r23_nist_pdr_manifest_and_samples_are_metadata_only_and_hashed() -> Non
         assert row["collection_status"] == "sampled_once_metadata_only"
         assert row["prohibited_actions"] == "bulk_crawl;bulk_download;auto_ingest"
         assert row["path_or_url"].startswith("https://data.nist.gov/rmm/records?")
-        assert row["local_file_relpath"].startswith("enterprise_data/raw_data/manual_samples/")
+        assert row["local_file_relpath"].startswith("data/rag/enterprise/raw_data/manual_samples/")
         assert "data files" in row["limitation"]
 
     dois = {record["normalized_payload"]["doi"] for record in samples}
@@ -87,7 +87,7 @@ def test_r23_nist_pdr_manifest_and_samples_are_metadata_only_and_hashed() -> Non
 
 
 def test_r23_nist_pdr_cleaning_report_records_gate_evidence_and_deduplication() -> None:
-    report = _read_json(ROOT / "enterprise_data" / "r14_cleaning_reports" / "r23_nist_pdr_manufacturing_metadata_cleaning_report.json")
+    report = _read_json(ROOT / "data" / "rag" / "enterprise" / "r14_cleaning_reports" / "r23_nist_pdr_manufacturing_metadata_cleaning_report.json")
 
     assert report["phase"] == "R23"
     assert report["status"] == "pass"
@@ -106,9 +106,9 @@ def test_r23_nist_pdr_cleaning_report_records_gate_evidence_and_deduplication() 
 
 
 def test_r23_nist_pdr_cards_and_bundle_remain_manual_review_only() -> None:
-    cards_fixture = _read_json(ROOT / "enterprise_data" / "r23_nist_pdr_manufacturing_cards.candidate.json")
-    bundle = _read_json(ROOT / "enterprise_data" / "r23_nist_pdr_manufacturing_evidence_bundle.sample.json")
-    sources = load_source_whitelist(ROOT / "enterprise_data" / "source_whitelist.csv")
+    cards_fixture = _read_json(ROOT / "data" / "rag" / "enterprise" / "r23_nist_pdr_manufacturing_cards.candidate.json")
+    bundle = _read_json(ROOT / "data" / "rag" / "enterprise" / "r23_nist_pdr_manufacturing_evidence_bundle.sample.json")
+    sources = load_source_whitelist(ROOT / "data" / "rag" / "enterprise" / "source_whitelist.csv")
 
     cards = cards_fixture["cards"]
     assert len(cards) == 10

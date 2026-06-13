@@ -31,56 +31,56 @@ def test_r13_schema_files_and_physical_artifacts_exist() -> None:
         ROOT / "schemas" / "enterprise_data_contract.schema.json",
         ROOT / "schemas" / "enterprise_source_whitelist.schema.json",
         ROOT / "schemas" / "enterprise_ingestion_record.schema.json",
-        ROOT / "enterprise_data" / "README.md",
-        ROOT / "enterprise_data" / "r13_enterprise_data_contract.sample.json",
-        ROOT / "enterprise_data" / "source_whitelist.csv",
-        ROOT / "enterprise_data" / "source_review_registry.csv",
-        ROOT / "enterprise_data" / "r14_small_batch_samples.jsonl",
-        ROOT / "enterprise_data" / "r14_external_metadata_samples.jsonl",
-        ROOT / "enterprise_data" / "r21_external_metadata_samples.jsonl",
-        ROOT / "enterprise_data" / "r14_cleaning_reports" / "README.md",
-        ROOT / "enterprise_data" / "r14_cleaning_reports" / "arxiv_metadata_sample_cleaning_report.json",
-        ROOT / "enterprise_data" / "r14_cleaning_reports" / "r21_crossref_metadata_small_batch_cleaning_report.json",
-        ROOT / "enterprise_data" / "r21_process_knowledge_cards.candidate.json",
-        ROOT / "enterprise_data" / "r21_process_rag_evidence_bundle.sample.json",
-        ROOT / "enterprise_data" / "r21_public_process_chain_metadata_samples.jsonl",
-        ROOT / "enterprise_data" / "r14_cleaning_reports" / "r21_nist_pdr_public_process_chain_cleaning_report.json",
-        ROOT / "enterprise_data" / "r21_public_process_chain_cards.candidate.json",
-        ROOT / "enterprise_data" / "r21_public_process_chain_evidence_bundle.sample.json",
-        ROOT / "enterprise_data" / "r21_nist_mdr_materials_metadata_samples.jsonl",
-        ROOT / "enterprise_data" / "r14_cleaning_reports" / "r21_nist_mdr_materials_metadata_cleaning_report.json",
-        ROOT / "enterprise_data" / "r21_nist_mdr_materials_cards.candidate.json",
-        ROOT / "enterprise_data" / "r21_nist_mdr_materials_evidence_bundle.sample.json",
-        ROOT / "enterprise_data" / "r21_nist_pdr_factory_operations_metadata_samples.jsonl",
-        ROOT / "enterprise_data" / "r14_cleaning_reports" / "r21_nist_pdr_factory_operations_cleaning_report.json",
-        ROOT / "enterprise_data" / "r21_nist_pdr_factory_operations_cards.candidate.json",
-        ROOT / "enterprise_data" / "r21_nist_pdr_factory_operations_evidence_bundle.sample.json",
-        ROOT / "enterprise_data" / "r21_autoform_public_site_metadata_samples.jsonl",
-        ROOT / "enterprise_data" / "r14_cleaning_reports" / "r21_autoform_public_site_metadata_cleaning_report.json",
-        ROOT / "enterprise_data" / "r21_autoform_public_site_cards.candidate.json",
-        ROOT / "enterprise_data" / "r21_autoform_public_site_evidence_bundle.sample.json",
-        ROOT / "enterprise_data" / "r14_cleaning_reports" / "r21_arxiv_api_metadata_expansion_blocked_report.json",
-        ROOT / "enterprise_data" / "r21_nist_pdr_process_chain_metadata_samples.jsonl",
-        ROOT / "enterprise_data" / "r14_cleaning_reports" / "r21_nist_pdr_process_chain_cleaning_report.json",
-        ROOT / "enterprise_data" / "r21_nist_pdr_process_chain_cards.candidate.json",
-        ROOT / "enterprise_data" / "r21_nist_pdr_process_chain_evidence_bundle.sample.json",
-        ROOT / "enterprise_data" / "r24_process_rag_candidate_index.sample.json",
-        ROOT / "enterprise_data" / "r25_process_rag_index_eval_queries.jsonl",
-        ROOT / "enterprise_data" / "r25_process_rag_index_eval_report.sample.json",
-        ROOT / "enterprise_data" / "raw_data" / "README.md",
-        ROOT / "enterprise_data" / "raw_data" / ".gitignore",
-        ROOT / "enterprise_data" / "raw_data" / "source_manifest.template.csv",
-        ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_arxiv_api_metadata_sample_manifest.csv",
-        ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_r21_crossref_metadata_sample_manifest.csv",
-        ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_r21_nist_pdr_public_process_chain_manifest.csv",
-        ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_r21_nist_mdr_materials_oai_manifest.csv",
-        ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_r21_nist_pdr_factory_operations_manifest.csv",
-        ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_r21_autoform_public_site_metadata_manifest.csv",
-        ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_r21_arxiv_api_metadata_expansion_blocked_manifest.csv",
-        ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_r21_nist_pdr_process_chain_manifest.csv",
-        ROOT / "enterprise_data" / "raw_data" / "manifests" / ".gitkeep",
-        ROOT / "enterprise_data" / "raw_data" / "manual_samples" / ".gitkeep",
-        ROOT / "enterprise_data" / "raw_data" / "quarantine" / ".gitkeep",
+        ROOT / "data" / "rag" / "enterprise" / "README.md",
+        ROOT / "data" / "rag" / "enterprise" / "r13_enterprise_data_contract.sample.json",
+        ROOT / "data" / "rag" / "enterprise" / "source_whitelist.csv",
+        ROOT / "data" / "rag" / "enterprise" / "source_review_registry.csv",
+        ROOT / "data" / "rag" / "enterprise" / "r14_small_batch_samples.jsonl",
+        ROOT / "data" / "rag" / "enterprise" / "r14_external_metadata_samples.jsonl",
+        ROOT / "data" / "rag" / "enterprise" / "r21_external_metadata_samples.jsonl",
+        ROOT / "data" / "rag" / "enterprise" / "r14_cleaning_reports" / "README.md",
+        ROOT / "data" / "rag" / "enterprise" / "r14_cleaning_reports" / "arxiv_metadata_sample_cleaning_report.json",
+        ROOT / "data" / "rag" / "enterprise" / "r14_cleaning_reports" / "r21_crossref_metadata_small_batch_cleaning_report.json",
+        ROOT / "data" / "rag" / "enterprise" / "r21_process_knowledge_cards.candidate.json",
+        ROOT / "data" / "rag" / "enterprise" / "r21_process_rag_evidence_bundle.sample.json",
+        ROOT / "data" / "rag" / "enterprise" / "r21_public_process_chain_metadata_samples.jsonl",
+        ROOT / "data" / "rag" / "enterprise" / "r14_cleaning_reports" / "r21_nist_pdr_public_process_chain_cleaning_report.json",
+        ROOT / "data" / "rag" / "enterprise" / "r21_public_process_chain_cards.candidate.json",
+        ROOT / "data" / "rag" / "enterprise" / "r21_public_process_chain_evidence_bundle.sample.json",
+        ROOT / "data" / "rag" / "enterprise" / "r21_nist_mdr_materials_metadata_samples.jsonl",
+        ROOT / "data" / "rag" / "enterprise" / "r14_cleaning_reports" / "r21_nist_mdr_materials_metadata_cleaning_report.json",
+        ROOT / "data" / "rag" / "enterprise" / "r21_nist_mdr_materials_cards.candidate.json",
+        ROOT / "data" / "rag" / "enterprise" / "r21_nist_mdr_materials_evidence_bundle.sample.json",
+        ROOT / "data" / "rag" / "enterprise" / "r21_nist_pdr_factory_operations_metadata_samples.jsonl",
+        ROOT / "data" / "rag" / "enterprise" / "r14_cleaning_reports" / "r21_nist_pdr_factory_operations_cleaning_report.json",
+        ROOT / "data" / "rag" / "enterprise" / "r21_nist_pdr_factory_operations_cards.candidate.json",
+        ROOT / "data" / "rag" / "enterprise" / "r21_nist_pdr_factory_operations_evidence_bundle.sample.json",
+        ROOT / "data" / "rag" / "enterprise" / "r21_autoform_public_site_metadata_samples.jsonl",
+        ROOT / "data" / "rag" / "enterprise" / "r14_cleaning_reports" / "r21_autoform_public_site_metadata_cleaning_report.json",
+        ROOT / "data" / "rag" / "enterprise" / "r21_autoform_public_site_cards.candidate.json",
+        ROOT / "data" / "rag" / "enterprise" / "r21_autoform_public_site_evidence_bundle.sample.json",
+        ROOT / "data" / "rag" / "enterprise" / "r14_cleaning_reports" / "r21_arxiv_api_metadata_expansion_blocked_report.json",
+        ROOT / "data" / "rag" / "enterprise" / "r21_nist_pdr_process_chain_metadata_samples.jsonl",
+        ROOT / "data" / "rag" / "enterprise" / "r14_cleaning_reports" / "r21_nist_pdr_process_chain_cleaning_report.json",
+        ROOT / "data" / "rag" / "enterprise" / "r21_nist_pdr_process_chain_cards.candidate.json",
+        ROOT / "data" / "rag" / "enterprise" / "r21_nist_pdr_process_chain_evidence_bundle.sample.json",
+        ROOT / "data" / "rag" / "enterprise" / "r24_process_rag_candidate_index.sample.json",
+        ROOT / "data" / "rag" / "enterprise" / "r25_process_rag_index_eval_queries.jsonl",
+        ROOT / "data" / "rag" / "enterprise" / "r25_process_rag_index_eval_report.sample.json",
+        ROOT / "data" / "rag" / "enterprise" / "raw_data" / "README.md",
+        ROOT / "data" / "rag" / "enterprise" / "raw_data" / ".gitignore",
+        ROOT / "data" / "rag" / "enterprise" / "raw_data" / "source_manifest.template.csv",
+        ROOT / "data" / "rag" / "enterprise" / "raw_data" / "manifests" / "2026-06-03_arxiv_api_metadata_sample_manifest.csv",
+        ROOT / "data" / "rag" / "enterprise" / "raw_data" / "manifests" / "2026-06-03_r21_crossref_metadata_sample_manifest.csv",
+        ROOT / "data" / "rag" / "enterprise" / "raw_data" / "manifests" / "2026-06-03_r21_nist_pdr_public_process_chain_manifest.csv",
+        ROOT / "data" / "rag" / "enterprise" / "raw_data" / "manifests" / "2026-06-03_r21_nist_mdr_materials_oai_manifest.csv",
+        ROOT / "data" / "rag" / "enterprise" / "raw_data" / "manifests" / "2026-06-03_r21_nist_pdr_factory_operations_manifest.csv",
+        ROOT / "data" / "rag" / "enterprise" / "raw_data" / "manifests" / "2026-06-03_r21_autoform_public_site_metadata_manifest.csv",
+        ROOT / "data" / "rag" / "enterprise" / "raw_data" / "manifests" / "2026-06-03_r21_arxiv_api_metadata_expansion_blocked_manifest.csv",
+        ROOT / "data" / "rag" / "enterprise" / "raw_data" / "manifests" / "2026-06-03_r21_nist_pdr_process_chain_manifest.csv",
+        ROOT / "data" / "rag" / "enterprise" / "raw_data" / "manifests" / ".gitkeep",
+        ROOT / "data" / "rag" / "enterprise" / "raw_data" / "manual_samples" / ".gitkeep",
+        ROOT / "data" / "rag" / "enterprise" / "raw_data" / "quarantine" / ".gitkeep",
         ROOT / "docs" / "enterprise_data_contract.md",
         ROOT / "docs" / "enterprise_rag_index.md",
         ROOT / "schemas" / "process_rag_candidate_index.schema.json",
@@ -98,9 +98,9 @@ def test_r13_schema_files_and_physical_artifacts_exist() -> None:
 
 
 def test_r13_raw_data_staging_folder_is_manifest_first() -> None:
-    readme = (ROOT / "enterprise_data" / "raw_data" / "README.md").read_text(encoding="utf-8")
-    ignore = (ROOT / "enterprise_data" / "raw_data" / ".gitignore").read_text(encoding="utf-8")
-    manifest_header = (ROOT / "enterprise_data" / "raw_data" / "source_manifest.template.csv").read_text(encoding="utf-8")
+    readme = (ROOT / "data" / "rag" / "enterprise" / "raw_data" / "README.md").read_text(encoding="utf-8")
+    ignore = (ROOT / "data" / "rag" / "enterprise" / "raw_data" / ".gitignore").read_text(encoding="utf-8")
+    manifest_header = (ROOT / "data" / "rag" / "enterprise" / "raw_data" / "source_manifest.template.csv").read_text(encoding="utf-8")
 
     assert "source_id,title,path_or_url" in manifest_header
     assert "checksum" in manifest_header
@@ -113,7 +113,7 @@ def test_r13_raw_data_staging_folder_is_manifest_first() -> None:
 
 
 def test_r13_enterprise_contract_requires_source_version_owner_and_permission() -> None:
-    contract = load_enterprise_data_contract(ROOT / "enterprise_data" / "r13_enterprise_data_contract.sample.json")
+    contract = load_enterprise_data_contract(ROOT / "data" / "rag" / "enterprise" / "r13_enterprise_data_contract.sample.json")
     result = validate_enterprise_data_contract(contract)
 
     assert result["status"] == "pass"
@@ -132,7 +132,7 @@ def test_r13_enterprise_contract_requires_source_version_owner_and_permission() 
 
 
 def test_r13_contract_validation_blocks_untraceable_field() -> None:
-    contract = load_enterprise_data_contract(ROOT / "enterprise_data" / "r13_enterprise_data_contract.sample.json")
+    contract = load_enterprise_data_contract(ROOT / "data" / "rag" / "enterprise" / "r13_enterprise_data_contract.sample.json")
     contract["data_domains"][0]["fields"][0]["source_required"] = False
 
     result = validate_enterprise_data_contract(contract)
@@ -142,7 +142,7 @@ def test_r13_contract_validation_blocks_untraceable_field() -> None:
 
 
 def test_r13_source_whitelist_allows_metadata_only_and_blocks_bulk_capture() -> None:
-    sources = load_source_whitelist(ROOT / "enterprise_data" / "source_whitelist.csv")
+    sources = load_source_whitelist(ROOT / "data" / "rag" / "enterprise" / "source_whitelist.csv")
     result = validate_source_whitelist(sources)
 
     assert result["status"] == "pass"
@@ -158,7 +158,7 @@ def test_r13_source_whitelist_allows_metadata_only_and_blocks_bulk_capture() -> 
 
 
 def test_r13_external_source_review_registry_keeps_crawl_gate_closed() -> None:
-    review_path = ROOT / "enterprise_data" / "source_review_registry.csv"
+    review_path = ROOT / "data" / "rag" / "enterprise" / "source_review_registry.csv"
     with review_path.open("r", encoding="utf-8-sig", newline="") as handle:
         rows = list(csv.DictReader(handle))
 
@@ -185,8 +185,8 @@ def test_r13_external_source_review_registry_keeps_crawl_gate_closed() -> None:
 
 
 def test_r14_arxiv_manual_metadata_sample_is_manifested_without_raw_file_commitment() -> None:
-    manifest_path = ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_arxiv_api_metadata_sample_manifest.csv"
-    sample_path = ROOT / "enterprise_data" / "r14_external_metadata_samples.jsonl"
+    manifest_path = ROOT / "data" / "rag" / "enterprise" / "raw_data" / "manifests" / "2026-06-03_arxiv_api_metadata_sample_manifest.csv"
+    sample_path = ROOT / "data" / "rag" / "enterprise" / "r14_external_metadata_samples.jsonl"
 
     with manifest_path.open("r", encoding="utf-8-sig", newline="") as handle:
         manifest_rows = list(csv.DictReader(handle))
@@ -201,7 +201,7 @@ def test_r14_arxiv_manual_metadata_sample_is_manifested_without_raw_file_commitm
     assert manifest["source_id"] == "source_arxiv_api_metadata"
     assert manifest["collection_status"] == "sampled_once_metadata_only"
     assert manifest["checksum"] == payload["raw_response_sha256"]
-    assert manifest["local_file_relpath"].startswith("enterprise_data/raw_data/manual_samples/")
+    assert manifest["local_file_relpath"].startswith("data/rag/enterprise/raw_data/manual_samples/")
     assert sample["source_id"] == "source_arxiv_api_metadata"
     assert sample["domain"] == "public_literature_metadata"
     assert payload["api_url"].startswith("https://export.arxiv.org/api/query?")
@@ -210,15 +210,15 @@ def test_r14_arxiv_manual_metadata_sample_is_manifested_without_raw_file_commitm
 
 
 def test_r14_arxiv_metadata_sample_cleaning_report_is_reproducible() -> None:
-    report_path = ROOT / "enterprise_data" / "r14_cleaning_reports" / "arxiv_metadata_sample_cleaning_report.json"
-    samples = load_jsonl_records(ROOT / "enterprise_data" / "r14_external_metadata_samples.jsonl")
-    sources = load_source_whitelist(ROOT / "enterprise_data" / "source_whitelist.csv")
+    report_path = ROOT / "data" / "rag" / "enterprise" / "r14_cleaning_reports" / "arxiv_metadata_sample_cleaning_report.json"
+    samples = load_jsonl_records(ROOT / "data" / "rag" / "enterprise" / "r14_external_metadata_samples.jsonl")
+    sources = load_source_whitelist(ROOT / "data" / "rag" / "enterprise" / "source_whitelist.csv")
     stored_report = _read_json(report_path)
     rebuilt_report = build_small_batch_cleaning_report(
         samples,
         sources=sources,
         report_id="report_r14_arxiv_metadata_sample_cleaning",
-        manifest_refs=["enterprise_data/raw_data/manifests/2026-06-03_arxiv_api_metadata_sample_manifest.csv"],
+        manifest_refs=["data/rag/enterprise/raw_data/manifests/2026-06-03_arxiv_api_metadata_sample_manifest.csv"],
     )
 
     assert stored_report["object_type"] == "EnterpriseSmallBatchCleaningReport"
@@ -232,9 +232,9 @@ def test_r14_arxiv_metadata_sample_cleaning_report_is_reproducible() -> None:
 
 
 def test_r21_crossref_controlled_small_batch_keeps_manual_gate_closed() -> None:
-    manifest_path = ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_r21_crossref_metadata_sample_manifest.csv"
-    sample_path = ROOT / "enterprise_data" / "r21_external_metadata_samples.jsonl"
-    report_path = ROOT / "enterprise_data" / "r14_cleaning_reports" / "r21_crossref_metadata_small_batch_cleaning_report.json"
+    manifest_path = ROOT / "data" / "rag" / "enterprise" / "raw_data" / "manifests" / "2026-06-03_r21_crossref_metadata_sample_manifest.csv"
+    sample_path = ROOT / "data" / "rag" / "enterprise" / "r21_external_metadata_samples.jsonl"
+    report_path = ROOT / "data" / "rag" / "enterprise" / "r14_cleaning_reports" / "r21_crossref_metadata_small_batch_cleaning_report.json"
 
     with manifest_path.open("r", encoding="utf-8-sig", newline="") as handle:
         manifest_rows = list(csv.DictReader(handle))
@@ -248,7 +248,7 @@ def test_r21_crossref_controlled_small_batch_keeps_manual_gate_closed() -> None:
     assert manifest["collection_status"] == "sampled_once_metadata_only"
     assert manifest["prohibited_actions"] == "bulk_crawl;bulk_download;auto_ingest"
     assert manifest["checksum"] == samples[0]["normalized_payload"]["raw_response_sha256"]
-    assert manifest["local_file_relpath"].startswith("enterprise_data/raw_data/manual_samples/")
+    assert manifest["local_file_relpath"].startswith("data/rag/enterprise/raw_data/manual_samples/")
 
     assert report["phase"] == "R21"
     assert report["status"] == "pass"
@@ -262,8 +262,8 @@ def test_r21_crossref_controlled_small_batch_keeps_manual_gate_closed() -> None:
 
 
 def test_r21_candidate_cards_and_evidence_bundle_do_not_enter_formal_index() -> None:
-    cards_fixture = _read_json(ROOT / "enterprise_data" / "r21_process_knowledge_cards.candidate.json")
-    bundle = _read_json(ROOT / "enterprise_data" / "r21_process_rag_evidence_bundle.sample.json")
+    cards_fixture = _read_json(ROOT / "data" / "rag" / "enterprise" / "r21_process_knowledge_cards.candidate.json")
+    bundle = _read_json(ROOT / "data" / "rag" / "enterprise" / "r21_process_rag_evidence_bundle.sample.json")
 
     cards = cards_fixture["cards"]
     assert len(cards) == 3
@@ -285,9 +285,9 @@ def test_r21_candidate_cards_and_evidence_bundle_do_not_enter_formal_index() -> 
 
 
 def test_r21_nist_pdr_public_process_chain_sample_is_manifested_and_gated() -> None:
-    manifest_path = ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_r21_nist_pdr_public_process_chain_manifest.csv"
-    sample_path = ROOT / "enterprise_data" / "r21_public_process_chain_metadata_samples.jsonl"
-    report_path = ROOT / "enterprise_data" / "r14_cleaning_reports" / "r21_nist_pdr_public_process_chain_cleaning_report.json"
+    manifest_path = ROOT / "data" / "rag" / "enterprise" / "raw_data" / "manifests" / "2026-06-03_r21_nist_pdr_public_process_chain_manifest.csv"
+    sample_path = ROOT / "data" / "rag" / "enterprise" / "r21_public_process_chain_metadata_samples.jsonl"
+    report_path = ROOT / "data" / "rag" / "enterprise" / "r14_cleaning_reports" / "r21_nist_pdr_public_process_chain_cleaning_report.json"
 
     with manifest_path.open("r", encoding="utf-8-sig", newline="") as handle:
         manifest_rows = list(csv.DictReader(handle))
@@ -316,8 +316,8 @@ def test_r21_nist_pdr_public_process_chain_sample_is_manifested_and_gated() -> N
 
 
 def test_r21_nist_pdr_candidate_cards_and_bundle_remain_manual_review_only() -> None:
-    cards_fixture = _read_json(ROOT / "enterprise_data" / "r21_public_process_chain_cards.candidate.json")
-    bundle = _read_json(ROOT / "enterprise_data" / "r21_public_process_chain_evidence_bundle.sample.json")
+    cards_fixture = _read_json(ROOT / "data" / "rag" / "enterprise" / "r21_public_process_chain_cards.candidate.json")
+    bundle = _read_json(ROOT / "data" / "rag" / "enterprise" / "r21_public_process_chain_evidence_bundle.sample.json")
 
     assert len(cards_fixture["cards"]) == 3
     for card in cards_fixture["cards"]:
@@ -337,9 +337,9 @@ def test_r21_nist_pdr_candidate_cards_and_bundle_remain_manual_review_only() -> 
 
 
 def test_r21_nist_mdr_materials_oai_sample_is_manifested_and_gated() -> None:
-    manifest_path = ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_r21_nist_mdr_materials_oai_manifest.csv"
-    sample_path = ROOT / "enterprise_data" / "r21_nist_mdr_materials_metadata_samples.jsonl"
-    report_path = ROOT / "enterprise_data" / "r14_cleaning_reports" / "r21_nist_mdr_materials_metadata_cleaning_report.json"
+    manifest_path = ROOT / "data" / "rag" / "enterprise" / "raw_data" / "manifests" / "2026-06-03_r21_nist_mdr_materials_oai_manifest.csv"
+    sample_path = ROOT / "data" / "rag" / "enterprise" / "r21_nist_mdr_materials_metadata_samples.jsonl"
+    report_path = ROOT / "data" / "rag" / "enterprise" / "r14_cleaning_reports" / "r21_nist_mdr_materials_metadata_cleaning_report.json"
 
     with manifest_path.open("r", encoding="utf-8-sig", newline="") as handle:
         manifest_rows = list(csv.DictReader(handle))
@@ -354,7 +354,7 @@ def test_r21_nist_mdr_materials_oai_sample_is_manifested_and_gated() -> None:
         assert row["collection_status"] == "sampled_once_metadata_only"
         assert row["prohibited_actions"] == "bulk_crawl;bulk_download;auto_ingest"
         assert row["path_or_url"].startswith("https://materialsdata.nist.gov/oai/request?verb=GetRecord")
-        assert row["local_file_relpath"].startswith("enterprise_data/raw_data/manual_samples/")
+        assert row["local_file_relpath"].startswith("data/rag/enterprise/raw_data/manual_samples/")
         assert row["checksum"]
 
     assert report["phase"] == "R21"
@@ -373,9 +373,9 @@ def test_r21_nist_mdr_materials_oai_sample_is_manifested_and_gated() -> None:
 
 
 def test_r21_nist_mdr_candidate_cards_and_bundle_remain_manual_review_only() -> None:
-    cards_fixture = _read_json(ROOT / "enterprise_data" / "r21_nist_mdr_materials_cards.candidate.json")
-    bundle = _read_json(ROOT / "enterprise_data" / "r21_nist_mdr_materials_evidence_bundle.sample.json")
-    sources = load_source_whitelist(ROOT / "enterprise_data" / "source_whitelist.csv")
+    cards_fixture = _read_json(ROOT / "data" / "rag" / "enterprise" / "r21_nist_mdr_materials_cards.candidate.json")
+    bundle = _read_json(ROOT / "data" / "rag" / "enterprise" / "r21_nist_mdr_materials_evidence_bundle.sample.json")
+    sources = load_source_whitelist(ROOT / "data" / "rag" / "enterprise" / "source_whitelist.csv")
 
     assert len(cards_fixture["cards"]) == 3
     for card in cards_fixture["cards"]:
@@ -404,9 +404,9 @@ def test_r21_nist_mdr_candidate_cards_and_bundle_remain_manual_review_only() -> 
 
 
 def test_r21_nist_pdr_factory_operations_sample_is_manifested_and_gated() -> None:
-    manifest_path = ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_r21_nist_pdr_factory_operations_manifest.csv"
-    sample_path = ROOT / "enterprise_data" / "r21_nist_pdr_factory_operations_metadata_samples.jsonl"
-    report_path = ROOT / "enterprise_data" / "r14_cleaning_reports" / "r21_nist_pdr_factory_operations_cleaning_report.json"
+    manifest_path = ROOT / "data" / "rag" / "enterprise" / "raw_data" / "manifests" / "2026-06-03_r21_nist_pdr_factory_operations_manifest.csv"
+    sample_path = ROOT / "data" / "rag" / "enterprise" / "r21_nist_pdr_factory_operations_metadata_samples.jsonl"
+    report_path = ROOT / "data" / "rag" / "enterprise" / "r14_cleaning_reports" / "r21_nist_pdr_factory_operations_cleaning_report.json"
 
     with manifest_path.open("r", encoding="utf-8-sig", newline="") as handle:
         manifest_rows = list(csv.DictReader(handle))
@@ -421,7 +421,7 @@ def test_r21_nist_pdr_factory_operations_sample_is_manifested_and_gated() -> Non
     assert manifest["prohibited_actions"] == "bulk_crawl;bulk_download;auto_ingest"
     assert manifest["path_or_url"].startswith("https://data.nist.gov/rmm/records?")
     assert manifest["checksum"] == samples[0]["normalized_payload"]["raw_response_sha256"]
-    assert manifest["local_file_relpath"].startswith("enterprise_data/raw_data/manual_samples/")
+    assert manifest["local_file_relpath"].startswith("data/rag/enterprise/raw_data/manual_samples/")
 
     assert report["phase"] == "R21"
     assert report["status"] == "pass"
@@ -442,9 +442,9 @@ def test_r21_nist_pdr_factory_operations_sample_is_manifested_and_gated() -> Non
 
 
 def test_r21_nist_pdr_factory_operations_cards_and_bundle_remain_manual_review_only() -> None:
-    cards_fixture = _read_json(ROOT / "enterprise_data" / "r21_nist_pdr_factory_operations_cards.candidate.json")
-    bundle = _read_json(ROOT / "enterprise_data" / "r21_nist_pdr_factory_operations_evidence_bundle.sample.json")
-    sources = load_source_whitelist(ROOT / "enterprise_data" / "source_whitelist.csv")
+    cards_fixture = _read_json(ROOT / "data" / "rag" / "enterprise" / "r21_nist_pdr_factory_operations_cards.candidate.json")
+    bundle = _read_json(ROOT / "data" / "rag" / "enterprise" / "r21_nist_pdr_factory_operations_evidence_bundle.sample.json")
+    sources = load_source_whitelist(ROOT / "data" / "rag" / "enterprise" / "source_whitelist.csv")
 
     assert len(cards_fixture["cards"]) == 3
     for card in cards_fixture["cards"]:
@@ -469,9 +469,9 @@ def test_r21_nist_pdr_factory_operations_cards_and_bundle_remain_manual_review_o
 
 
 def test_r21_autoform_public_site_metadata_sample_is_manifested_and_gated() -> None:
-    manifest_path = ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_r21_autoform_public_site_metadata_manifest.csv"
-    sample_path = ROOT / "enterprise_data" / "r21_autoform_public_site_metadata_samples.jsonl"
-    report_path = ROOT / "enterprise_data" / "r14_cleaning_reports" / "r21_autoform_public_site_metadata_cleaning_report.json"
+    manifest_path = ROOT / "data" / "rag" / "enterprise" / "raw_data" / "manifests" / "2026-06-03_r21_autoform_public_site_metadata_manifest.csv"
+    sample_path = ROOT / "data" / "rag" / "enterprise" / "r21_autoform_public_site_metadata_samples.jsonl"
+    report_path = ROOT / "data" / "rag" / "enterprise" / "r14_cleaning_reports" / "r21_autoform_public_site_metadata_cleaning_report.json"
 
     with manifest_path.open("r", encoding="utf-8-sig", newline="") as handle:
         manifest_rows = list(csv.DictReader(handle))
@@ -486,7 +486,7 @@ def test_r21_autoform_public_site_metadata_sample_is_manifested_and_gated() -> N
         assert row["collection_status"] == "sampled_once_metadata_only"
         assert row["prohibited_actions"] == "bulk_crawl;bulk_download;auto_ingest"
         assert row["path_or_url"].startswith("https://www.autoform.com/en/")
-        assert row["local_file_relpath"].startswith("enterprise_data/raw_data/manual_samples/")
+        assert row["local_file_relpath"].startswith("data/rag/enterprise/raw_data/manual_samples/")
         assert "HTML body" in row["limitation"]
 
     assert report["phase"] == "R21"
@@ -506,9 +506,9 @@ def test_r21_autoform_public_site_metadata_sample_is_manifested_and_gated() -> N
 
 
 def test_r21_autoform_public_site_cards_and_bundle_remain_manual_review_only() -> None:
-    cards_fixture = _read_json(ROOT / "enterprise_data" / "r21_autoform_public_site_cards.candidate.json")
-    bundle = _read_json(ROOT / "enterprise_data" / "r21_autoform_public_site_evidence_bundle.sample.json")
-    sources = load_source_whitelist(ROOT / "enterprise_data" / "source_whitelist.csv")
+    cards_fixture = _read_json(ROOT / "data" / "rag" / "enterprise" / "r21_autoform_public_site_cards.candidate.json")
+    bundle = _read_json(ROOT / "data" / "rag" / "enterprise" / "r21_autoform_public_site_evidence_bundle.sample.json")
+    sources = load_source_whitelist(ROOT / "data" / "rag" / "enterprise" / "source_whitelist.csv")
 
     assert len(cards_fixture["cards"]) == 3
     for card in cards_fixture["cards"]:
@@ -534,8 +534,8 @@ def test_r21_autoform_public_site_cards_and_bundle_remain_manual_review_only() -
 
 
 def test_r21_arxiv_expansion_blocked_attempt_is_manifested_without_samples() -> None:
-    manifest_path = ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_r21_arxiv_api_metadata_expansion_blocked_manifest.csv"
-    report_path = ROOT / "enterprise_data" / "r14_cleaning_reports" / "r21_arxiv_api_metadata_expansion_blocked_report.json"
+    manifest_path = ROOT / "data" / "rag" / "enterprise" / "raw_data" / "manifests" / "2026-06-03_r21_arxiv_api_metadata_expansion_blocked_manifest.csv"
+    report_path = ROOT / "data" / "rag" / "enterprise" / "r14_cleaning_reports" / "r21_arxiv_api_metadata_expansion_blocked_report.json"
 
     with manifest_path.open("r", encoding="utf-8-sig", newline="") as handle:
         manifest_rows = list(csv.DictReader(handle))
@@ -546,7 +546,7 @@ def test_r21_arxiv_expansion_blocked_attempt_is_manifested_without_samples() -> 
     assert manifest["source_id"] == "source_arxiv_api_metadata"
     assert manifest["collection_status"] == "blocked_rate_limited_not_sampled"
     assert manifest["prohibited_actions"] == "bulk_crawl;bulk_download;auto_ingest"
-    assert manifest["local_file_relpath"].startswith("enterprise_data/raw_data/manual_samples/")
+    assert manifest["local_file_relpath"].startswith("data/rag/enterprise/raw_data/manual_samples/")
     assert manifest["checksum"] == report["collection_attempts"][0]["raw_response_sha256"]
 
     assert report["phase"] == "R21"
@@ -557,9 +557,9 @@ def test_r21_arxiv_expansion_blocked_attempt_is_manifested_without_samples() -> 
 
 
 def test_r21_nist_pdr_process_chain_sample_is_manifested_and_gated() -> None:
-    manifest_path = ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_r21_nist_pdr_process_chain_manifest.csv"
-    sample_path = ROOT / "enterprise_data" / "r21_nist_pdr_process_chain_metadata_samples.jsonl"
-    report_path = ROOT / "enterprise_data" / "r14_cleaning_reports" / "r21_nist_pdr_process_chain_cleaning_report.json"
+    manifest_path = ROOT / "data" / "rag" / "enterprise" / "raw_data" / "manifests" / "2026-06-03_r21_nist_pdr_process_chain_manifest.csv"
+    sample_path = ROOT / "data" / "rag" / "enterprise" / "r21_nist_pdr_process_chain_metadata_samples.jsonl"
+    report_path = ROOT / "data" / "rag" / "enterprise" / "r14_cleaning_reports" / "r21_nist_pdr_process_chain_cleaning_report.json"
 
     with manifest_path.open("r", encoding="utf-8-sig", newline="") as handle:
         manifest_rows = list(csv.DictReader(handle))
@@ -573,7 +573,7 @@ def test_r21_nist_pdr_process_chain_sample_is_manifested_and_gated() -> None:
         assert row["source_id"] == "source_nist_public_data_repository"
         assert row["prohibited_actions"] == "bulk_crawl;bulk_download;auto_ingest"
         assert row["path_or_url"].startswith("https://data.nist.gov/rmm/records?")
-        assert row["local_file_relpath"].startswith("enterprise_data/raw_data/manual_samples/")
+        assert row["local_file_relpath"].startswith("data/rag/enterprise/raw_data/manual_samples/")
         assert "data files" in row["limitation"]
 
     assert report["phase"] == "R21"
@@ -592,9 +592,9 @@ def test_r21_nist_pdr_process_chain_sample_is_manifested_and_gated() -> None:
 
 
 def test_r21_nist_pdr_process_chain_cards_and_bundle_remain_manual_review_only() -> None:
-    cards_fixture = _read_json(ROOT / "enterprise_data" / "r21_nist_pdr_process_chain_cards.candidate.json")
-    bundle = _read_json(ROOT / "enterprise_data" / "r21_nist_pdr_process_chain_evidence_bundle.sample.json")
-    sources = load_source_whitelist(ROOT / "enterprise_data" / "source_whitelist.csv")
+    cards_fixture = _read_json(ROOT / "data" / "rag" / "enterprise" / "r21_nist_pdr_process_chain_cards.candidate.json")
+    bundle = _read_json(ROOT / "data" / "rag" / "enterprise" / "r21_nist_pdr_process_chain_evidence_bundle.sample.json")
+    sources = load_source_whitelist(ROOT / "data" / "rag" / "enterprise" / "source_whitelist.csv")
 
     assert len(cards_fixture["cards"]) == 3
     for card in cards_fixture["cards"]:
@@ -619,8 +619,8 @@ def test_r21_nist_pdr_process_chain_cards_and_bundle_remain_manual_review_only()
 
 
 def test_r13_catalog_summary_keeps_current_actions_to_catalog_and_small_samples() -> None:
-    contract = load_enterprise_data_contract(ROOT / "enterprise_data" / "r13_enterprise_data_contract.sample.json")
-    sources = load_source_whitelist(ROOT / "enterprise_data" / "source_whitelist.csv")
+    contract = load_enterprise_data_contract(ROOT / "data" / "rag" / "enterprise" / "r13_enterprise_data_contract.sample.json")
+    sources = load_source_whitelist(ROOT / "data" / "rag" / "enterprise" / "source_whitelist.csv")
 
     summary = build_enterprise_data_catalog_summary(contract, sources)
 
@@ -636,8 +636,8 @@ def test_r13_catalog_summary_keeps_current_actions_to_catalog_and_small_samples(
 
 
 def test_r14_small_batch_cleaning_preserves_source_hash_and_normalizes_units() -> None:
-    sources = load_source_whitelist(ROOT / "enterprise_data" / "source_whitelist.csv")
-    records = load_jsonl_records(ROOT / "enterprise_data" / "r14_small_batch_samples.jsonl")
+    sources = load_source_whitelist(ROOT / "data" / "rag" / "enterprise" / "source_whitelist.csv")
+    records = load_jsonl_records(ROOT / "data" / "rag" / "enterprise" / "r14_small_batch_samples.jsonl")
 
     result = clean_enterprise_sample_records(records, sources=sources)
 
@@ -653,7 +653,7 @@ def test_r14_small_batch_cleaning_preserves_source_hash_and_normalizes_units() -
 
 
 def test_r14_small_batch_cleaning_quarantines_unlisted_source_and_blocks_large_batch() -> None:
-    sources = load_source_whitelist(ROOT / "enterprise_data" / "source_whitelist.csv")
+    sources = load_source_whitelist(ROOT / "data" / "rag" / "enterprise" / "source_whitelist.csv")
     bad_records = [
         {
             "record_id": "record_unlisted_source",

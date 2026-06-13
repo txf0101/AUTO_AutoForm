@@ -5,8 +5,8 @@ This test file checks queue probes and queue command plans. Read each assertion 
 
 from pathlib import Path
 
-from autoform_agent.paths import AutoFormInstallation
-from autoform_agent.queue import (
+from autoform_core.paths import AutoFormInstallation
+from autoform_core.queue import (
     lsf_command_plan,
     parse_queue_client_config_output,
     parse_tasklist_csv,

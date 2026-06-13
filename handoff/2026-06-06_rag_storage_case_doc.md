@@ -20,7 +20,7 @@
 
 ## 案例选择
 
-推荐使用 `enterprise_data/r14_small_batch_samples.jsonl` 的 DC04/D-20 小样本。该文件只有两条 JSONL 记录，分别对应材料属性和工艺路线，字段足够短，适合投影展示；进入 RAG 后覆盖 MaterialCard、OperationRoute、ParameterWindow 和 ProcessCase 四类对象，链路能连接 R15、R16、R24 和 R25。
+推荐使用 `data/rag/enterprise/r14_small_batch_samples.jsonl` 的 DC04/D-20 小样本。该文件只有两条 JSONL 记录，分别对应材料属性和工艺路线，字段足够短，适合投影展示；进入 RAG 后覆盖 MaterialCard、OperationRoute、ParameterWindow 和 ProcessCase 四类对象，链路能连接 R15、R16、R24 和 R25。
 
 该案例的价值在于把“源记录是什么”“库里存成什么”“检索时怎样命中”连成同一条证据链。相比公开网页元数据样例，它更贴近 AutoForm 工艺准备语境；相比更大的 NIST 元数据样例，它更适合在汇报现场逐字段讲清楚。
 

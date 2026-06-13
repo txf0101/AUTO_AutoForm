@@ -1,6 +1,6 @@
 [project]
 name = "autoform-mcp"
-version = "1.1.0"
+version = "1.8.0"
 description = "Standalone stdio MCP server for local AutoForm helper workflows."
 requires-python = ">=3.10"
 dependencies = [
@@ -14,6 +14,10 @@ dependencies = [
 
 [project.optional-dependencies]
 test = ["pytest>=8.0"]
+
+[tool.autoform_mcp]
+shared_core_path = "../autoform_core"
+stdio_entrypoint = "autoform_mcp_agent.mcp_server"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

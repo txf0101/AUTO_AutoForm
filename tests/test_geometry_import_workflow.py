@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-import autoform_agent.geometry_import_workflow as workflow
+import autoform_core.geometry_import_workflow as workflow
 
 
 def test_resolve_geometry_source_path_accepts_desktop_file_name(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:

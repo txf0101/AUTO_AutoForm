@@ -17,7 +17,7 @@
 
 ## 问题判断
 
-用户指出的“会话轨迹”长文本未说完，根因在前端 fallback 逻辑。后端没有提供结构化 `agentMessages` 时，`frontend/app.js` 把 `reply.text.slice(0, 180)` 直接写入中心 Agent 消息。该文本来自 Runtime response 或命令运行摘要，天然包含长输出、工具目录和路径，进入右侧工程会话轨迹后就表现为截断和语义混杂。
+用户指出的“会话轨迹”长文本未说完，根因在前端 fallback 逻辑。后端没有提供结构化 `agentMessages` 时，`apps/workbench/app.js` 把 `reply.text.slice(0, 180)` 直接写入中心 Agent 消息。该文本来自 Runtime response 或命令运行摘要，天然包含长输出、工具目录和路径，进入右侧工程会话轨迹后就表现为截断和语义混杂。
 
 同时，简单工程咨询缺少本地确定性分支。用户输入“检查当前工程”时，中心 Agent 应能读取运行时快照、工程上下文和本窗口历史，然后给出可讨论的结构化 Agent 消息；这类咨询不应被迫回到 provider 或命令输出摘要。
 
@@ -26,9 +26,9 @@
 ## 已完成修改
 
 - 前端工程操作：
-  - `frontend/index.html` 将“示例工程提示”改为“工程操作”。
+  - `apps/workbench/index.html` 将“示例工程提示”改为“工程操作”。
   - 下拉框新增“新建工程”和“已有工程（请在Prompt里面告知项目地址）”。
-  - `frontend/app.js` 将选择结果整理为 `projectOperation`；只有官方示例项才发送 `exampleName`。
+  - `apps/workbench/app.js` 将选择结果整理为 `projectOperation`；只有官方示例项才发送 `exampleName`。
   - 默认选择 `new_project`，避免新建工程请求被默认示例工程劫持。
 - 前端会话轨迹：
   - 后端缺少结构化 `agentMessages` 时，页面只追加简短中心 Agent 摘要。
@@ -43,18 +43,18 @@
   - 网关工具结果统一返回简洁 `agentMessages`，把详细命令输出留在日志面板。
 - 测试与文档：
   - 更新 `tests/test_agent_runtime.py`，覆盖工程咨询、新建工程选择和已有工程缺路径保护。
-  - 更新 `frontend/tests/smoke-test.mjs` 与 `frontend/tests/smoke_test.py`，覆盖“工程操作”和新增选项。
-  - 同步 `README.md`、`frontend/README.md`、`docs/api_runtime_call_chain.md` 和 `docs/beginner_onboarding_zh.md`。
+  - 更新 `apps/workbench/tests/smoke-test.mjs` 与 `apps/workbench/tests/smoke_test.py`，覆盖“工程操作”和新增选项。
+  - 同步 `README.md`、`apps/workbench/README.md`、`docs/api_runtime_call_chain.md` 和 `docs/beginner_onboarding_zh.md`。
 
 ## 验证证据
 
 - 后端与前端 smoke：
-  - `python -m pytest tests/test_agent_runtime.py frontend/tests/smoke_test.py frontend/tests/http_smoke_test.py -q --basetemp tmp\pytest_goal_project_consultation`
+  - `python -m pytest tests/test_agent_runtime.py apps/workbench/tests/smoke_test.py apps/workbench/tests/http_smoke_test.py -q --basetemp tmp\pytest_goal_project_consultation`
   - 结果：`34 passed in 8.68s`。
 - 前端静态检查：
-  - `C:\Users\Tang Xufeng\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe --check frontend\app.js`
+  - `C:\Users\Tang Xufeng\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe --check apps\workbench\app.js`
   - 结果：通过，无语法错误。
-  - `C:\Users\Tang Xufeng\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe frontend\tests\smoke-test.mjs`
+  - `C:\Users\Tang Xufeng\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe apps\workbench\tests\smoke-test.mjs`
   - 结果：`frontend smoke test passed`。
 - 后端抽样：
   - `projectOperation=existing_project` 且 prompt 为“打开工程”时，结果为 `existingProjectPathRequired=True`，`toolRuns` 不存在，Agent 提示用户补充 `.afd` 路径。

@@ -5,9 +5,9 @@ This test file checks safety scans and extension boundaries. Read each assertion
 
 from pathlib import Path
 
-from autoform_agent.extension import internal_extension_boundary
-from autoform_agent.paths import AutoFormInstallation
-from autoform_agent.safety import public_release_scan, write_safety_plan
+from autoform_core.extension import internal_extension_boundary
+from autoform_core.paths import AutoFormInstallation
+from autoform_core.safety import public_release_scan, write_safety_plan
 
 
 def test_public_release_scan_detects_secret_like_values(tmp_path: Path) -> None:

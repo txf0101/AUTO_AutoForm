@@ -13,22 +13,22 @@ from pathlib import Path
 import re
 from typing import Any, Callable
 
-from .commands import list_command_specs
-from .coverage import MODULE_COVERAGE
+from autoform_core.commands import list_command_specs
+from autoform_core.coverage import MODULE_COVERAGE
 from .credentials import credential_fingerprint, redact_secret_data, redact_secret_text
 from .agent_system import build_agent_tool_gateway, build_center_agent_plan
-from .diagnostics import environment_snapshot
-from .flex_scripts import script_run as run_flex_script
-from .geometry_import_workflow import SUPPORTED_GEOMETRY_SUFFIXES, extract_geometry_path_from_text
-from .gui_automation import computer_use_probe
+from autoform_core.diagnostics import environment_snapshot
+from autoform_core.flex_scripts import script_run as run_flex_script
+from autoform_core.geometry_import_workflow import SUPPORTED_GEOMETRY_SUFFIXES, extract_geometry_path_from_text
+from autoform_core.gui_automation import computer_use_probe
 from .intent_utils import (
     prompt_affirms_any as shared_prompt_affirms_any,
     prompt_match_is_negated as shared_prompt_match_is_negated,
     text_contains_any as shared_text_contains_any,
 )
-from .inventory import get_afd_project_summary, list_example_projects
-from .material_assignment_workflow import extract_material_path_from_text
-from .paths import discover_installations
+from autoform_core.inventory import get_afd_project_summary, list_example_projects
+from autoform_core.material_assignment_workflow import extract_material_path_from_text
+from autoform_core.paths import discover_installations
 from .preparation_agents import (
     build_material_review,
     build_material_user_input_request,
@@ -39,10 +39,10 @@ from .preparation_agents import (
     run_material_database_query_script,
 )
 from .provider_connection import call_provider_chat_completion, check_provider_connection
-from .project_workflow import official_sample_run_summary, project_run_workflow
-from .queue import queue_health_check
-from .quicklink import get_blank_info, list_exported_geometry, list_quicklink_exports
-from .result_viewer import (
+from autoform_core.project_workflow import official_sample_run_summary, project_run_workflow
+from autoform_core.queue import queue_health_check
+from autoform_core.quicklink import get_blank_info, list_exported_geometry, list_quicklink_exports
+from autoform_core.result_viewer import (
     assess_result_review_readiness,
     build_result_review_plan,
     result_gui_evidence,
@@ -50,7 +50,7 @@ from .result_viewer import (
     result_review_capabilities,
     route_result_task,
 )
-from .solver import forming_solver_kinematic_plan
+from autoform_core.solver import forming_solver_kinematic_plan
 from .runtime_events import RunUsageAccumulator, build_runtime_run_events, make_run_id
 
 
@@ -180,6 +180,9 @@ def run_agent_runtime_turn(
     and response shaping.
     """
 
+    # payload 就是这一轮用户在网页或 CLI 里提交的东西。
+    # 这里先把网页传来的模型配置、API key 来源、prompt 和上下文拆开，
+    # 后面的分支才知道要查状态、问模型、走多 Agent 准备，还是请求本机工具。
     runtime_config = _apply_payload_runtime_config(
         payload=payload,
         config=config or load_agent_runtime_config(),
@@ -191,6 +194,8 @@ def run_agent_runtime_turn(
     run_id = make_run_id(conversation_id)
     runtime_snapshot = snapshot or collect_agent_runtime_snapshot(runtime_config.project_root)
 
+    # “测试连接”只检查 provider 是否能连通，不进入 AutoForm 工具链。
+    # 这样用户点连接测试时不会误触发开窗、复制工程或求解。
     if _payload_requests_connection_test(payload):
         connection_test = check_provider_connection(runtime_config, run_id=run_id)
         return _finalize_runtime_reply(
@@ -220,6 +225,8 @@ def run_agent_runtime_turn(
             config=runtime_config,
         )
 
+    # 普通 prompt 会先生成中心 Agent 计划。中心 Agent 计划像一张任务单：
+    # 它记录任务类型、要分给哪些专业 Agent、是否有候选补丁、是否需要工具审批。
     center_plan = build_center_agent_plan(
         prompt,
         conversation_id=conversation_id,
@@ -229,6 +236,8 @@ def run_agent_runtime_turn(
         project_root=runtime_config.project_root,
     )
 
+    # 如果中心 Agent 计划已经包含工具执行结果，就直接整理给前端。
+    # 典型例子是用户允许本机 MCP 工具控制后，网关已经返回 completed 或 blocked。
     if _center_plan_has_tool_results(center_plan):
         return _finalize_runtime_reply(
             _build_gateway_tool_runtime_result(
@@ -245,6 +254,8 @@ def run_agent_runtime_turn(
             execution_approved=execution_approved,
         )
 
+    # 下面这些本地分支优先于直接调用模型，原因是它们依赖本机工程上下文、
+    # 白名单工具、材料库或已有脚本，结果更容易留证据，也更便于前端续接。
     if _payload_requests_example_selection(payload, prompt=prompt):
         return _finalize_runtime_reply(
             _build_example_project_selection_required_runtime_result(
@@ -597,7 +608,8 @@ def build_runtime_tool_catalog(project_root: Path | None = None) -> list[dict[st
         {"name": "autoform_official_sample_run_summary", "domain": "project", "purpose": "汇总官方样例运行证据"},
         {"name": "autoform_computer_use_probe", "domain": "gui", "purpose": "探测桌面截图和 AutoForm 窗口可见性"},
         {"name": "autoform_gui_control_demo", "domain": "gui", "purpose": "规划 R12 基础可见窗口控制演示，真实动作通过 AgentToolGateway 审批"},
-        {"name": "autoform_r12_project_view_demo", "domain": "gui", "purpose": "规划 R12 示例工程俯视和等轴测切换演示，执行路径保留审批边界"},
+        {"name": "autoform_r12_project_view_demo", "domain": "gui", "purpose": "规划或执行 R12 示例工程打开与指定视角切换演示，执行路径保留审批边界"},
+        {"name": "autoform_result_set_view", "domain": "result_review", "purpose": "对当前可见 AutoForm 结果窗口执行目标视角切换，不负责打开工程"},
         {"name": "autoform_result_capabilities", "domain": "result_review", "purpose": "列出结果审阅变量、视角和路线"},
         {"name": "autoform_result_gui_evidence", "domain": "result_review", "purpose": "读取 GUI 控件证据和剩余边界"},
         {"name": "autoform_result_blockers", "domain": "result_review", "purpose": "列出结果审阅当前卡点和对策"},
@@ -1032,6 +1044,13 @@ def _runtime_tool_registry(
             execution_approved=False,
             secret_values=(config.api_key,) if config.api_key else (),
         ),
+        "autoform_result_set_view": lambda args: gateway.call_tool(
+            "autoform_result_set_view",
+            args,
+            agent_id="result_review",
+            execution_approved=False,
+            secret_values=(config.api_key,) if config.api_key else (),
+        ),
         "autoform_result_capabilities": lambda args: result_review_capabilities(
             autoform_version=str(args.get("autoform_version") or "") or None
         ),
@@ -1130,7 +1149,8 @@ def _tool_argument_hints(name: str) -> dict[str, Any]:
         "autoform_start_ui": {"optional": ["graphics", "dry_run"]},
         "autoform_official_sample_run_summary": {"optional": ["search_dir", "mode", "limit"]},
         "autoform_gui_control_demo": {"optional": ["output_dir", "execute", "action", "title_contains"]},
-        "autoform_r12_project_view_demo": {"optional": ["example_name", "afd_path", "execute", "verify_screenshot", "output_dir"]},
+        "autoform_r12_project_view_demo": {"optional": ["example", "afd_path", "execute", "verify_screenshot", "view_sequence", "output_dir"]},
+        "autoform_result_set_view": {"required": ["view"], "optional": ["execute", "verify_screenshot", "output_dir", "title_contains", "target_pid"]},
         "autoform_result_gui_evidence": {"optional": ["scope", "workspace"]},
         "autoform_result_blockers": {"optional": ["scope", "include_completed"]},
         "autoform_result_route_task": {"optional": ["intent"]},
@@ -1161,13 +1181,16 @@ def _sanitize_tool_payload(value: Any, config: AgentRuntimeConfig) -> Any:
 def _compact_large_tool_payload(value: Any) -> dict[str, Any] | None:
     if not isinstance(value, dict):
         return None
-    if not any(key in value for key in ("working_project", "run_dir", "solver", "gui_observation")):
+    is_r12_view_demo = value.get("schema_version") == "autoform.r12.project_view_demo.v1"
+    if not is_r12_view_demo and not any(key in value for key in ("working_project", "run_dir", "solver", "gui_observation")):
         return None
 
     compact: dict[str, Any] = {}
     for key in (
         "schema_version",
         "created_at",
+        "r_stage",
+        "demo_slice",
         "mode",
         "threads",
         "execute",
@@ -1180,6 +1203,11 @@ def _compact_large_tool_payload(value: Any) -> dict[str, Any] | None:
         "working_project",
         "copy_project",
         "gui_open_requested",
+        "target_title_contains",
+        "view_sequence",
+        "effective_target_pid",
+        "approval_required",
+        "blocking_reasons",
     ):
         if key in value:
             compact[key] = value[key]
@@ -1203,6 +1231,24 @@ def _compact_large_tool_payload(value: Any) -> dict[str, Any] | None:
                 "startup_wait_seconds",
             ),
         )
+
+    if is_r12_view_demo:
+        stages = value.get("stages")
+        if isinstance(stages, list):
+            compact["stages"] = [
+                _keep_dict_keys(stage, ("stage", "status", "shortcut"))
+                for stage in stages[:8]
+                if isinstance(stage, dict)
+            ]
+        view_results = value.get("view_results")
+        if isinstance(view_results, list):
+            compact["view_results"] = [_compact_view_result(item) for item in view_results[:8] if isinstance(item, dict)]
+        window_after_open = value.get("window_after_open")
+        if isinstance(window_after_open, dict):
+            compact["window_after_open"] = _keep_dict_keys(
+                window_after_open,
+                ("window_count", "interaction_ready_window_count"),
+            )
 
     summary = value.get("summary")
     if isinstance(summary, dict):
@@ -1241,6 +1287,18 @@ def _compact_large_tool_payload(value: Any) -> dict[str, Any] | None:
             ("output_dir", "manifest_path", "file_count", "status"),
         )
 
+    return compact
+
+
+def _compact_view_result(value: dict[str, Any]) -> dict[str, Any]:
+    compact = _keep_dict_keys(value, ("status", "executed", "failure_reason"))
+    resolution = value.get("view_resolution") if isinstance(value.get("view_resolution"), dict) else {}
+    view = resolution.get("view") if isinstance(resolution.get("view"), dict) else {}
+    if view:
+        compact["view"] = _keep_dict_keys(view, ("key", "label", "r13_shortcut", "r13_control_label"))
+    keystroke = value.get("keystroke") if isinstance(value.get("keystroke"), dict) else {}
+    if keystroke:
+        compact["keystroke"] = _keep_dict_keys(keystroke, ("sent", "keys", "title_contains", "pid"))
     return compact
 
 
@@ -1627,6 +1685,10 @@ def _gateway_tool_response_text(
         summary = ""
         if tool_name == "autoform_project_run":
             summary = _project_run_result_summary(result)
+        elif tool_name == "autoform_r12_project_view_demo":
+            summary = _project_view_demo_result_summary(result)
+        elif tool_name == "autoform_result_set_view":
+            summary = _result_set_view_result_summary(result)
         elif tool_name == "autoform_import_geometry_to_new_project":
             summary = _geometry_import_result_summary(result)
         elif tool_name == "autoform_assign_material_to_project":
@@ -1721,6 +1783,22 @@ def _current_project_from_tool_runs(tool_runs: list[dict[str, Any]]) -> dict[str
                 gui_pid=gui.get("pid"),
                 source="gateway_tool_result",
             )
+        if tool_name == "autoform_r12_project_view_demo":
+            demo_project = result.get("project") if isinstance(result.get("project"), dict) else {}
+            afd_path = str(arguments.get("afd_path") or demo_project.get("path") or "").strip()
+            example_name = _normalize_frontend_demo_example(arguments.get("example") or demo_project.get("name"))
+            if afd_path or example_name:
+                return _current_project_payload(
+                    kind="example_project" if example_name else "afd_project",
+                    label=afd_path or example_name,
+                    example_name=example_name,
+                    afd_path=afd_path,
+                    working_project=afd_path,
+                    last_tool=tool_name,
+                    last_tool_status=str(result.get("status") or status),
+                    gui_pid=result.get("effective_target_pid"),
+                    source="gateway_tool_result",
+                )
         working_project = str(result.get("working_project") or "").strip()
         run_dir = str(result.get("run_dir") or "").strip()
         afd_path = str(arguments.get("afd_path") or project.get("path") or result.get("path") or "").strip()
@@ -2070,11 +2148,19 @@ def _gateway_tool_agent_messages(
             text = f"AutoForm 主界面启动请求返回 {status}。"
             if _tool_run_is_blocked(run):
                 text += " 需要勾选本机 MCP 工具控制后再发送。"
+        elif tool_name == "autoform_result_set_view":
+            text = _result_set_view_result_summary(result) or f"{tool_name} 返回 {status}。"
         elif tool_name == "autoform_status_snapshot":
             text = _status_snapshot_result_summary(result)
         else:
             text = f"{tool_name} 返回 {status}。"
-        source_agent = "material_agent" if tool_name == "autoform_assign_material_to_project" else "project_workflow"
+        source_agent = (
+            "material_agent"
+            if tool_name == "autoform_assign_material_to_project"
+            else "result_review"
+            if tool_name in {"autoform_r12_project_view_demo", "autoform_result_set_view"}
+            else "project_workflow"
+        )
         messages.append(_agent_directed_message(source_agent, "center_agent", _compact_dialog_text(text, maximum=220)))
     messages.append(
         _agent_message(
@@ -2758,7 +2844,7 @@ def _material_user_response_text(
 def _multi_agent_preparation_source_refs(*, material: dict[str, Any]) -> list[str]:
     refs = [
         "autoform_agent/preparation_agents.py",
-        "script_registry.yaml",
+        "script_library/flex/registry.yaml",
         "docs/multi_agent_architecture.md",
         "docs/realtime_executor.md",
     ]
@@ -3161,6 +3247,46 @@ def _project_run_result_summary(result: dict[str, Any]) -> str:
     return f"autoform_project_run 已返回：{path_text}；{details}。"
 
 
+def _project_view_demo_result_summary(result: dict[str, Any]) -> str:
+    if not result:
+        return ""
+    status = str(result.get("status") or "unknown")
+    project = result.get("project") if isinstance(result.get("project"), dict) else {}
+    project_name = str(project.get("name") or project.get("path") or "").strip()
+    views = result.get("view_sequence") if isinstance(result.get("view_sequence"), list) else []
+    pid = result.get("effective_target_pid")
+    parts = [f"状态 {status}"]
+    if project_name:
+        parts.append(f"工程 {project_name}")
+    if views:
+        parts.append("视角序列 " + ",".join(str(item) for item in views))
+    if pid:
+        parts.append(f"pid={pid}")
+    return "autoform_r12_project_view_demo 已返回：" + "；".join(parts) + "。"
+
+
+def _result_set_view_result_summary(result: dict[str, Any]) -> str:
+    if not result:
+        return ""
+    status = str(result.get("status") or "unknown")
+    resolution = result.get("view_resolution") if isinstance(result.get("view_resolution"), dict) else {}
+    view = resolution.get("view") if isinstance(resolution.get("view"), dict) else {}
+    profile = result.get("control_profile") if isinstance(result.get("control_profile"), dict) else {}
+    keystroke = result.get("keystroke") if isinstance(result.get("keystroke"), dict) else {}
+    parts = [f"状态 {status}"]
+    if view.get("key"):
+        parts.append(f"视角 {view.get('key')}")
+    if result.get("executed") is not None:
+        parts.append(f"executed={result.get('executed')}")
+    if keystroke.get("sent") is not None:
+        parts.append(f"keystroke_sent={keystroke.get('sent')}")
+    if profile.get("target_pid") is not None:
+        parts.append(f"pid={profile.get('target_pid')}")
+    if profile.get("title_contains"):
+        parts.append(f"title={profile.get('title_contains')}")
+    return "autoform_result_set_view 已返回：" + "；".join(parts) + "。"
+
+
 def _geometry_import_result_summary(result: dict[str, Any]) -> str:
     if not result:
         return ""
@@ -3255,6 +3381,7 @@ def _gateway_tool_runs_will_control_gui(tool_runs: list[dict[str, Any]]) -> bool
             "autoform_assign_material_to_project",
             "autoform_gui_control_demo",
             "autoform_r12_project_view_demo",
+            "autoform_result_set_view",
         }:
             return True
         arguments = run.get("arguments") if isinstance(run.get("arguments"), dict) else {}
@@ -3956,7 +4083,7 @@ def _runtime_preview(
     solver: str,
     solver_detail: str,
 ) -> dict[str, str]:
-    """Build the preview card state used by `frontend/app.js`."""
+    """Build the preview card state used by `apps/workbench/app.js`."""
 
     return {
         "phase": phase,
@@ -4332,6 +4459,12 @@ def _payload_agent_tool_requests(payload: dict[str, Any], *, prompt: str = "") -
     geometry_import_requests = _geometry_import_tool_requests(payload, prompt=prompt)
     if geometry_import_requests:
         return geometry_import_requests
+    current_project_view_requests = _current_project_view_tool_requests(payload, prompt=prompt)
+    if current_project_view_requests:
+        return current_project_view_requests
+    project_view_demo_requests = _project_view_demo_tool_requests(payload, prompt=prompt)
+    if project_view_demo_requests:
+        return project_view_demo_requests
     ui_requests = _autoform_ui_tool_requests(payload, prompt=prompt)
     if ui_requests:
         return ui_requests
@@ -4426,6 +4559,114 @@ def _geometry_import_tool_requests(payload: dict[str, Any], *, prompt: str) -> l
                 "dry_run": False,
             },
             "reason": "Frontend new-project operation plus CAD geometry import prompt.",
+        }
+    ]
+
+
+def _current_project_view_tool_requests(payload: dict[str, Any], *, prompt: str) -> list[dict[str, Any]]:
+    view_key = _prompt_requested_result_view(prompt)
+    if not view_key:
+        return []
+    if (
+        _prompt_requests_frontend_demo_project(prompt)
+        or _prompt_requests_project_copy(prompt)
+        or _prompt_requests_window_open(prompt)
+        or _prompt_requests_solver_execution(prompt)
+    ):
+        return []
+    conversation_context = _payload_conversation_context(payload)
+    current_project = _conversation_context_current_project(conversation_context) or {}
+    if not current_project:
+        return []
+    target_pid = _optional_positive_int(current_project.get("gui_pid"))
+    title_contains = _current_project_view_title(current_project)
+    if target_pid is None and not title_contains:
+        return []
+    arguments: dict[str, Any] = {
+        "view": view_key,
+        "execute": True,
+        "verify_screenshot": False,
+        "output_dir": "tmp/result_review",
+    }
+    if title_contains:
+        arguments["title_contains"] = title_contains
+    if target_pid is not None:
+        arguments["target_pid"] = target_pid
+    return [
+        {
+            "agent_id": "result_review",
+            "tool": "autoform_result_set_view",
+            "arguments": arguments,
+            "reason": "View-only follow-up should target the current visible AutoForm window without opening another project.",
+        }
+    ]
+
+
+def _current_project_view_title(current_project: dict[str, Any]) -> str:
+    path_text = str(
+        current_project.get("working_project")
+        or current_project.get("output_afd_path")
+        or current_project.get("afd_path")
+        or current_project.get("label")
+        or ""
+    ).strip()
+    if path_text:
+        path_name = Path(path_text.replace("\\", "/")).name.strip()
+        if path_name:
+            return path_name
+    example_name = _normalize_frontend_demo_example(current_project.get("example_name") or current_project.get("exampleName"))
+    return f"{example_name}.afd" if example_name else ""
+
+
+def _optional_positive_int(value: Any) -> int | None:
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return None
+    return parsed if parsed > 0 else None
+
+
+def _project_view_demo_tool_requests(payload: dict[str, Any], *, prompt: str) -> list[dict[str, Any]]:
+    view_key = _prompt_requested_result_view(prompt)
+    if not view_key:
+        return []
+    local_execution = _payload_local_execution_context(payload)
+    conversation_context = _payload_conversation_context(payload)
+    current_project = _conversation_context_current_project(conversation_context) or {}
+    afd_path = _afd_path_from_prompt(prompt)
+    if not afd_path:
+        afd_path = str(
+            current_project.get("working_project")
+            or current_project.get("output_afd_path")
+            or current_project.get("afd_path")
+            or ""
+        ).strip()
+    selected_example = _project_operation_example_name(local_execution, prompt=prompt, default_example="")
+    context_example = _normalize_frontend_demo_example(current_project.get("example_name") or current_project.get("exampleName"))
+    example_name = "" if afd_path else selected_example or context_example
+    has_project_target = bool(afd_path or example_name)
+    if not has_project_target and not _prompt_requests_frontend_demo_project(prompt):
+        return []
+    if not afd_path and not example_name:
+        return []
+    arguments: dict[str, Any] = {
+        "execute": True,
+        "verify_screenshot": False,
+        "view_sequence": [view_key],
+        "wait_seconds": 8,
+        "view_wait_seconds": 0.2,
+        "output_dir": "tmp/r12_project_view_demo",
+    }
+    if afd_path:
+        arguments["afd_path"] = afd_path
+    else:
+        arguments["example"] = example_name
+    return [
+        {
+            "agent_id": "result_review",
+            "tool": "autoform_r12_project_view_demo",
+            "arguments": arguments,
+            "reason": "Frontend prompt requested opening a project and switching the visible AutoForm view.",
         }
     ]
 
@@ -4814,6 +5055,19 @@ def _prompt_requests_solver_execution(prompt: str) -> bool:
             "simulation",
         ),
     )
+
+
+def _prompt_requested_result_view(prompt: str) -> str:
+    text = str(prompt or "").casefold()
+    if _prompt_affirms_any(prompt, ("\u4fef\u89c6", "\u4e0a\u89c6", "+z\u5411\u89c6\u56fe", "+z")) or re.search(r"\btop\b", text):
+        return "top"
+    if _prompt_affirms_any(prompt, ("\u7b49\u8f74\u6d4b", "\u4e09\u7ef4", "isometric", "iso")):
+        return "isometric"
+    if _prompt_affirms_any(prompt, ("\u6b63\u89c6", "\u524d\u89c6", "+x\u5411\u89c6\u56fe", "+x")) or re.search(r"\bfront\b", text):
+        return "front"
+    if _prompt_affirms_any(prompt, ("\u4fa7\u89c6", "\u5de6\u89c6", "\u53f3\u89c6", "-y\u5411\u89c6\u56fe", "-y")) or re.search(r"\bside\b", text):
+        return "side"
+    return ""
 
 
 def _prompt_requests_autoform_ui_start(prompt: str) -> bool:

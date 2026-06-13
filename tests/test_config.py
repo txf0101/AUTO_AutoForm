@@ -5,7 +5,7 @@ This test file checks configuration reading and defaults. Read each assertion as
 
 from pathlib import Path
 
-from autoform_agent.config import get_logging_config, get_queue_config, get_remote_hosts
+from autoform_core.config import get_logging_config, get_queue_config, get_remote_hosts
 
 
 CONFIG_XML = """<Configuration version="R13">

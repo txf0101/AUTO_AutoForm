@@ -465,7 +465,7 @@ def add_agent_tables(document: Document) -> None:
         ],
         [
             "quicklink_bridge",
-            r"autoform_agent_data\quicklink\<时间戳>\manifest.json",
+            r"data/runtime/agent\quicklink\<时间戳>\manifest.json",
             "记录 archive 原路径、收集时间、文件列表和目标目录。",
             "quicklink_bridge.py",
         ],
@@ -511,7 +511,7 @@ def add_appendix(document: Document) -> None:
         ["预演安装材料库", r"python -m autoform_agent.cli install-materials <material-archive> --library-name 主机厂材料库 --dry-run"],
         ["输出完整安装计划", r"python -m autoform_agent.cli install-materials <material-archive> --library-name 主机厂材料库 --dry-run --json"],
         ["预演安装 QuickLink 桥接", r"python -m autoform_agent.cli install-quicklink-bridge --workspace <repo-root> --dry-run"],
-        ["启动 MCP 服务", r"python -m autoform_agent.mcp_server"],
+        ["启动 MCP 服务", r"python -m autoform_mcp_agent.mcp_server"],
     ]
     add_table(document, ["用途", "命令"], rows, [5.0, 21.5])
 

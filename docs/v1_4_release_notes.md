@@ -39,7 +39,7 @@ AutoFrom，打开，并且新建一个项目
 
 ```powershell
 python -m py_compile autoform_agent\agent_runtime.py autoform_agent\release.py
-python -m pytest -q tests\test_agent_runtime.py tests\test_release.py frontend\tests\smoke_test.py
+python -m pytest -q tests\test_agent_runtime.py tests\test_release.py apps\workbench\tests\smoke_test.py
 python -m autoform_agent.cli release-readiness
 python -m autoform_agent.cli public-release-scan
 ```

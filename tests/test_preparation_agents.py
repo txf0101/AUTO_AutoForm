@@ -136,13 +136,13 @@ def test_r9_process_plan_does_not_submit_solver() -> None:
 
 
 def test_r10_low_risk_script_registry_and_failure_summary() -> None:
-    registry = load_script_registry(ROOT / "script_registry.yaml")
+    registry = load_script_registry(ROOT / "script_library" / "flex" / "registry.yaml")
     success = run_low_risk_script(
         "skill_readiness_echo",
         {"task_id": "task_r11_prepare_demo", "evidence_bundle_id": "evidence_rag_minimal_autoform_prepare"},
-        registry_path=ROOT / "script_registry.yaml",
+        registry_path=ROOT / "script_library" / "flex" / "registry.yaml",
     )
-    failure = run_low_risk_script("skill_readiness_echo", {"task_id": "task_r11_prepare_demo"}, registry_path=ROOT / "script_registry.yaml")
+    failure = run_low_risk_script("skill_readiness_echo", {"task_id": "task_r11_prepare_demo"}, registry_path=ROOT / "script_library" / "flex" / "registry.yaml")
 
     assert {item["skill_id"] for item in registry} >= {
         "skill_readiness_echo",
@@ -161,7 +161,7 @@ def test_r10_low_risk_script_registry_and_failure_summary() -> None:
     material_success = run_low_risk_script(
         "skill_material_aa6061_candidate_check",
         {"task_id": "task_r11_prepare_demo", "material_grade": "AA6061"},
-        registry_path=ROOT / "script_registry.yaml",
+        registry_path=ROOT / "script_library" / "flex" / "registry.yaml",
     )
     assert material_success["status"] == "completed"
 
@@ -177,7 +177,7 @@ def test_material_database_query_script_finds_local_candidates(tmp_path: Path) -
         "AA6061",
         task_id="task_material_query_test",
         materials_root=materials_root,
-        registry_path=ROOT / "script_registry.yaml",
+        registry_path=ROOT / "script_library" / "flex" / "registry.yaml",
     )
 
     assert result["object_type"] == "ScriptRunRecord"
@@ -239,7 +239,7 @@ def test_r11_physical_artifacts_exist() -> None:
         ROOT / "source_registry.csv",
         ROOT / "card_schema.yaml",
         ROOT / "eval_queries.jsonl",
-        ROOT / "script_registry.yaml",
+        ROOT / "script_library" / "flex" / "registry.yaml",
         ROOT / "fixtures" / "r11_low_risk_prepare_events.jsonl",
         ROOT / "handoff" / "ui_prepare_report.md",
     ]:

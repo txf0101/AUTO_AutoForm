@@ -268,5 +268,5 @@ def _medium_context_patch(center_plan: dict) -> dict:
     patch["patch_id"] = "patch_r18_medium_context"
     patch["risk_level"] = "medium"
     patch["review_status"] = "needs_human_confirmation"
-    patch["evidence_refs"] = ["enterprise_data/r17_enterprise_process_plan_candidate.sample.json"]
+    patch["evidence_refs"] = ["data/rag/enterprise/r17_enterprise_process_plan_candidate.sample.json"]
     return patch

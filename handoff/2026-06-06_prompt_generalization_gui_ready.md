@@ -19,7 +19,7 @@
 - `agent_runtime.py` 增加真实中文 prompt 的意图词覆盖，修复中文关键词只在乱码分支里生效的问题。
 - `projectOperation=new_project` 加尺寸、材料等准备型描述时，不再直接启动 GUI，改走多 Agent 准备链路；包含 CAD/STEP/IGES/STL 导入意图时，生成 `autoform_import_geometry_to_new_project`。
 - `autoform_agent/geometry_import_workflow.py` 把 GUI 启动、窗口恢复和可交互窗口确认作为 wrapper 内部步骤。窗口标题兼容 `Untitled` 和中文界面的 `<无当前设计>`，多窗口场景下通过快照和候选标题定位目标。
-- `README.md`、`frontend/README.md`、`docs/api_runtime_call_chain.md`、`docs/beginner_onboarding_zh.md` 已同步说明：导入桌面几何时用户不需要额外输入“打开GUI”，工具会自行启动或定位 AutoForm Forming。
+- `README.md`、`apps/workbench/README.md`、`docs/api_runtime_call_chain.md`、`docs/beginner_onboarding_zh.md` 已同步说明：导入桌面几何时用户不需要额外输入“打开GUI”，工具会自行启动或定位 AutoForm Forming。
 
 ## Prompt 矩阵验证
 
@@ -56,14 +56,14 @@ F:\【项目和任务】\EIT\2026\AUTO_AutoForm\output\geometry_import_projects\
 $env:PYTHONPATH=(Get-Location).Path
 $env:TMP=(Join-Path (Get-Location).Path 'tmp\pytest_tmp')
 $env:TEMP=$env:TMP
-pytest tests/test_agent_runtime.py tests/test_geometry_import_workflow.py frontend/tests/smoke_test.py
+pytest tests/test_agent_runtime.py tests/test_geometry_import_workflow.py apps/workbench/tests/smoke_test.py
 ```
 
 结果：`49 passed, 1 skipped`。跳过项是需要 `AUTOFORM_GUI_IMPORT_TEST=1` 才执行的真实 GUI 集成测试。
 
 ```powershell
 $env:PYTHONPATH=(Get-Location).Path
-python -m py_compile autoform_agent\geometry_import_workflow.py autoform_agent\agent_runtime.py autoform_agent\mcp_tools\project.py autoform_agent\agent_system\tool_gateway.py frontend\tests\smoke_test.py
+python -m py_compile autoform_agent\geometry_import_workflow.py autoform_agent\agent_runtime.py autoform_agent\mcp_tools\project.py autoform_agent\agent_system\tool_gateway.py apps\workbench\tests\smoke_test.py
 ```
 
 结果：通过。
@@ -90,20 +90,20 @@ python -m py_compile autoform_agent\geometry_import_workflow.py autoform_agent\a
 - `resolve_geometry_source_path()` 和 run 目录命名改用真实文件名片段，避免 `薄板模型_薄板30-40-3` 这类描述词污染工程目录。
 - wrapper 增加 `geometry_dimension_candidate`，从 `30-40-3`、`30x40x3` 等文件名模式返回长、宽、厚候选。该字段标注为 `candidate_from_filename`，不能当作 CAD 几何测量结果。
 - `autoform_agent/agent_runtime.py` 在网关返回 `completed` 但 wrapper 结果为 `failed/blocked/planned` 时，把 `toolRuns[].status` 映射为业务状态，同时保留 `gatewayStatus`。失败的 `autoform_import_geometry_to_new_project` 不再写入 `runtime.currentProject`。
-- `frontend/app.js` 展示工具结果时优先使用 `result.status`，失败导入不会覆盖 `conversationContext.current_project`，工具明细会显示 `dimension_candidate`。
+- `apps/workbench/app.js` 展示工具结果时优先使用 `result.status`，失败导入不会覆盖 `conversationContext.current_project`，工具明细会显示 `dimension_candidate`。
 
 验证：
 
 ```powershell
 $env:PYTHONPATH=(Get-Location).Path
-pytest tests/test_geometry_import_workflow.py tests/test_agent_runtime.py frontend/tests/smoke_test.py
+pytest tests/test_geometry_import_workflow.py tests/test_agent_runtime.py apps/workbench/tests/smoke_test.py
 ```
 
 结果：`53 passed, 1 skipped`。
 
 ```powershell
-python -m py_compile autoform_agent\geometry_import_workflow.py autoform_agent\agent_runtime.py tests\test_geometry_import_workflow.py tests\test_agent_runtime.py frontend\tests\smoke_test.py
-node --check frontend\app.js
+python -m py_compile autoform_agent\geometry_import_workflow.py autoform_agent\agent_runtime.py tests\test_geometry_import_workflow.py tests\test_agent_runtime.py apps\workbench\tests\smoke_test.py
+node --check apps\workbench\app.js
 ```
 
 结果：通过。

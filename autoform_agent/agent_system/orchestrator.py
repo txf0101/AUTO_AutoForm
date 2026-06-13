@@ -1,7 +1,4 @@
-"""这个文件提供多 Agent 路由预览。它当前主要说明某类任务应该交给哪些角色，并保留以后接入真实执行器的位置。
-
-This file provides a preview of multi-agent routing. It mainly explains which roles should handle each kind of task and leaves a clear place for a future real executor.
-"""
+"""Deterministic multi-agent routing preview."""
 
 from __future__ import annotations
 
@@ -12,65 +9,60 @@ from .contracts import AgentSystemPlan, AgentSystemRequest
 from .registry import AgentRoleRegistry, build_default_agent_registry
 
 
-# Keyword routing is intentionally deterministic. It is a preview contract for
-# tests and documentation, not a language model. New keywords should point to
-# business-facing roles first; legacy roles can remain as compatibility targets
-# when an old tool family has not yet been renamed.
 KEYWORD_ROLE_MAP: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("new project", ("demand_process_planning_agent", "geometry_data_agent")),
+    ("create", ("demand_process_planning_agent", "geometry_data_agent")),
+    ("resize", ("geometry_data_agent",)),
+    ("dimension", ("geometry_data_agent",)),
+    ("geometry", ("geometry_data_agent",)),
+    ("part", ("geometry_data_agent",)),
+    ("material", ("material_agent",)),
+    ("6061", ("material_agent",)),
+    ("aa6061", ("material_agent",)),
+    ("process", ("demand_process_planning_agent", "process_setting_agent")),
+    ("route", ("demand_process_planning_agent", "process_setting_agent")),
+    ("solver", ("solver_execution_agent",)),
+    ("solve", ("solver_execution_agent",)),
+    ("result", ("postprocessing_agent", "report_collation_agent")),
+    ("post", ("postprocessing_agent",)),
+    ("springback", ("postprocessing_agent", "diagnosis_optimization_agent")),
+    ("wrinkle", ("postprocessing_agent", "diagnosis_optimization_agent")),
+    ("animation", ("postprocessing_agent",)),
+    ("view", ("postprocessing_agent",)),
+    ("quicklink", ("quicklink",)),
+    ("export", ("quicklink", "report_collation_agent")),
+    ("script", ("script_agent",)),
+    ("report", ("report_collation_agent",)),
+    ("release", ("report_collation_agent",)),
+    ("mcp", ("mcp_gateway",)),
     ("新建", ("demand_process_planning_agent",)),
     ("创建", ("demand_process_planning_agent", "geometry_data_agent")),
     ("修改", ("geometry_data_agent",)),
     ("调整", ("geometry_data_agent",)),
-    ("改成", ("geometry_data_agent",)),
-    ("改为", ("geometry_data_agent",)),
     ("尺寸", ("geometry_data_agent",)),
     ("大小", ("geometry_data_agent",)),
     ("薄板", ("geometry_data_agent", "material_agent")),
-    ("铝合金", ("material_agent",)),
-    ("6061", ("material_agent",)),
-    ("aa6061", ("material_agent",)),
-    ("20*20", ("geometry_data_agent",)),
-    ("20×20", ("geometry_data_agent",)),
-    ("50*40", ("geometry_data_agent",)),
-    ("50×40", ("geometry_data_agent",)),
-    ("安装", ("diagnosis_optimization_agent",)),
-    ("环境", ("diagnosis_optimization_agent",)),
-    ("诊断", ("diagnosis_optimization_agent",)),
-    ("优化", ("diagnosis_optimization_agent",)),
-    ("队列", ("installation",)),
+    ("几何", ("geometry_data_agent",)),
+    ("材料", ("material_agent",)),
     ("工程", ("demand_process_planning_agent", "process_setting_agent")),
     ("项目", ("demand_process_planning_agent", "process_setting_agent")),
-    ("afd", ("process_setting_agent",)),
     ("需求", ("demand_process_planning_agent",)),
-    ("分诊", ("demand_process_planning_agent",)),
-    ("缺失", ("demand_process_planning_agent",)),
-    ("几何", ("geometry_data_agent",)),
-    ("板厚", ("geometry_data_agent",)),
-    ("part", ("geometry_data_agent",)),
-    ("rag", ("demand_process_planning_agent",)),
-    ("证据", ("demand_process_planning_agent",)),
-    ("来源", ("demand_process_planning_agent",)),
+    ("证据", ("rag_evidence_agent",)),
+    ("来源", ("rag_evidence_agent",)),
     ("求解", ("solver_execution_agent",)),
-    ("solver", ("solver_execution_agent",)),
     ("后处理", ("postprocessing_agent", "diagnosis_optimization_agent", "report_collation_agent")),
     ("结果审阅", ("postprocessing_agent",)),
-    ("流入量", ("postprocessing_agent",)),
     ("回弹", ("postprocessing_agent", "diagnosis_optimization_agent")),
     ("起皱", ("postprocessing_agent", "diagnosis_optimization_agent")),
     ("动画", ("postprocessing_agent",)),
     ("视角", ("postprocessing_agent",)),
-    ("quicklink", ("quicklink",)),
     ("导出", ("quicklink", "report_collation_agent")),
-    ("材料", ("material_agent",)),
-    ("material", ("material_agent",)),
     ("工艺", ("demand_process_planning_agent", "process_setting_agent")),
     ("路线", ("demand_process_planning_agent", "process_setting_agent")),
-    ("脚本", ("process_setting_agent",)),
-    ("script", ("process_setting_agent",)),
+    ("脚本", ("script_agent",)),
     ("报告", ("report_collation_agent",)),
     ("结果", ("postprocessing_agent", "report_collation_agent")),
     ("发布", ("report_collation_agent",)),
-    ("mcp", ("mcp_gateway",)),
 )
 
 
@@ -81,12 +73,7 @@ def plan_agent_system_turn(
     registry: AgentRoleRegistry | None = None,
     execution_mode: str = "routing_preview",
 ) -> AgentSystemPlan:
-    """Return the planned agent route for one future multi agent turn.
-
-    The function is intentionally deterministic.  It gives developers, tests,
-    and documentation a stable contract today, while leaving the actual live
-    handoff implementation to a future runtime layer.
-    """
+    """Return the planned agent route for one future multi-agent turn."""
 
     role_registry = registry or build_default_agent_registry()
     request = AgentSystemRequest(
@@ -96,55 +83,59 @@ def plan_agent_system_turn(
     )
     role_ids = _select_role_ids(prompt, request.requested_roles)
     selected_roles, missing_roles = role_registry.select(role_ids)
-
-    notes = (
-        "当前接口只生成多 Agent 路由预览，不执行外部模型调用。",
-        "MCP gateway 同时承担外部 MCP host 入口和内部 Agent 工具网关边界。",
-        "后续接入真实执行器时，应复用 AgentSystemRequest、AgentRoleSpec 和 AgentSystemPlan 三个契约。",
-    )
-    integration_points = {
-        "single_agent_runtime": "autoform_agent.agent_runtime.run_agent_runtime_turn",
-        "mcp_gateway": "autoform_agent.mcp_server.mcp",
-        "agent_tool_gateway": "autoform_agent.agent_system.tool_gateway.AgentToolGateway",
-        "mcp_tool_layers": "autoform_agent.mcp_tools.register_all_tools",
-        "cli_preview": "python -m autoform_agent.cli agent-system-plan",
-        "role_registry": "autoform_agent.agent_system.registry.build_default_agent_registry",
-    }
     return AgentSystemPlan(
         request=request,
         selected_roles=selected_roles,
         missing_roles=missing_roles,
         execution_mode=execution_mode,
-        notes=notes,
-        integration_points=integration_points,
+        notes=(
+            "Current API builds a deterministic routing preview and does not call an external model.",
+            "MCP gateway is the boundary for external MCP hosts and internal Agent tool calls.",
+            "Future executors should reuse AgentSystemRequest, AgentRoleSpec, and AgentSystemPlan.",
+        ),
+        integration_points={
+            "single_agent_runtime": "autoform_agent.agent_runtime.run_agent_runtime_turn",
+            "mcp_gateway": "autoform_mcp_agent.mcp_server.mcp",
+            "agent_tool_gateway": "autoform_agent.agent_system.tool_gateway.AgentToolGateway",
+            "mcp_tool_layers": "autoform_core.tool_registry.register_all_tools",
+            "cli_preview": "python -m autoform_agent.cli agent-system-plan",
+            "role_registry": "autoform_agent.agent_system.registry.build_default_agent_registry",
+        },
     )
 
 
 def _select_role_ids(prompt: str, requested_roles: tuple[str, ...]) -> tuple[str, ...]:
-    """Select manager plus requested and keyword matched roles."""
+    """Select manager plus requested and keyword-matched roles."""
 
     selected: list[str] = ["manager"]
     for role_id in requested_roles:
         _append_unique(selected, role_id)
 
-    normalized_prompt = prompt.lower()
     if _is_geometry_dimension_update(prompt):
         _append_unique(selected, "geometry_data_agent")
         return tuple(selected)
+
+    normalized_prompt = str(prompt or "").lower()
     for keyword, role_ids in KEYWORD_ROLE_MAP:
         if keyword.lower() in normalized_prompt and prompt_affirms_any(prompt, (keyword,)):
             for role_id in role_ids:
                 _append_unique(selected, role_id)
-
     return tuple(selected)
 
 
 def _is_geometry_dimension_update(prompt: str) -> bool:
+    """Return whether a prompt is a focused size-edit request."""
+
     text = str(prompt or "")
-    has_dimension_triplet = bool(re.search(r"\d+(?:\.\d+)?\s*(?:x|\*|×)\s*\d+(?:\.\d+)?\s*(?:x|\*|×)\s*\d+(?:\.\d+)?", text))
+    has_dimension_triplet = bool(
+        re.search(r"\d+(?:\.\d+)?\s*(?:x|\*)\s*\d+(?:\.\d+)?\s*(?:x|\*)\s*\d+(?:\.\d+)?", text)
+    )
     if not has_dimension_triplet:
         return False
-    return prompt_affirms_any(text, ("修改", "调整", "改成", "改为", "变更", "重定义", "设置", "设为", "更新", "modify", "change", "resize", "set"))
+    return prompt_affirms_any(
+        text,
+        ("修改", "调整", "改成", "改为", "变更", "设置", "设为", "更新", "modify", "change", "resize", "set"),
+    )
 
 
 def _append_unique(items: list[str], value: str) -> None:

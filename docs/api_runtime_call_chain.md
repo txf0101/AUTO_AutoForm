@@ -45,21 +45,21 @@ R5 普通 prompt 会先由 `autoform_agent.agent_system.kernel.build_center_agen
 MCP server 保留为可选外部工具入口。支持 MCP 的客户端可以独立启动：
 
 ```powershell
-python -m autoform_agent.mcp_server
+python -m autoform_mcp_agent.mcp_server
 ```
 
 随后通过 MCP 协议调用 `autoform_` 前缀工具。该入口不参与当前网页应用主链路。
 
-支持 MCP resources 的 host 还可以读取 `autoform://status`。该 resource 返回只读状态快照，内容包括项目版本、默认服务端口、本机 AutoForm 安装、队列进程、QuickLink 导出、最近日志、能力覆盖和探测错误。资源实现与 `autoform_status_snapshot` MCP 工具、`python -m autoform_agent.cli status` 共享同一个底层函数。作业生命周期、工程运行、QuickLink 规范化、结果证据包、发布就绪检查、公开发布扫描、扩展边界说明、柔性脚本目录和 V1.1 GUI 结果审阅也已经挂到可选 MCP 层，MCP wrapper 位于 `autoform_agent/mcp_tools/`，业务实现分别位于 `autoform_agent/jobs.py`、`autoform_agent/project_workflow.py`、`autoform_agent/quicklink.py`、`autoform_agent/results.py`、`autoform_agent/release.py`、`autoform_agent/safety.py`、`autoform_agent/extension.py`、`autoform_agent/flex_scripts/`、`autoform_agent/gui_automation.py` 和 `autoform_agent/result_viewer.py`。
+支持 MCP resources 的 host 还可以读取 `autoform://status`。该 resource 返回只读状态快照，内容包括项目版本、默认服务端口、本机 AutoForm 安装、队列进程、QuickLink 导出、最近日志、能力覆盖和探测错误。资源实现与 `autoform_status_snapshot` MCP 工具、`python -m autoform_agent.cli status` 共享同一个底层函数。作业生命周期、工程运行、QuickLink 规范化、结果证据包、发布就绪检查、公开发布扫描、扩展边界说明、柔性脚本目录和 V1.1 GUI 结果审阅也已经挂到可选 MCP 层，MCP wrapper 位于 `autoform_core/tool_registry/`，业务实现分别位于 `autoform_core/jobs.py`、`autoform_core/project_workflow.py`、`autoform_core/quicklink.py`、`autoform_core/results.py`、`autoform_core/release.py`、`autoform_core/safety.py`、`autoform_core/extension.py`、`autoform_core/flex_scripts/`、`autoform_core/gui_automation.py` 和 `autoform_core/result_viewer.py`。
 
 ## 源码依据
 
 1. `autoform_agent/agent_runtime.py` 定义 `run_agent_runtime_turn()` 和 `build_runtime_tool_catalog()`。该模块读取 DeepSeek 和通用 chat completions 环境变量，合并页面传入的 `runtimeConfig`，构造本机证据快照、R5 中心 Agent 计划和能力目录，并通过直接 HTTP API 调用 provider。当前能力目录包含中心 Agent 计划、几何候选更新、AgentToolGateway 目录、MCP 同源工具调用、安装发现、环境快照、队列检查、官方示例、命令登记、QuickLink、QuickLink Blank 信息、QuickLink 几何文件引用、工程摘要、本机材料库查询、求解计划、AutoForm 主界面启动、官方样例汇总、桌面探测和 V1.1 结果审阅规划入口。
 2. `autoform_agent/http_bridge.py` 的 `/api/agent` 路由通过 `build_agent_runtime_reply()` 调用 `run_agent_runtime_turn()`，说明前端 prompt 已进入 Python 后端运行时。
-3. `frontend/app.js` 的 `DEFAULT_ENDPOINT` 指向 `http://127.0.0.1:4317/api/agent`，并在请求体中发送 `runtimeConfig`；当用户勾选本机 MCP 工具控制时，页面还会发送 `uiContext.localExecution`、`scope=mcp_gateway` 和批准状态，由后端运行时生成白名单工具请求。
+3. `apps/workbench/app.js` 的 `DEFAULT_ENDPOINT` 指向 `http://127.0.0.1:4317/api/agent`，并在请求体中发送 `runtimeConfig`；当用户勾选本机 MCP 工具控制时，页面还会发送 `uiContext.localExecution`、`scope=mcp_gateway` 和批准状态，由后端运行时生成白名单工具请求。
 4. `start_autoform_agent.ps1` 的交互菜单默认检查 API runtime；第二个选项再启动 HTTP bridge、静态前端服务并打开页面。
 5. `start_autoform_agent.ps1` 默认复用已经监听的 `4317` 与 `8765` 服务；当源码时间晚于服务启动时间时会提示旧进程风险。源码更新后需要刷新网页链路时，使用 `-RestartServices` 只重启本启动器 PID 文件中记录的 HTTP bridge 和前端服务。
-6. `autoform_agent/mcp_server.py` 创建 `mcp = FastMCP("autoform-agent")` 并调用 `autoform_agent.mcp_tools.register_all_tools()`。`autoform_agent/mcp_tools/` 下的工具家族模块通过 `mcp.add_tool()` 注册 116 个 `autoform_` 工具，并在 status 模块中注册 `autoform://status` 只读资源。文件末尾在 `__main__` 情况下调用 `mcp.run()`，这是可选 MCP stdio 入口。
+6. `AutoForm_MCP/autoform_mcp_agent/mcp_server.py` 创建 `mcp = FastMCP("autoform-agent")` 并调用 `autoform_core.tool_registry.register_all_tools()`。`autoform_core/tool_registry/` 下的工具家族模块通过 `mcp.add_tool()` 注册 116 个 `autoform_` 工具，并在 status 模块中注册 `autoform://status` 只读资源。文件末尾在 `__main__` 情况下调用 `mcp.run()`，这是可选 MCP stdio 入口。
 
 ## 分层职责
 
@@ -71,9 +71,9 @@ python -m autoform_agent.mcp_server
 
 `autoform_agent/http_bridge.py` 是前端本地通信层。它提供 `/health` 和 `/api/agent` 两个 HTTP 路由，接收页面 prompt 并交给后端运行时。正常响应、400 错误和 500 异常都会经过共享脱敏函数。
 
-`frontend/` 是可视化层。它显示 prompt、状态总结、Agent 图谱、工程会话轨迹、终端式输出、凭据边界和 API 使用情况。前端不决定 AutoForm 工具调用，只把 prompt 与 API 运行时配置发送到 HTTP bridge，并渲染后端返回结果。R5 后端响应会附带 `events`，页面按同一 `RunEvent` 外壳更新任务卡、路由、上下文视图、图谱、状态和 token 用量。工程会话轨迹保留本次前端窗口内的用户 prompt 和 Agent 消息，用户输入靠右显示，Agent 摘要靠左显示；fixture 回放仍按事件逐条展示，live HTTP 回复统一收敛为一条中心 Agent 摘要气泡，折叠区 `查看本轮 Agent 明细` 展示专业 Agent 消息、当前工程上下文、紧凑工具结果和必要审批状态。页面在每轮回复渲染完成后更新 `conversationContext`，把压缩后的 `project_history` 和结构化 `current_project` 放入下一轮请求；`current_project` 的来源顺序为后端 `runtime.currentProject`、工具结果或参数中的工程路径、前端“工程操作”选择。Agent 图谱固定显示 9 个业务节点：中心Agent、需求与工艺规划Agent、几何与数据Agent、材料Agent、工艺设置Agent、求解执行Agent、后处理Agent、诊断与优化Agent、报告整理Agent；内部 role_id 会映射到这些节点，工作态为绿色，完成后回到待命灰白态。R19 起页面还识别 `tool_requested`、`tool_completed`、`tool_blocked`、`tool_failed` 和 `approval_required`，用于展示网关工具状态。
+`apps/workbench/` 是可视化层。它显示 prompt、状态总结、Agent 图谱、工程会话轨迹、终端式输出、凭据边界和 API 使用情况。前端不决定 AutoForm 工具调用，只把 prompt 与 API 运行时配置发送到 HTTP bridge，并渲染后端返回结果。R5 后端响应会附带 `events`，页面按同一 `RunEvent` 外壳更新任务卡、路由、上下文视图、图谱、状态和 token 用量。工程会话轨迹保留本次前端窗口内的用户 prompt 和 Agent 消息，用户输入靠右显示，Agent 摘要靠左显示；fixture 回放仍按事件逐条展示，live HTTP 回复统一收敛为一条中心 Agent 摘要气泡，折叠区 `查看本轮 Agent 明细` 展示专业 Agent 消息、当前工程上下文、紧凑工具结果和必要审批状态。页面在每轮回复渲染完成后更新 `conversationContext`，把压缩后的 `project_history` 和结构化 `current_project` 放入下一轮请求；`current_project` 的来源顺序为后端 `runtime.currentProject`、工具结果或参数中的工程路径、前端“工程操作”选择。Agent 图谱固定显示 9 个业务节点：中心Agent、需求与工艺规划Agent、几何与数据Agent、材料Agent、工艺设置Agent、求解执行Agent、后处理Agent、诊断与优化Agent、报告整理Agent；内部 role_id 会映射到这些节点，工作态为绿色，完成后回到待命灰白态。R19 起页面还识别 `tool_requested`、`tool_completed`、`tool_blocked`、`tool_failed` 和 `approval_required`，用于展示网关工具状态。
 
-`autoform_agent/mcp_server.py` 是可选 MCP stdio 入口。具体 MCP wrapper 位于 `autoform_agent/mcp_tools/`，按 status、project、jobs、materials、quicklink、environment、queue、solver、commands、reporting、release、reference、scripts 和 gui 分组。各工具层模块负责把 MCP 参数转换为内部函数输入，并把结果整理成可序列化对象。当前状态资源来自 `autoform_agent.diagnostics.autoform_status_snapshot()`，用于让支持 MCP 的客户端在正式调用工具前先读取本机健康状态和可观测信息。该层还暴露 `autoform_project_run`、`autoform_script_catalog`、`autoform_script_run`、`autoform_example_project_baseline`、`autoform_official_sample_run_summary`、`autoform_quicklink_schema`、`autoform_job_submit`、`autoform_result_inventory`、`autoform_report_delivery_plan`、`autoform_release_readiness_check`、`autoform_public_release_scan`、`autoform_internal_extension_boundary`、`autoform_gui_window_snapshot`、`autoform_gui_restore_window`、`autoform_computer_use_probe`、`autoform_result_query_capabilities`、`autoform_result_gui_evidence`、`autoform_result_blockers`、`autoform_result_open_latest`、`autoform_result_show_variable`、`autoform_result_set_view`、`autoform_result_view_evidence`、`autoform_result_play_forming_animation`、`autoform_result_capture_evidence`、`autoform_result_route_task`、`autoform_result_plan_review` 和 `autoform_result_readiness` 等工具，便于 MCP host 直接复核工程运行、脚本目录、官方样例覆盖、作业、结果、发布状态、桌面观察状态和 V1.1 GUI 后处理路线。`autoform_result_view_evidence` 用于六个目标视角的 before、after 和 compare 取证。`autoform_result_play_forming_animation` 对本机 AutoComp_R13 可使用 `autocomp_r13_bottom_strip` 受控 profile，窗口或工程布局不匹配时使用 `manual_user_playback` 观察 profile；两条路径都会抓取前后截图并执行结果视图区差异校验。`autoform_project_run` 支持 `open_gui=true`，该参数会通过 `project_workflow.py` 调用 `open_afd_observer()` 打开 AutoForm Forming 观察窗口，并把 GUI 命令、进程号和可视观察边界写入 `gui_observation`。
+`AutoForm_MCP/autoform_mcp_agent/mcp_server.py` 是可选 MCP stdio 入口。具体 MCP wrapper 位于 `autoform_core/tool_registry/`，按 status、project、jobs、materials、quicklink、environment、queue、solver、commands、reporting、release、reference、scripts 和 gui 分组。各工具层模块负责把 MCP 参数转换为内部函数输入，并把结果整理成可序列化对象。当前状态资源来自 `autoform_core.diagnostics.autoform_status_snapshot()`，用于让支持 MCP 的客户端在正式调用工具前先读取本机健康状态和可观测信息。该层还暴露 `autoform_project_run`、`autoform_script_catalog`、`autoform_script_run`、`autoform_example_project_baseline`、`autoform_official_sample_run_summary`、`autoform_quicklink_schema`、`autoform_job_submit`、`autoform_result_inventory`、`autoform_report_delivery_plan`、`autoform_release_readiness_check`、`autoform_public_release_scan`、`autoform_internal_extension_boundary`、`autoform_gui_window_snapshot`、`autoform_gui_restore_window`、`autoform_computer_use_probe`、`autoform_result_query_capabilities`、`autoform_result_gui_evidence`、`autoform_result_blockers`、`autoform_result_open_latest`、`autoform_result_show_variable`、`autoform_result_set_view`、`autoform_result_view_evidence`、`autoform_result_play_forming_animation`、`autoform_result_capture_evidence`、`autoform_result_route_task`、`autoform_result_plan_review` 和 `autoform_result_readiness` 等工具，便于 MCP host 直接复核工程运行、脚本目录、官方样例覆盖、作业、结果、发布状态、桌面观察状态和 V1.1 GUI 后处理路线。`autoform_result_view_evidence` 用于六个目标视角的 before、after 和 compare 取证。`autoform_result_play_forming_animation` 对本机 AutoComp_R13 可使用 `autocomp_r13_bottom_strip` 受控 profile，窗口或工程布局不匹配时使用 `manual_user_playback` 观察 profile；两条路径都会抓取前后截图并执行结果视图区差异校验。`autoform_project_run` 支持 `open_gui=true`，该参数会通过 `project_workflow.py` 调用 `open_afd_observer()` 打开 AutoForm Forming 观察窗口，并把 GUI 命令、进程号和可视观察边界写入 `gui_observation`。
 
 ## 后续维护要求
 
@@ -83,9 +83,9 @@ python -m autoform_agent.mcp_server
 2. 在 `tests/` 中补充成功路径和安全默认值检查。
 3. 需要进入应用运行时时，在 `autoform_agent/agent_runtime.py` 的 `build_runtime_tool_catalog()` 中新增能力目录项，并在对应业务模块实现可测试函数。
 4. 需要进入多 Agent 系统时，在 `autoform_agent/agent_system/registry.py` 中补充角色，并在 `docs/multi_agent_architecture.md` 中记录依据。需要让 Agent 调用 MCP 同源工具时，还要在 `autoform_agent/agent_system/tool_gateway.py` 中补充 `GatewayToolSpec`。
-5. 需要给 HTTP 页面展示新状态时，更新 `frontend/` 的状态字段和渲染函数。
-6. 需要给 MCP host 直接调用时，在 `autoform_agent/mcp_tools/` 中对应工具家族模块新增薄 wrapper，工具名继续使用 `autoform_` 前缀，并确认该模块的注册函数会被 `register_all_tools()` 调用。
-7. 需要给 MCP host 提供可轮询状态时，优先更新 `autoform_agent.diagnostics.autoform_status_snapshot()`，再在 `autoform_agent/mcp_tools/status.py` 中暴露 resource 或工具。
+5. 需要给 HTTP 页面展示新状态时，更新 `apps/workbench/` 的状态字段和渲染函数。
+6. 需要给 MCP host 直接调用时，在 `autoform_core/tool_registry/` 中对应工具家族模块新增薄 wrapper，工具名继续使用 `autoform_` 前缀，并确认该模块的注册函数会被 `register_all_tools()` 调用。
+7. 需要给 MCP host 提供可轮询状态时，优先更新 `autoform_core.diagnostics.autoform_status_snapshot()`，再在 `autoform_core/tool_registry/status.py` 中暴露 resource 或工具。
 8. 涉及安装、启动、CLI、MCP、前端或测试命令时，同步检查 `docs/beginner_onboarding_zh.md`。
 9. 更新 `README.md`、`DEVELOPERS.md` 和本文件中受影响的说明。
 10. R13 至 R20 的企业工艺数据、工艺 RAG 和实时多 Agent 执行器能力进入运行时、前端或 MCP 时，必须先满足 `docs/multi_agent_architecture.md` 中对应阶段的严格验收标准。
@@ -100,19 +100,19 @@ python -m autoform_agent.mcp_server
 
 ## 2026-06-06 新建工程导入 CAD 调用链
 
-当网页“工程操作”选择 `new_project`，并且 prompt 同时包含导入几何意图和 `.step`、`.stp`、`.igs`、`.iges`、`.stl` 路径时，`autoform_agent.agent_runtime._geometry_import_tool_requests()` 会生成 `autoform_import_geometry_to_new_project`。路径解析由 `autoform_agent.geometry_import_workflow.extract_geometry_path_from_text()` 处理，支持绝对路径、相对路径、桌面文件名和“桌面上的 xxx.STEP”类表达。GUI 是否已经运行由 workflow 自行判断：先调用 AutoForm Forming 启动或附着逻辑，再用窗口快照和恢复逻辑确认可交互窗口，失败时返回 `blocked` 或 `failed` 并保存证据。
+当网页“工程操作”选择 `new_project`，并且 prompt 同时包含导入几何意图和 `.step`、`.stp`、`.igs`、`.iges`、`.stl` 路径时，`autoform_agent.agent_runtime._geometry_import_tool_requests()` 会生成 `autoform_import_geometry_to_new_project`。路径解析由 `autoform_core.geometry_import_workflow.extract_geometry_path_from_text()` 处理，支持绝对路径、相对路径、桌面文件名和“桌面上的 xxx.STEP”类表达。GUI 是否已经运行由 workflow 自行判断：先调用 AutoForm Forming 启动或附着逻辑，再用窗口快照和恢复逻辑确认可交互窗口，失败时返回 `blocked` 或 `failed` 并保存证据。
 
-该工具在 `autoform_agent.mcp_tools.project` 注册为 MCP wrapper，在 `autoform_agent.agent_system.tool_gateway` 注册为 `guarded_gui`。前端直接路径仍使用已有“允许本机 MCP 工具控制”批准位；未批准时返回 `blocked_requires_approval`，批准后调用同一 workflow。CLI 入口为：
+该工具在 `autoform_core.tool_registry.project` 注册为 MCP wrapper，在 `autoform_agent.agent_system.tool_gateway` 注册为 `guarded_gui`。前端直接路径仍使用已有“允许本机 MCP 工具控制”批准位；未批准时返回 `blocked_requires_approval`，批准后调用同一 workflow。CLI 入口为：
 
 ```powershell
 python -m autoform_agent import-geometry-to-new-project --source-geometry-path "C:\Users\Tang Xufeng\Desktop\薄板30-40-3.STEP" --output-dir output\geometry_import_projects
 ```
 
-成功或失败都会返回结构化字段：`status`、`source_geometry_path`、`output_afd_path`、`gui_pid`、`screenshots`、`logs`、`run_dir`、`evidence_dir`、`failure_reason`、`blocked_reason`、`geometry_dimension_candidate` 和 `steps`。输出目录默认是 `output/geometry_import_projects/<timestamp>_<stem>/`，截图、窗口树和日志位于其 `evidence/` 子目录。`geometry_dimension_candidate` 来自 `30-40-3`、`30x40x3` 等文件名模式，仅作为讨论候选，不代表已经完成 CAD 几何测量。前端 `frontend/app.js` 会把成功导入的 `source_geometry_path`、`output_afd_path`、`run_dir`、`evidence_dir` 和 `gui_pid` 合入 `conversationContext.current_project`，用于后续“这个工程是做什么的”等上下文续接；失败导入不会覆盖当前工程。
+成功或失败都会返回结构化字段：`status`、`source_geometry_path`、`output_afd_path`、`gui_pid`、`screenshots`、`logs`、`run_dir`、`evidence_dir`、`failure_reason`、`blocked_reason`、`geometry_dimension_candidate` 和 `steps`。输出目录默认是 `output/geometry_import_projects/<timestamp>_<stem>/`，截图、窗口树和日志位于其 `evidence/` 子目录。`geometry_dimension_candidate` 来自 `30-40-3`、`30x40x3` 等文件名模式，仅作为讨论候选，不代表已经完成 CAD 几何测量。前端 `apps/workbench/app.js` 会把成功导入的 `source_geometry_path`、`output_afd_path`、`run_dir`、`evidence_dir` 和 `gui_pid` 合入 `conversationContext.current_project`，用于后续“这个工程是做什么的”等上下文续接；失败导入不会覆盖当前工程。
 
 ## 2026-06-06 柔性脚本与 CAD 实测调用链
 
-当用户询问“这个薄板长宽厚是多少”一类问题时，`autoform_agent.agent_runtime.run_agent_runtime_turn()` 会优先读取 `conversationContext.current_project.source_geometry_path`，没有当前工程路径时再从 prompt 中解析 CAD 文件路径。随后运行稳定库脚本 `cad_measure_geometry_v1`，执行入口由 `autoform_agent.flex_scripts.script_agent.script_run()`、`ScriptExecutor` 和 `ScriptRunner` 串联，输出统一写入 `output/script_runs/<timestamp>_cad_measure_geometry_v1/`，证据位于该目录的 `evidence/` 子目录。CAD 测量结果同时保存到 `output/cad_measurements/` 或调用参数指定的输出目录，并嵌入 `ScriptRunRecord.result`。
+当用户询问“这个薄板长宽厚是多少”一类问题时，`autoform_agent.agent_runtime.run_agent_runtime_turn()` 会优先读取 `conversationContext.current_project.source_geometry_path`，没有当前工程路径时再从 prompt 中解析 CAD 文件路径。随后运行稳定库脚本 `cad_measure_geometry_v1`，执行入口由 `autoform_core.flex_scripts.script_agent.script_run()`、`ScriptExecutor` 和 `ScriptRunner` 串联，输出统一写入 `output/script_runs/<timestamp>_cad_measure_geometry_v1/`，证据位于该目录的 `evidence/` 子目录。CAD 测量结果同时保存到 `output/cad_measurements/` 或调用参数指定的输出目录，并嵌入 `ScriptRunRecord.result`。
 
 `cad_measure_geometry_v1` 使用内置 ASCII/Binary STL 顶点解析计算 `.stl` axis-aligned bounding box，并给出 `length`、`width`、`thickness`。`.step/.stp/.igs/.iges` 会探测 CadQuery/OCP、FreeCADCmd、FreeCAD、meshio 和 trimesh；当 CadQuery/OCP 或 FreeCADCmd 可用时，STEP 可以返回真实 bbox。解析器缺失或解析失败时返回 `status=blocked`、`parser=probe_only` 或失败 parser 名、`blocked_reason`、`evidence_dir` 和 `filename_dimension_candidate`。`filename_dimension_candidate` 来自文件名中的 `30-40-3` 等模式，仅供后续建模讨论，运行时和前端都不能把它渲染成 CAD 实测尺寸。
 

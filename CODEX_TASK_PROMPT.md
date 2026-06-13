@@ -13,15 +13,15 @@
 AutoForm Agent 的应用主调用链以 DeepSeek 直接 API runtime 为核心。浏览器前端只收集 prompt、API 供应商配置和显示结果，HTTP bridge 把 `/api/agent` 请求转交给
 `autoform_agent.agent_runtime`。该运行时在具备 `DeepSeek_V4_API`、`.env` 或页面临时 API key 时，直接调用兼容 chat completions 的 HTTP 接口，并用本地证据快照和工具目录约束回答。页面传入的 `runtimeConfig` 可以覆盖 provider、Base URL、模型和 API 模式，便于 DeepSeek 或其他兼容 endpoint 复用同一条后端链路。
 
-MCP server 作为可选外部工具入口保留。支持 MCP 的客户端可以通过 `python -m autoform_agent.mcp_server` 启动 stdio MCP server，再调用 `autoform_` 前缀工具；该入口不参与当前网页应用主链路。
+MCP server 作为可选外部工具入口保留。支持 MCP 的客户端可以通过 `python -m autoform_mcp_agent.mcp_server` 启动 stdio MCP server，再调用 `autoform_` 前缀工具；该入口不参与当前网页应用主链路。
 
 这个方向的依据来自本仓库现有文件：
 
 1. `autoform_agent/agent_runtime.py` 合并 `.env` 与页面 `runtimeConfig`，构造本地证据快照和工具目录，并通过 `autoform_agent/provider_connection.py` 直接调用兼容 chat completions 的 HTTP 接口。
 2. `autoform_agent/http_bridge.py` 把前端 `/api/agent` 请求转交给 `run_agent_runtime_turn()`。
-3. `frontend/app.js` 默认把页面请求发送到 `http://127.0.0.1:4317/api/agent`。
+3. `apps/workbench/app.js` 默认把页面请求发送到 `http://127.0.0.1:4317/api/agent`。
 4. `start_autoform_agent.ps1` 的交互菜单检查 API runtime，第二个选项再启动 HTTP bridge 和静态前端。
-5. `autoform_agent/mcp_server.py` 仍创建 `FastMCP("autoform-agent")`，作为可选外部工具层保留。
+5. `AutoForm_MCP/autoform_mcp_agent/mcp_server.py` 仍创建 `FastMCP("autoform-agent")`，作为可选外部工具层保留。
 
 ## 修改原则
 

@@ -4,7 +4,7 @@
 
 - 主计划 DOCX：`VC开发文档/Auto_Autoform思路整理/AutoForm多Agent系统整体任务规划矛盾检查与Vibecoding开发计划.docx`。
 - 本轮执行前确认该 DOCX 时间戳为 `2026-06-01 20:48:15`。
-- 仓库现状依据 `git status --short --branch`、顶层目录清单和现有 `frontend/`、`autoform_agent/`、`docs/`、`tests/` 文件。
+- 仓库现状依据 `git status --short --branch`、顶层目录清单和现有 `apps/workbench/`、`autoform_agent/`、`docs/`、`tests/` 文件。
 
 ## 本轮判断
 

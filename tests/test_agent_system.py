@@ -63,7 +63,7 @@ def test_agent_system_plan_selects_requested_and_keyword_roles() -> None:
     assert "postprocessing_agent" in role_ids
     assert "report_collation_agent" in role_ids
     assert data["missing_roles"] == []
-    assert data["integration_points"]["mcp_tool_layers"] == "autoform_agent.mcp_tools.register_all_tools"
+    assert data["integration_points"]["mcp_tool_layers"] == "autoform_core.tool_registry.register_all_tools"
 
 
 def test_agent_system_plan_ignores_negated_solver_and_gui_keywords() -> None:

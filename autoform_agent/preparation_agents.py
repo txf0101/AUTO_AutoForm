@@ -19,7 +19,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SOURCE_REGISTRY = ROOT / "source_registry.csv"
-DEFAULT_SCRIPT_REGISTRY = ROOT / "script_registry.yaml"
+DEFAULT_SCRIPT_REGISTRY = ROOT / "script_library" / "flex" / "registry.yaml"
 DEFAULT_AUTOFORM_MATERIALS_DIR = Path(r"C:\ProgramData\AutoForm\AFplus\R13F\materials")
 DEFAULT_R11_TASK_ID = "task_r11_prepare_demo"
 DEFAULT_EVIDENCE_BUNDLE_ID = "evidence_rag_minimal_autoform_prepare"
@@ -910,7 +910,7 @@ def _script_failure(skill_id: str, params_hash: str, reason: str) -> dict[str, A
         "failure_summary": {
             "object_type": "FailureSummary",
             "reason": reason,
-            "next_action": "检查 script_registry.yaml 和参数边界。",
+            "next_action": "检查 script_library/flex/registry.yaml 和参数边界。",
         },
         "created_at": utc_now(),
     }

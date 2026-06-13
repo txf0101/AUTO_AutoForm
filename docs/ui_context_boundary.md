@@ -4,7 +4,7 @@
 
 - 主计划文档 R2 至 R5 要求固定 `RunEvent`、`TaskCard`、`ContextPatch`、`EvidenceBundle`、`TokenUsageSnapshot`、后端事件网关、凭据边界和中心 Agent。
 - `02_上下文信息结构体详细架构计划与任务目标.docx` 将上下文分为 C0 至 C6，并要求正式字段通过 `ContextPatch` 改变。
-- 当前仓库源码 `autoform_agent/http_bridge.py`、`autoform_agent/agent_runtime.py` 和 `frontend/` 说明了既有前后端边界。
+- 当前仓库源码 `autoform_agent/http_bridge.py`、`autoform_agent/agent_runtime.py` 和 `apps/workbench/` 说明了既有前后端边界。
 
 ## UI 可读取内容
 

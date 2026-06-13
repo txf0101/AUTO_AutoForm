@@ -4,7 +4,7 @@
 
 ## 本项目文件
 
-若项目通过普通目录复制安装，可先备份需要保留的 `output`、`autoform_agent_data` 和 `.env`，再删除项目目录。删除前建议运行：
+若项目通过普通目录复制安装，可先备份需要保留的 `output`、`data/runtime/agent` 和 `.env`，再删除项目目录。删除前建议运行：
 
 ```powershell
 python -m autoform_agent.cli status
@@ -38,4 +38,4 @@ C:\ProgramData\AutoForm\AFplus\R13F\scripts\CodexAgentBridge.cmd
 
 ## MCP 配置
 
-如果曾把 `codex_mcp_config.autoform-agent.toml` 内容写入外部 MCP host 配置，删除对应配置段后重启该 host。项目本身不会自动修改外部配置文件。
+如果曾把 `AutoForm_MCP/codex_mcp_config.autoform-mcp.toml` 内容写入外部 MCP host 配置，删除对应配置段后重启该 host。项目本身不会自动修改外部配置文件。

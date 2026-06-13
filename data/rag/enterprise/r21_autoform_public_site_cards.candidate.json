@@ -1,0 +1,244 @@
+{
+  "cards": [
+    {
+      "allowed_usage": "catalog_only",
+      "applicability": {
+        "applicable_lines": [
+          "not_applicable_until_legal_scope_and_owner_review"
+        ],
+        "applicable_materials": [
+          "autoform_public_product_metadata"
+        ],
+        "conflict_status": "none",
+        "part_features": [
+          "official_public_page_metadata_only"
+        ],
+        "process_actions": [
+          "sheet_metal_forming_public_product_metadata_review"
+        ]
+      },
+      "card_id": "pkc_r21_autoform_public_site_page_001",
+      "card_type": "ProcessCase",
+      "created_at": "2026-06-03T09:03:20.077335+00:00",
+      "evidence_refs": [
+        {
+          "artifact_uri": "data/rag/enterprise/r21_autoform_public_site_metadata_samples.jsonl",
+          "evidence_id": "record_r21_autoform_public_site_001_autoform_forming",
+          "evidence_type": "cleaned_record",
+          "source_hash": "a815b5338824744415cab8ffb3e8924a29856fa9aca825a026389ebeef1ca7c4",
+          "source_id": "source_autoform_public_site_metadata"
+        }
+      ],
+      "human_confirmation": {
+        "owner": "autoform_agent",
+        "required": true,
+        "status": "pending"
+      },
+      "key_parameter_windows": [
+        {
+          "basis_evidence_refs": [
+            "record_r21_autoform_public_site_001_autoform_forming"
+          ],
+          "lower": 1,
+          "parameter": "metadata_record_count",
+          "review_status": "candidate",
+          "unit": "count",
+          "upper": 1
+        }
+      ],
+      "license_status": "official_site_copyright_public_metadata_only",
+      "limitation": "AutoForm public site page metadata only; copyrighted page body, product documentation and engineering applicability are not confirmed.",
+      "object_type": "ProcessKnowledgeCard",
+      "owner": "autoform_agent",
+      "payload": {
+        "canonical_url": "https://www.autoform.com/en/products/autoform-forming/",
+        "case_ref": "https://www.autoform.com/en/products/autoform-forming/",
+        "formal_index_allowed": false,
+        "metadata_retention_scope": "page_title_canonical_selected_meta_tags_only",
+        "outcome_status": "metadata_only_no_engineering_outcome",
+        "page_category": "product_suite_metadata",
+        "title": "AutoForm Forming",
+        "validation_status": "pass"
+      },
+      "phase": "R15",
+      "quality_risks": [
+        {
+          "basis_evidence_refs": [
+            "record_r21_autoform_public_site_001_autoform_forming"
+          ],
+          "risk_type": "copyright_scope_and_owner_missing_blocks_process_use",
+          "severity": "blocked"
+        }
+      ],
+      "review_status": "needs_license_review",
+      "schema_version": "autoform.process_knowledge_card.r15.v1",
+      "source_id": "source_autoform_public_site_metadata",
+      "title": "R21 candidate AutoForm public page metadata case 1: AutoForm Forming",
+      "valid_from": "2026-06-03",
+      "valid_until": "2026-12-31",
+      "version": "2026-06-03T09:03:20.077335+00:00"
+    },
+    {
+      "allowed_usage": "catalog_only",
+      "applicability": {
+        "applicable_lines": [
+          "not_applicable_until_legal_scope_and_owner_review"
+        ],
+        "applicable_materials": [
+          "autoform_public_product_metadata"
+        ],
+        "conflict_status": "none",
+        "part_features": [
+          "official_public_page_metadata_only"
+        ],
+        "process_actions": [
+          "forming_solver_public_product_metadata_review"
+        ]
+      },
+      "card_id": "pkc_r21_autoform_public_site_page_002",
+      "card_type": "ProcessCase",
+      "created_at": "2026-06-03T09:03:20.077335+00:00",
+      "evidence_refs": [
+        {
+          "artifact_uri": "data/rag/enterprise/r21_autoform_public_site_metadata_samples.jsonl",
+          "evidence_id": "record_r21_autoform_public_site_002_autoform_formingsolver",
+          "evidence_type": "cleaned_record",
+          "source_hash": "fe92595259422477b28b0a9665d3cdeb5382c4f2f5a960dc5c1c1233f2f3f6f2",
+          "source_id": "source_autoform_public_site_metadata"
+        }
+      ],
+      "human_confirmation": {
+        "owner": "autoform_agent",
+        "required": true,
+        "status": "pending"
+      },
+      "key_parameter_windows": [
+        {
+          "basis_evidence_refs": [
+            "record_r21_autoform_public_site_002_autoform_formingsolver"
+          ],
+          "lower": 1,
+          "parameter": "metadata_record_count",
+          "review_status": "candidate",
+          "unit": "count",
+          "upper": 1
+        }
+      ],
+      "license_status": "official_site_copyright_public_metadata_only",
+      "limitation": "AutoForm public site page metadata only; copyrighted page body, product documentation and engineering applicability are not confirmed.",
+      "object_type": "ProcessKnowledgeCard",
+      "owner": "autoform_agent",
+      "payload": {
+        "canonical_url": "https://www.autoform.com/en/products/autoform-forming/autoform-formingsolver/",
+        "case_ref": "https://www.autoform.com/en/products/autoform-forming/autoform-formingsolver/",
+        "formal_index_allowed": false,
+        "metadata_retention_scope": "page_title_canonical_selected_meta_tags_only",
+        "outcome_status": "metadata_only_no_engineering_outcome",
+        "page_category": "solver_product_metadata",
+        "title": "AutoForm-FormingSolver",
+        "validation_status": "pass"
+      },
+      "phase": "R15",
+      "quality_risks": [
+        {
+          "basis_evidence_refs": [
+            "record_r21_autoform_public_site_002_autoform_formingsolver"
+          ],
+          "risk_type": "copyright_scope_and_owner_missing_blocks_process_use",
+          "severity": "blocked"
+        }
+      ],
+      "review_status": "needs_license_review",
+      "schema_version": "autoform.process_knowledge_card.r15.v1",
+      "source_id": "source_autoform_public_site_metadata",
+      "title": "R21 candidate AutoForm public page metadata case 2: AutoForm-FormingSolver",
+      "valid_from": "2026-06-03",
+      "valid_until": "2026-12-31",
+      "version": "2026-06-03T09:03:20.077335+00:00"
+    },
+    {
+      "allowed_usage": "catalog_only",
+      "applicability": {
+        "applicable_lines": [
+          "not_applicable_until_legal_scope_and_owner_review"
+        ],
+        "applicable_materials": [
+          "autoform_public_product_metadata"
+        ],
+        "conflict_status": "none",
+        "part_features": [
+          "official_public_page_metadata_only"
+        ],
+        "process_actions": [
+          "biw_assembly_process_chain_public_metadata_review"
+        ]
+      },
+      "card_id": "pkc_r21_autoform_public_site_page_003",
+      "card_type": "ProcessCase",
+      "created_at": "2026-06-03T09:03:20.077335+00:00",
+      "evidence_refs": [
+        {
+          "artifact_uri": "data/rag/enterprise/r21_autoform_public_site_metadata_samples.jsonl",
+          "evidence_id": "record_r21_autoform_public_site_003_biw_assembly_process_chain",
+          "evidence_type": "cleaned_record",
+          "source_hash": "32387ae66796d7aebc7fd82a0bd0ff412753e4c879d893d66e12be1c49472615",
+          "source_id": "source_autoform_public_site_metadata"
+        }
+      ],
+      "human_confirmation": {
+        "owner": "autoform_agent",
+        "required": true,
+        "status": "pending"
+      },
+      "key_parameter_windows": [
+        {
+          "basis_evidence_refs": [
+            "record_r21_autoform_public_site_003_biw_assembly_process_chain"
+          ],
+          "lower": 1,
+          "parameter": "metadata_record_count",
+          "review_status": "candidate",
+          "unit": "count",
+          "upper": 1
+        }
+      ],
+      "license_status": "official_site_copyright_public_metadata_only",
+      "limitation": "AutoForm public site page metadata only; copyrighted page body, product documentation and engineering applicability are not confirmed.",
+      "object_type": "ProcessKnowledgeCard",
+      "owner": "autoform_agent",
+      "payload": {
+        "canonical_url": "https://www.autoform.com/en/topics/biw-assembly-process-chain/",
+        "case_ref": "https://www.autoform.com/en/topics/biw-assembly-process-chain/",
+        "formal_index_allowed": false,
+        "metadata_retention_scope": "page_title_canonical_selected_meta_tags_only",
+        "outcome_status": "metadata_only_no_engineering_outcome",
+        "page_category": "process_chain_topic_metadata",
+        "title": "BiW Assembly Process Chain",
+        "validation_status": "pass"
+      },
+      "phase": "R15",
+      "quality_risks": [
+        {
+          "basis_evidence_refs": [
+            "record_r21_autoform_public_site_003_biw_assembly_process_chain"
+          ],
+          "risk_type": "copyright_scope_and_owner_missing_blocks_process_use",
+          "severity": "blocked"
+        }
+      ],
+      "review_status": "needs_license_review",
+      "schema_version": "autoform.process_knowledge_card.r15.v1",
+      "source_id": "source_autoform_public_site_metadata",
+      "title": "R21 candidate AutoForm public page metadata case 3: BiW Assembly Process Chain",
+      "valid_from": "2026-06-03",
+      "valid_until": "2026-12-31",
+      "version": "2026-06-03T09:03:20.077335+00:00"
+    }
+  ],
+  "collection_phase": "R21",
+  "created_at": "2026-06-03T09:03:20.077335+00:00",
+  "gate": "Candidate AutoForm public site metadata cards only; formal_index_allowed remains false until legal scope, engineering applicability and owner are reviewed.",
+  "object_type": "ProcessKnowledgeCardFixture",
+  "phase": "R15",
+  "schema_version": "autoform.process_knowledge_cards_fixture.r15.v1"
+}

@@ -23,7 +23,7 @@
 | `../source_registry.csv` | `SourceRegistry` | R7 来源登记和最小证据检索 |
 | `../card_schema.yaml` | Specialist cards | R6 至 R11 卡片对象的轻量字段索引 |
 | `../eval_queries.jsonl` | RAG eval queries | R7 可重复检索评测样例 |
-| `../script_registry.yaml` | `SkillCard` | R10 L0 至 L2 低风险脚本登记 |
+| `../script_library/flex/registry.yaml` | `SkillCard` | R10 L0 至 L2 低风险脚本登记 |
 | `../fixtures/r11_low_risk_prepare_events.jsonl` | R11 RunEvent fixture | 从用户输入到 StageSummary 的低风险端到端回放 |
 
 ## Flexible Script and CAD Measurement

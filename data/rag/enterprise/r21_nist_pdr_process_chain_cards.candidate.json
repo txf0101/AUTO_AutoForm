@@ -1,0 +1,262 @@
+{
+  "cards": [
+    {
+      "allowed_usage": "catalog_only",
+      "applicability": {
+        "applicable_lines": [
+          "not_applicable_until_scope_and_owner_review"
+        ],
+        "applicable_materials": [
+          "manufacturing_systems_metadata"
+        ],
+        "conflict_status": "none",
+        "part_features": [
+          "supply_chain_metadata_only"
+        ],
+        "process_actions": [
+          "supply_chain_metadata_review"
+        ]
+      },
+      "card_id": "pkc_r21_nist_pdr_logistics_chain_case_001",
+      "card_type": "ProcessCase",
+      "created_at": "2026-06-03T09:26:29.127019+00:00",
+      "evidence_refs": [
+        {
+          "artifact_uri": "data/rag/enterprise/r21_nist_pdr_process_chain_metadata_samples.jsonl",
+          "evidence_id": "record_r21_nist_pdr_process_chain_001_10_18434_m32183",
+          "evidence_type": "cleaned_record",
+          "source_hash": "2f4ca55d2ffe3ce2bcc33e1a4d6a6daf69bd6dd98483904e59a869ac3d75cf06",
+          "source_id": "source_nist_public_data_repository"
+        }
+      ],
+      "human_confirmation": {
+        "owner": "autoform_agent",
+        "required": true,
+        "status": "pending"
+      },
+      "key_parameter_windows": [
+        {
+          "basis_evidence_refs": [
+            "record_r21_nist_pdr_process_chain_001_10_18434_m32183"
+          ],
+          "lower": 1,
+          "parameter": "metadata_record_count",
+          "review_status": "candidate",
+          "unit": "count",
+          "upper": 1
+        }
+      ],
+      "license_status": "nist_open_license_present_item_scope_review_required",
+      "limitation": "NIST PDR metadata only; downloadable data files, engineering applicability and responsible owner are not confirmed.",
+      "object_type": "ProcessKnowledgeCard",
+      "owner": "autoform_agent",
+      "payload": {
+        "case_ref": "10.18434/M32183",
+        "formal_index_allowed": false,
+        "landing_page": "https://data.nist.gov/od/id/mds2-2183",
+        "license_url": "https://www.nist.gov/open/license",
+        "outcome_status": "metadata_only_no_engineering_outcome",
+        "process_action": "supply_chain_metadata_review",
+        "query": "manufacturing process chain",
+        "themes": [
+          "Manufacturing: Supply chain",
+          "Information Technology: Cybersecurity"
+        ],
+        "title": "Sample Purchasing / Supply Chain Data",
+        "validation_status": "pass"
+      },
+      "phase": "R15",
+      "quality_risks": [
+        {
+          "basis_evidence_refs": [
+            "record_r21_nist_pdr_process_chain_001_10_18434_m32183"
+          ],
+          "risk_type": "item_scope_and_owner_missing_blocks_process_use",
+          "severity": "blocked"
+        }
+      ],
+      "review_status": "needs_license_review",
+      "schema_version": "autoform.process_knowledge_card.r15.v1",
+      "source_id": "source_nist_public_data_repository",
+      "title": "R21 candidate NIST PDR process chain case 1: Sample Purchasing / Supply Chain Data",
+      "valid_from": "2026-06-03",
+      "valid_until": "2026-12-31",
+      "version": "2026-06-03T09:26:29.127019+00:00"
+    },
+    {
+      "allowed_usage": "catalog_only",
+      "applicability": {
+        "applicable_lines": [
+          "not_applicable_until_scope_and_owner_review"
+        ],
+        "applicable_materials": [
+          "manufacturing_systems_metadata"
+        ],
+        "conflict_status": "none",
+        "part_features": [
+          "discrete_event_logistics_sysml_metadata_only"
+        ],
+        "process_actions": [
+          "discrete_event_logistics_sysml_metadata_review"
+        ]
+      },
+      "card_id": "pkc_r21_nist_pdr_logistics_chain_case_002",
+      "card_type": "ProcessCase",
+      "created_at": "2026-06-03T09:26:29.127019+00:00",
+      "evidence_refs": [
+        {
+          "artifact_uri": "data/rag/enterprise/r21_nist_pdr_process_chain_metadata_samples.jsonl",
+          "evidence_id": "record_r21_nist_pdr_process_chain_002_10_18434_m32203",
+          "evidence_type": "cleaned_record",
+          "source_hash": "decf2e76ef4bea156bb53e3f715e037bf9e957fd2bece78f61807f5e61225b02",
+          "source_id": "source_nist_public_data_repository"
+        }
+      ],
+      "human_confirmation": {
+        "owner": "autoform_agent",
+        "required": true,
+        "status": "pending"
+      },
+      "key_parameter_windows": [
+        {
+          "basis_evidence_refs": [
+            "record_r21_nist_pdr_process_chain_002_10_18434_m32203"
+          ],
+          "lower": 1,
+          "parameter": "metadata_record_count",
+          "review_status": "candidate",
+          "unit": "count",
+          "upper": 1
+        }
+      ],
+      "license_status": "nist_open_license_present_item_scope_review_required",
+      "limitation": "NIST PDR metadata only; downloadable data files, engineering applicability and responsible owner are not confirmed.",
+      "object_type": "ProcessKnowledgeCard",
+      "owner": "autoform_agent",
+      "payload": {
+        "case_ref": "10.18434/M32203",
+        "formal_index_allowed": false,
+        "landing_page": "https://data.nist.gov/od/id/mds2-2203",
+        "license_url": "https://www.nist.gov/open/license",
+        "outcome_status": "metadata_only_no_engineering_outcome",
+        "process_action": "discrete_event_logistics_sysml_metadata_review",
+        "query": "manufacturing process chain",
+        "themes": [
+          "Manufacturing: Factory operations planning and control",
+          "Manufacturing: Manufacturing systems design and analysis",
+          "Manufacturing: Supply chain",
+          "Manufacturing: Systems engineering",
+          "Manufacturing: Systems integration"
+        ],
+        "title": "SysML Model Libraries Supporting Discrete Event Logistics Systems (DELS) Models",
+        "validation_status": "pass"
+      },
+      "phase": "R15",
+      "quality_risks": [
+        {
+          "basis_evidence_refs": [
+            "record_r21_nist_pdr_process_chain_002_10_18434_m32203"
+          ],
+          "risk_type": "item_scope_and_owner_missing_blocks_process_use",
+          "severity": "blocked"
+        }
+      ],
+      "review_status": "needs_license_review",
+      "schema_version": "autoform.process_knowledge_card.r15.v1",
+      "source_id": "source_nist_public_data_repository",
+      "title": "R21 candidate NIST PDR process chain case 2: SysML Model Libraries Supporting Discrete Event Logistics Systems (DELS) Models",
+      "valid_from": "2026-06-03",
+      "valid_until": "2026-12-31",
+      "version": "2026-06-03T09:26:29.127019+00:00"
+    },
+    {
+      "allowed_usage": "catalog_only",
+      "applicability": {
+        "applicable_lines": [
+          "not_applicable_until_scope_and_owner_review"
+        ],
+        "applicable_materials": [
+          "manufacturing_systems_metadata"
+        ],
+        "conflict_status": "none",
+        "part_features": [
+          "syslma_logistics_translator_metadata_only"
+        ],
+        "process_actions": [
+          "syslma_logistics_translator_metadata_review"
+        ]
+      },
+      "card_id": "pkc_r21_nist_pdr_logistics_chain_case_003",
+      "card_type": "ProcessCase",
+      "created_at": "2026-06-03T09:26:29.127019+00:00",
+      "evidence_refs": [
+        {
+          "artifact_uri": "data/rag/enterprise/r21_nist_pdr_process_chain_metadata_samples.jsonl",
+          "evidence_id": "record_r21_nist_pdr_process_chain_003_10_18434_mds2_3786",
+          "evidence_type": "cleaned_record",
+          "source_hash": "8af6fbdaab74824f50204d56e154cea4d20594a2d8e5792a78a00ebe70f94ed1",
+          "source_id": "source_nist_public_data_repository"
+        }
+      ],
+      "human_confirmation": {
+        "owner": "autoform_agent",
+        "required": true,
+        "status": "pending"
+      },
+      "key_parameter_windows": [
+        {
+          "basis_evidence_refs": [
+            "record_r21_nist_pdr_process_chain_003_10_18434_mds2_3786"
+          ],
+          "lower": 1,
+          "parameter": "metadata_record_count",
+          "review_status": "candidate",
+          "unit": "count",
+          "upper": 1
+        }
+      ],
+      "license_status": "nist_open_license_present_item_scope_review_required",
+      "limitation": "NIST PDR metadata only; downloadable data files, engineering applicability and responsible owner are not confirmed.",
+      "object_type": "ProcessKnowledgeCard",
+      "owner": "autoform_agent",
+      "payload": {
+        "case_ref": "10.18434/mds2-3786",
+        "formal_index_allowed": false,
+        "landing_page": "https://data.nist.gov/od/id/mds2-3786",
+        "license_url": "https://www.nist.gov/open/license",
+        "outcome_status": "metadata_only_no_engineering_outcome",
+        "process_action": "syslma_logistics_translator_metadata_review",
+        "query": "production logistics systems",
+        "themes": [
+          "Manufacturing: Interoperability in manufacturing",
+          "Mathematics and Statistics: Modeling and simulation research",
+          "Manufacturing: Systems engineering",
+          "Manufacturing: Supply chain",
+          "Manufacturing: Manufacturing systems design and analysis",
+          "Manufacturing: Factory operations planning and control",
+          "Information Technology: Interoperability testing",
+          "Advanced Communications"
+        ],
+        "title": "Translator for the SysML Extension for Logistics Modeling and Analysis (SysLMA)",
+        "validation_status": "pass"
+      },
+      "phase": "R15",
+      "quality_risks": [
+        {
+          "basis_evidence_refs": [
+            "record_r21_nist_pdr_process_chain_003_10_18434_mds2_3786"
+          ],
+          "risk_type": "item_scope_and_owner_missing_blocks_process_use",
+          "severity": "blocked"
+        }
+      ],
+      "review_status": "needs_license_review",
+      "schema_version": "autoform.process_knowledge_card.r15.v1",
+      "source_id": "source_nist_public_data_repository",
+      "title": "R21 candidate NIST PDR process chain case 3: Translator for the SysML Extension for Logistics Modeling and Analysis (SysLMA)",
+      "valid_from": "2026-06-03",
+      "valid_until": "2026-12-31",
+      "version": "2026-06-03T09:26:29.127019+00:00"
+    }
+  ]
+}

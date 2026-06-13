@@ -6,20 +6,20 @@
 
 记录用户看到的问题、触发入口和复现条件。
 
-- 前端页面：先查 `frontend/index.html`、`frontend/app.js`、`frontend/styles.css`、`frontend/tests/`。
+- 前端页面：先查 `apps/workbench/index.html`、`apps/workbench/app.js`、`apps/workbench/styles.css`、`apps/workbench/tests/`。
 - HTTP 运行时：先查 `autoform_agent/http_bridge.py`、`autoform_agent/agent_runtime.py`、`tests/test_http_bridge.py`、`tests/test_agent_runtime.py`。
 - 中心 Agent 和多 Agent：先查 `autoform_agent/agent_system/`、`tests/test_agent_system.py`、`docs/multi_agent_architecture.md`。
 - R6 至 R11 准备链路：先查 `autoform_agent/preparation_agents.py`、`fixtures/r11_low_risk_prepare_events.jsonl`、`tests/test_preparation_agents.py`。
-- R12 可见窗口控制：先查 `autoform_agent/gui_automation.py`、`autoform_agent/r12_demo.py`、`tests/test_gui_automation.py`、`tests/test_r12_demo.py`。
+- R12 可见窗口控制：先查 `autoform_core/gui_automation.py`、`autoform_core/r12_demo.py`、`tests/test_gui_automation.py`、`tests/test_r12_demo.py`。
 
 ## 2. 先搜事实，再下判断
 
 优先用仓库内证据定位字段、状态和调用链。
 
 ```powershell
-rg -n "问题关键词|状态值|按钮文案|事件类型|工具名" autoform_agent frontend tests docs fixtures -S
+rg -n "问题关键词|状态值|按钮文案|事件类型|工具名" autoform_agent apps/workbench tests docs fixtures -S
 rg -n "source_agent|target_agent|object_type|review_status|will_submit_solver" fixtures autoform_agent tests -S
-rg -n "except Exception|fallback|placeholder|needs_human_confirmation|candidate" autoform_agent frontend tests -S
+rg -n "except Exception|fallback|placeholder|needs_human_confirmation|candidate" autoform_agent apps/workbench tests -S
 ```
 
 判断要标注依据。依据可以来自源码行、fixture、测试断言、文档、命令输出或实际浏览器截图。
@@ -47,7 +47,7 @@ rg -n "except Exception|fallback|placeholder|needs_human_confirmation|candidate"
 
 每改一处，运行与变更范围匹配的最小测试。
 
-- 前端结构：`python -m pytest frontend\tests -q`
+- 前端结构：`python -m pytest apps\workbench\tests -q`
 - R6 至 R11：`python -m pytest tests\test_preparation_agents.py -q`
 - 中心 Agent：`python -m pytest tests\test_agent_system.py -q`
 - HTTP 运行时：`python -m pytest tests\test_http_bridge.py tests\test_agent_runtime.py -q`

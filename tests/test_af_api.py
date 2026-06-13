@@ -5,8 +5,8 @@ This test file checks AF API discovery, templates, and build plans. Read each as
 
 from pathlib import Path
 
-from autoform_agent.af_api import af_api_build_preview, af_api_template_plan, check_af_api_build_env, list_af_api_modules
-from autoform_agent.paths import AutoFormInstallation
+from autoform_core.af_api import af_api_build_preview, af_api_template_plan, check_af_api_build_env, list_af_api_modules
+from autoform_core.paths import AutoFormInstallation
 
 
 def test_list_af_api_modules_reads_exports(tmp_path: Path) -> None:

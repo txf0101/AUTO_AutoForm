@@ -20,12 +20,12 @@
   - 增加 `.afd` 路径解析，prompt 中含用户工程路径时生成 `autoform_project_run(afd_path=...)`，不使用默认示例工程。
   - 增加“别的项目”“用户工程”“自定义工程”等非默认工程语义，用户未提供 `.afd` 路径时不再用 `Solver_R13` 替代。
   - 更新审批阻断提示，指向“允许本机 MCP 工具控制”。
-- `frontend/index.html`、`frontend/app.js`
+- `apps/workbench/index.html`、`apps/workbench/app.js`
   - 将按钮改为“允许本机 MCP 工具控制”。
   - 将下拉标签改为“示例工程提示”。
   - 请求日志改为 `mcp_control=... scope=mcp_gateway example_hint=...`。
   - 更新 CSS 与 JS 版本号，降低浏览器继续使用旧静态资源的概率。
-- `README.md`、`docs/api_runtime_call_chain.md`、`docs/beginner_onboarding_zh.md`、`frontend/README.md`
+- `README.md`、`docs/api_runtime_call_chain.md`、`docs/beginner_onboarding_zh.md`、`apps/workbench/README.md`
   - 同步说明：前端批准覆盖白名单 MCP 工具控制，不局限于官方示例工程；新建工程和显式 `.afd` 路径优先级高于示例提示。
 - `tests/test_agent_runtime.py`
   - 增加“已批准且携带 Solver_R13 示例提示时，新建项目仍走 `autoform_start_ui`”回归。
@@ -35,11 +35,11 @@
 
 - `python -m py_compile autoform_agent\agent_runtime.py`
 - `python -m pytest -q tests\test_agent_runtime.py`，21 个测试通过。
-- `pytest -q frontend\tests\smoke_test.py`，3 个测试通过。
+- `pytest -q apps\workbench\tests\smoke_test.py`，3 个测试通过。
 - 禁用句式扫描通过。
 - 精确旧文案扫描通过：旧的示例工程专用批准文案、过渡期 AutoForm 控制文案和旧日志字段均无残留。
 - HTTP bridge 实测：未批准、携带 `exampleName=Solver_R13` 的“AutoFrom，打开，并且新建一个项目”返回 `tool=autoform_start_ui`、`status=blocked_requires_approval`，证明默认示例提示没有劫持新建工程意图。
-- 前端静态服务实测：`/frontend/index.html?bridge=http` 按 UTF-8 解析后包含“允许本机 MCP 工具控制”“示例工程提示”和新的 `app.js?v=20260604-mcp-control-scope`。
+- 前端静态服务实测：`/apps/workbench/index.html?bridge=http` 按 UTF-8 解析后包含“允许本机 MCP 工具控制”“示例工程提示”和新的 `app.js?v=20260604-mcp-control-scope`。
 
 ## 方法沉淀
 

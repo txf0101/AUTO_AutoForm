@@ -32,19 +32,19 @@
 
 ## 原始响应与 manifest
 
-原始响应均在 `.gitignore` 覆盖的 `enterprise_data/raw_data/manual_samples/` 下保留，版本库只进入 manifest 与清洗产物。
+原始响应均在 `.gitignore` 覆盖的 `data/rag/enterprise/raw_data/manual_samples/` 下保留，版本库只进入 manifest 与清洗产物。
 
 | 查询 | 原始文件 | SHA256 | 选择数 |
 | --- | --- | --- | ---: |
-| `manufacturing process planning` | `enterprise_data/raw_data/manual_samples/r23_nist_pdr_manufacturing_metadata_expansion_20260603/nist_pdr_manufacturing_process_planning_limit10_20260603.json` | `70c720b7221316de3d2e696d5f449812a450df0fb8c63ecd85662d3a0ea55db6` | 6 |
-| `manufacturing quality inspection` | `enterprise_data/raw_data/manual_samples/r23_nist_pdr_manufacturing_metadata_expansion_20260603/nist_pdr_manufacturing_quality_inspection_limit10_20260603.json` | `90e12cc776e946803b4c6021e9f293b2d0bb9d338feb40851c67a4213a504943` | 3 |
-| `manufacturing operations management` | `enterprise_data/raw_data/manual_samples/r23_nist_pdr_manufacturing_metadata_expansion_20260603/nist_pdr_manufacturing_operations_management_limit10_20260603.json` | `cce722ff8a812a4e45b8869ca2311332c41cdcbf7cafdc7f6facfea3e7658ab1` | 1 |
+| `manufacturing process planning` | `data/rag/enterprise/raw_data/manual_samples/r23_nist_pdr_manufacturing_metadata_expansion_20260603/nist_pdr_manufacturing_process_planning_limit10_20260603.json` | `70c720b7221316de3d2e696d5f449812a450df0fb8c63ecd85662d3a0ea55db6` | 6 |
+| `manufacturing quality inspection` | `data/rag/enterprise/raw_data/manual_samples/r23_nist_pdr_manufacturing_metadata_expansion_20260603/nist_pdr_manufacturing_quality_inspection_limit10_20260603.json` | `90e12cc776e946803b4c6021e9f293b2d0bb9d338feb40851c67a4213a504943` | 3 |
+| `manufacturing operations management` | `data/rag/enterprise/raw_data/manual_samples/r23_nist_pdr_manufacturing_metadata_expansion_20260603/nist_pdr_manufacturing_operations_management_limit10_20260603.json` | `cce722ff8a812a4e45b8869ca2311332c41cdcbf7cafdc7f6facfea3e7658ab1` | 1 |
 
-manifest：`enterprise_data/raw_data/manifests/2026-06-03_r23_nist_pdr_manufacturing_metadata_manifest.csv`
+manifest：`data/rag/enterprise/raw_data/manifests/2026-06-03_r23_nist_pdr_manufacturing_metadata_manifest.csv`
 
 ## R14/R15/R16 转换结果
 
-R14 文件：`enterprise_data/r23_nist_pdr_manufacturing_metadata_samples.jsonl`
+R14 文件：`data/rag/enterprise/r23_nist_pdr_manufacturing_metadata_samples.jsonl`
 
 | record_id | DOI | source_hash | 处理动作 |
 | --- | --- | --- | --- |
@@ -61,18 +61,18 @@ R14 文件：`enterprise_data/r23_nist_pdr_manufacturing_metadata_samples.jsonl`
 
 清洗报告：
 
-- `enterprise_data/r14_cleaning_reports/r23_nist_pdr_manufacturing_metadata_cleaning_report.json`
+- `data/rag/enterprise/r14_cleaning_reports/r23_nist_pdr_manufacturing_metadata_cleaning_report.json`
 - 状态 `pass`，清洗样本 10 条，隔离样本 0。
 - 已跳过 R21 中已有的 `10.18434/m32067`、`10.18434/m32068`、`10.18434/m32203` 和 `10.18434/mds2-3703`。
 
 R15 候选卡：
 
-- `enterprise_data/r23_nist_pdr_manufacturing_cards.candidate.json`
+- `data/rag/enterprise/r23_nist_pdr_manufacturing_cards.candidate.json`
 - 10 张卡均为 `needs_license_review`、`allowed_usage=catalog_only`、`formal_index_allowed=false`。
 
 R16 EvidenceBundle：
 
-- `enterprise_data/r23_nist_pdr_manufacturing_evidence_bundle.sample.json`
+- `data/rag/enterprise/r23_nist_pdr_manufacturing_evidence_bundle.sample.json`
 - `collection_phase=R23`，`conflict_status=blocked_evidence_present`，`formal_index_allowed_count=0`。
 - 阻断动作保持 `write_formal_engineering_state`、`submit_solver`、`control_gui`。
 

@@ -1,0 +1,2882 @@
+{
+  "average_recall_at_k": 1.0,
+  "blocked_actions": [
+    "auto_ingest",
+    "bulk_crawl",
+    "bulk_download",
+    "compute_embedding",
+    "control_gui",
+    "submit_solver",
+    "train_neural_index",
+    "write_formal_engineering_state",
+    "write_formal_index"
+  ],
+  "created_at": "2026-06-03T12:00:00+00:00",
+  "index_gate": {
+    "candidate_entry_count": 37,
+    "duplicate_card_id_count": 0,
+    "duplicate_card_ids": [],
+    "duplicate_entry_id_count": 0,
+    "duplicate_entry_ids": [],
+    "embedding_status": "not_built",
+    "formal_index_allowed_count": 0,
+    "index_validation_error_count": 0,
+    "index_validation_status": "pass",
+    "training_status": "not_started"
+  },
+  "index_id": "index_r24_process_rag_candidate_snapshot",
+  "index_schema_version": "autoform.process_rag_candidate_index.r24.v1",
+  "object_type": "ProcessRagCandidateIndexEvaluationReport",
+  "pass_count": 6,
+  "phase": "R25",
+  "query_count": 6,
+  "report_id": "report_r25_candidate_index_retrieval_gate",
+  "results": [
+    {
+      "expected_card_ids": [
+        "pkc_r15_parameter_blank_thickness_pending_001",
+        "pkc_r15_process_case_dc04_d20_pending_001"
+      ],
+      "failures": [],
+      "formal_index_allowed_count": 0,
+      "matched_card_ids": [
+        "pkc_r15_parameter_blank_thickness_pending_001",
+        "pkc_r15_process_case_dc04_d20_pending_001"
+      ],
+      "matched_entry_count": 2,
+      "query": "DC04 D-20 blank thickness process route",
+      "query_id": "eval_r25_dc04_d20_blank_thickness",
+      "recall_at_k": 1.0,
+      "retrieval_trace": {
+        "blocked_actions": [
+          "auto_ingest",
+          "bulk_crawl",
+          "bulk_download",
+          "compute_embedding",
+          "control_gui",
+          "submit_solver",
+          "train_neural_index",
+          "write_formal_engineering_state",
+          "write_formal_index"
+        ],
+        "candidate_entry_count": 37,
+        "created_at": "2026-06-03T12:00:00+00:00",
+        "excluded_entries": [
+          {
+            "card_id": "pkc_r15_material_dc04_pending_001",
+            "card_type": "MaterialCard",
+            "entry_id": "idx_pkc_r15_material_dc04_pending_001",
+            "reasons": [
+              "card_type_filtered",
+              "process_action_filtered"
+            ],
+            "source_id": "source_enterprise_internal_dataset_pending"
+          },
+          {
+            "card_id": "pkc_r15_operation_route_d20_pending_001",
+            "card_type": "OperationRoute",
+            "entry_id": "idx_pkc_r15_operation_route_d20_pending_001",
+            "reasons": [
+              "card_type_filtered"
+            ],
+            "source_id": "source_enterprise_internal_dataset_pending"
+          },
+          {
+            "card_id": "pkc_r15_quality_traceability_gate_001",
+            "card_type": "QualityCriteria",
+            "entry_id": "idx_pkc_r15_quality_traceability_gate_001",
+            "reasons": [
+              "card_type_filtered",
+              "process_action_filtered"
+            ],
+            "source_id": "source_enterprise_internal_dataset_pending"
+          },
+          {
+            "card_id": "pkc_r15_public_literature_metadata_arxiv_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r15_public_literature_metadata_arxiv_001",
+            "reasons": [
+              "material_filtered",
+              "process_action_filtered"
+            ],
+            "source_id": "source_arxiv_api_metadata"
+          },
+          {
+            "card_id": "pkc_r21_crossref_public_metadata_case_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_crossref_public_metadata_case_001",
+            "reasons": [
+              "material_filtered",
+              "process_action_filtered"
+            ],
+            "source_id": "source_crossref_rest_metadata"
+          },
+          {
+            "card_id": "pkc_r21_crossref_public_metadata_case_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_crossref_public_metadata_case_002",
+            "reasons": [
+              "material_filtered",
+              "process_action_filtered"
+            ],
+            "source_id": "source_crossref_rest_metadata"
+          },
+          {
+            "card_id": "pkc_r21_crossref_public_metadata_case_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_crossref_public_metadata_case_003",
+            "reasons": [
+              "material_filtered",
+              "process_action_filtered"
+            ],
+            "source_id": "source_crossref_rest_metadata"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_process_chain_case_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_process_chain_case_001",
+            "reasons": [
+              "material_filtered",
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_process_chain_case_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_process_chain_case_002",
+            "reasons": [
+              "material_filtered",
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_process_chain_case_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_process_chain_case_003",
+            "reasons": [
+              "material_filtered",
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_mdr_materials_metadata_case_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_mdr_materials_metadata_case_001",
+            "reasons": [
+              "material_filtered",
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_materials_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_mdr_materials_metadata_case_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_mdr_materials_metadata_case_002",
+            "reasons": [
+              "material_filtered",
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_materials_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_mdr_materials_metadata_case_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_mdr_materials_metadata_case_003",
+            "reasons": [
+              "material_filtered",
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_materials_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_factory_operations_case_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_factory_operations_case_001",
+            "reasons": [
+              "material_filtered",
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_factory_operations_case_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_factory_operations_case_002",
+            "reasons": [
+              "material_filtered",
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_factory_operations_case_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_factory_operations_case_003",
+            "reasons": [
+              "material_filtered",
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_autoform_public_site_page_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_autoform_public_site_page_001",
+            "reasons": [
+              "material_filtered",
+              "process_action_filtered"
+            ],
+            "source_id": "source_autoform_public_site_metadata"
+          },
+          {
+            "card_id": "pkc_r21_autoform_public_site_page_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_autoform_public_site_page_002",
+            "reasons": [
+              "material_filtered",
+              "process_action_filtered"
+            ],
+            "source_id": "source_autoform_public_site_metadata"
+          },
+          {
+            "card_id": "pkc_r21_autoform_public_site_page_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_autoform_public_site_page_003",
+            "reasons": [
+              "material_filtered",
+              "process_action_filtered"
+            ],
+            "source_id": "source_autoform_public_site_metadata"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_logistics_chain_case_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_logistics_chain_case_001",
+            "reasons": [
+              "material_filtered",
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_logistics_chain_case_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_logistics_chain_case_002",
+            "reasons": [
+              "material_filtered",
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_logistics_chain_case_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_logistics_chain_case_003",
+            "reasons": [
+              "material_filtered",
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r22_partner_material_curve_gate_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r22_partner_material_curve_gate_001",
+            "reasons": [
+              "material_filtered",
+              "process_action_filtered"
+            ],
+            "source_id": "source_enterprise_partner_submission_pending"
+          },
+          {
+            "card_id": "pkc_r22_partner_process_route_gate_001",
+            "card_type": "OperationRoute",
+            "entry_id": "idx_pkc_r22_partner_process_route_gate_001",
+            "reasons": [
+              "card_type_filtered",
+              "material_filtered",
+              "process_action_filtered"
+            ],
+            "source_id": "source_enterprise_partner_submission_pending"
+          },
+          {
+            "card_id": "pkc_r22_partner_withdrawal_quality_gate_001",
+            "card_type": "QualityCriteria",
+            "entry_id": "idx_pkc_r22_partner_withdrawal_quality_gate_001",
+            "reasons": [
+              "card_type_filtered",
+              "material_filtered",
+              "process_action_filtered"
+            ],
+            "source_id": "source_enterprise_partner_submission_pending"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_001",
+            "reasons": [
+              "material_filtered",
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_002",
+            "reasons": [
+              "material_filtered",
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_003",
+            "reasons": [
+              "material_filtered",
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_004",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_004",
+            "reasons": [
+              "material_filtered",
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_005",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_005",
+            "reasons": [
+              "material_filtered",
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_006",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_006",
+            "reasons": [
+              "material_filtered",
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_007",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_007",
+            "reasons": [
+              "material_filtered",
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_008",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_008",
+            "reasons": [
+              "material_filtered",
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_009",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_009",
+            "reasons": [
+              "material_filtered",
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_010",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_010",
+            "reasons": [
+              "material_filtered",
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          }
+        ],
+        "excluded_entry_count": 35,
+        "filters": {
+          "card_types": [
+            "ParameterWindow",
+            "ProcessCase"
+          ],
+          "exclude_expired": true,
+          "material": "DC04",
+          "process_action": "D-20"
+        },
+        "formal_index_allowed_count": 0,
+        "human_review_status": "required",
+        "index_id": "index_r24_process_rag_candidate_snapshot",
+        "index_schema_version": "autoform.process_rag_candidate_index.r24.v1",
+        "matched_entry_count": 2,
+        "matches": [
+          {
+            "allowed_usage": "candidate_knowledge_card_only",
+            "card_id": "pkc_r15_parameter_blank_thickness_pending_001",
+            "card_type": "ParameterWindow",
+            "entry_id": "idx_pkc_r15_parameter_blank_thickness_pending_001",
+            "evidence_graph_refs": [
+              {
+                "edge_type": "card_to_source",
+                "from": "pkc_r15_parameter_blank_thickness_pending_001",
+                "to": "source_enterprise_internal_dataset_pending"
+              },
+              {
+                "edge_type": "card_to_evidence",
+                "from": "pkc_r15_parameter_blank_thickness_pending_001",
+                "to": "record_r14_sample_material_001"
+              },
+              {
+                "edge_type": "card_to_evidence",
+                "from": "pkc_r15_parameter_blank_thickness_pending_001",
+                "to": "record_r14_sample_process_001"
+              }
+            ],
+            "evidence_refs": [
+              {
+                "artifact_uri": "data/rag/enterprise/r14_small_batch_samples.jsonl",
+                "evidence_id": "record_r14_sample_material_001",
+                "evidence_type": "cleaned_record",
+                "source_hash": "d9ef6dbbe85f221488897c4ddc02333d2b5e63d9a8b820d2e9d9253beb48737e",
+                "source_id": "source_enterprise_internal_dataset_pending"
+              },
+              {
+                "artifact_uri": "data/rag/enterprise/r14_small_batch_samples.jsonl",
+                "evidence_id": "record_r14_sample_process_001",
+                "evidence_type": "cleaned_record",
+                "source_hash": "4b99e9162c9569b0fe9c37daf79a95b00e0f24ae1efcb59b024f085900c843e8",
+                "source_id": "source_enterprise_internal_dataset_pending"
+              }
+            ],
+            "formal_index_allowed": false,
+            "license_status": "pending_internal_permission",
+            "ranking_reasons": [
+              "keyword_match:20",
+              "keyword_match:blank",
+              "keyword_match:d",
+              "keyword_match:dc04",
+              "keyword_match:process",
+              "keyword_match:thickness",
+              "filter_match:card_type",
+              "filter_match:material",
+              "filter_match:process_action",
+              "candidate_only",
+              "human_review_required",
+              "formal_index_blocked",
+              "license_gate:pending_internal_permission"
+            ],
+            "review_status": "candidate",
+            "score": 24,
+            "source_id": "source_enterprise_internal_dataset_pending",
+            "source_permission_level": "P2",
+            "text_hash": "7ebcd32f4d6169476fa1955932d9eced3d67b791987388b648548bc29a48c4a8"
+          },
+          {
+            "allowed_usage": "candidate_knowledge_card_only",
+            "card_id": "pkc_r15_process_case_dc04_d20_pending_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r15_process_case_dc04_d20_pending_001",
+            "evidence_graph_refs": [
+              {
+                "edge_type": "card_to_source",
+                "from": "pkc_r15_process_case_dc04_d20_pending_001",
+                "to": "source_enterprise_internal_dataset_pending"
+              },
+              {
+                "edge_type": "card_to_evidence",
+                "from": "pkc_r15_process_case_dc04_d20_pending_001",
+                "to": "record_r14_sample_material_001"
+              },
+              {
+                "edge_type": "card_to_evidence",
+                "from": "pkc_r15_process_case_dc04_d20_pending_001",
+                "to": "record_r14_sample_process_001"
+              },
+              {
+                "edge_type": "card_to_payload_case_ref",
+                "from": "pkc_r15_process_case_dc04_d20_pending_001",
+                "to": "case_r15_internal_pending_001"
+              }
+            ],
+            "evidence_refs": [
+              {
+                "artifact_uri": "data/rag/enterprise/r14_small_batch_samples.jsonl",
+                "evidence_id": "record_r14_sample_material_001",
+                "evidence_type": "cleaned_record",
+                "source_hash": "d9ef6dbbe85f221488897c4ddc02333d2b5e63d9a8b820d2e9d9253beb48737e",
+                "source_id": "source_enterprise_internal_dataset_pending"
+              },
+              {
+                "artifact_uri": "data/rag/enterprise/r14_small_batch_samples.jsonl",
+                "evidence_id": "record_r14_sample_process_001",
+                "evidence_type": "cleaned_record",
+                "source_hash": "4b99e9162c9569b0fe9c37daf79a95b00e0f24ae1efcb59b024f085900c843e8",
+                "source_id": "source_enterprise_internal_dataset_pending"
+              }
+            ],
+            "formal_index_allowed": false,
+            "license_status": "pending_internal_permission",
+            "ranking_reasons": [
+              "keyword_match:20",
+              "keyword_match:d",
+              "keyword_match:dc04",
+              "keyword_match:process",
+              "filter_match:card_type",
+              "filter_match:material",
+              "filter_match:process_action",
+              "candidate_only",
+              "human_review_required",
+              "formal_index_blocked",
+              "license_gate:pending_internal_permission"
+            ],
+            "review_status": "candidate",
+            "score": 20,
+            "source_id": "source_enterprise_internal_dataset_pending",
+            "source_permission_level": "P2",
+            "text_hash": "1cf16d37bad09921c6455dd779c1718ccb2239d00e10afa91f4b9c8ffe9af43a"
+          }
+        ],
+        "max_entries": 5,
+        "object_type": "ProcessRagCandidateIndexRetrievalTrace",
+        "phase": "R25",
+        "query": "DC04 D-20 blank thickness process route",
+        "query_terms": [
+          "20",
+          "blank",
+          "d",
+          "dc04",
+          "process",
+          "route",
+          "thickness"
+        ],
+        "result_id": "retrieval_r25_dc04_d20_blank_thickness",
+        "review_status": "candidate",
+        "schema_version": "autoform.process_rag_index_eval.r25.v1"
+      },
+      "status": "pass",
+      "top_score": 24
+    },
+    {
+      "expected_card_ids": [
+        "pkc_r22_partner_material_curve_gate_001"
+      ],
+      "failures": [],
+      "formal_index_allowed_count": 0,
+      "matched_card_ids": [
+        "pkc_r22_partner_material_curve_gate_001"
+      ],
+      "matched_entry_count": 1,
+      "query": "partner material curve metadata intake gate",
+      "query_id": "eval_r25_partner_material_curve_gate",
+      "recall_at_k": 1.0,
+      "retrieval_trace": {
+        "blocked_actions": [
+          "auto_ingest",
+          "bulk_crawl",
+          "bulk_download",
+          "compute_embedding",
+          "control_gui",
+          "submit_solver",
+          "train_neural_index",
+          "write_formal_engineering_state",
+          "write_formal_index"
+        ],
+        "candidate_entry_count": 37,
+        "created_at": "2026-06-03T12:00:00+00:00",
+        "excluded_entries": [
+          {
+            "card_id": "pkc_r15_material_dc04_pending_001",
+            "card_type": "MaterialCard",
+            "entry_id": "idx_pkc_r15_material_dc04_pending_001",
+            "reasons": [
+              "permission_filtered",
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_enterprise_internal_dataset_pending"
+          },
+          {
+            "card_id": "pkc_r15_operation_route_d20_pending_001",
+            "card_type": "OperationRoute",
+            "entry_id": "idx_pkc_r15_operation_route_d20_pending_001",
+            "reasons": [
+              "permission_filtered",
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_enterprise_internal_dataset_pending"
+          },
+          {
+            "card_id": "pkc_r15_parameter_blank_thickness_pending_001",
+            "card_type": "ParameterWindow",
+            "entry_id": "idx_pkc_r15_parameter_blank_thickness_pending_001",
+            "reasons": [
+              "permission_filtered",
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_enterprise_internal_dataset_pending"
+          },
+          {
+            "card_id": "pkc_r15_process_case_dc04_d20_pending_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r15_process_case_dc04_d20_pending_001",
+            "reasons": [
+              "permission_filtered",
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_enterprise_internal_dataset_pending"
+          },
+          {
+            "card_id": "pkc_r15_quality_traceability_gate_001",
+            "card_type": "QualityCriteria",
+            "entry_id": "idx_pkc_r15_quality_traceability_gate_001",
+            "reasons": [
+              "permission_filtered",
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_enterprise_internal_dataset_pending"
+          },
+          {
+            "card_id": "pkc_r15_public_literature_metadata_arxiv_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r15_public_literature_metadata_arxiv_001",
+            "reasons": [
+              "permission_filtered",
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_arxiv_api_metadata"
+          },
+          {
+            "card_id": "pkc_r21_crossref_public_metadata_case_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_crossref_public_metadata_case_001",
+            "reasons": [
+              "permission_filtered",
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_crossref_rest_metadata"
+          },
+          {
+            "card_id": "pkc_r21_crossref_public_metadata_case_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_crossref_public_metadata_case_002",
+            "reasons": [
+              "permission_filtered",
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_crossref_rest_metadata"
+          },
+          {
+            "card_id": "pkc_r21_crossref_public_metadata_case_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_crossref_public_metadata_case_003",
+            "reasons": [
+              "permission_filtered",
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_crossref_rest_metadata"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_process_chain_case_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_process_chain_case_001",
+            "reasons": [
+              "permission_filtered",
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_process_chain_case_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_process_chain_case_002",
+            "reasons": [
+              "permission_filtered",
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_process_chain_case_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_process_chain_case_003",
+            "reasons": [
+              "permission_filtered",
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_mdr_materials_metadata_case_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_mdr_materials_metadata_case_001",
+            "reasons": [
+              "permission_filtered",
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_materials_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_mdr_materials_metadata_case_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_mdr_materials_metadata_case_002",
+            "reasons": [
+              "permission_filtered",
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_materials_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_mdr_materials_metadata_case_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_mdr_materials_metadata_case_003",
+            "reasons": [
+              "permission_filtered",
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_materials_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_factory_operations_case_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_factory_operations_case_001",
+            "reasons": [
+              "permission_filtered",
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_factory_operations_case_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_factory_operations_case_002",
+            "reasons": [
+              "permission_filtered",
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_factory_operations_case_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_factory_operations_case_003",
+            "reasons": [
+              "permission_filtered",
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_autoform_public_site_page_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_autoform_public_site_page_001",
+            "reasons": [
+              "permission_filtered",
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_autoform_public_site_metadata"
+          },
+          {
+            "card_id": "pkc_r21_autoform_public_site_page_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_autoform_public_site_page_002",
+            "reasons": [
+              "permission_filtered",
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_autoform_public_site_metadata"
+          },
+          {
+            "card_id": "pkc_r21_autoform_public_site_page_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_autoform_public_site_page_003",
+            "reasons": [
+              "permission_filtered",
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_autoform_public_site_metadata"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_logistics_chain_case_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_logistics_chain_case_001",
+            "reasons": [
+              "permission_filtered",
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_logistics_chain_case_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_logistics_chain_case_002",
+            "reasons": [
+              "permission_filtered",
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_logistics_chain_case_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_logistics_chain_case_003",
+            "reasons": [
+              "permission_filtered",
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r22_partner_process_route_gate_001",
+            "card_type": "OperationRoute",
+            "entry_id": "idx_pkc_r22_partner_process_route_gate_001",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_enterprise_partner_submission_pending"
+          },
+          {
+            "card_id": "pkc_r22_partner_withdrawal_quality_gate_001",
+            "card_type": "QualityCriteria",
+            "entry_id": "idx_pkc_r22_partner_withdrawal_quality_gate_001",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_enterprise_partner_submission_pending"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_001",
+            "reasons": [
+              "permission_filtered",
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_002",
+            "reasons": [
+              "permission_filtered",
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_003",
+            "reasons": [
+              "permission_filtered",
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_004",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_004",
+            "reasons": [
+              "permission_filtered",
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_005",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_005",
+            "reasons": [
+              "permission_filtered",
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_006",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_006",
+            "reasons": [
+              "permission_filtered",
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_007",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_007",
+            "reasons": [
+              "permission_filtered",
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_008",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_008",
+            "reasons": [
+              "permission_filtered",
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_009",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_009",
+            "reasons": [
+              "permission_filtered",
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_010",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_010",
+            "reasons": [
+              "permission_filtered",
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          }
+        ],
+        "excluded_entry_count": 36,
+        "filters": {
+          "allowed_permission_levels": [
+            "P3"
+          ],
+          "exclude_expired": true,
+          "process_action": "partner_material_curve_metadata_review",
+          "source_ids": [
+            "source_enterprise_partner_submission_pending"
+          ]
+        },
+        "formal_index_allowed_count": 0,
+        "human_review_status": "required",
+        "index_id": "index_r24_process_rag_candidate_snapshot",
+        "index_schema_version": "autoform.process_rag_candidate_index.r24.v1",
+        "matched_entry_count": 1,
+        "matches": [
+          {
+            "allowed_usage": "catalog_only",
+            "card_id": "pkc_r22_partner_material_curve_gate_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r22_partner_material_curve_gate_001",
+            "evidence_graph_refs": [
+              {
+                "edge_type": "card_to_source",
+                "from": "pkc_r22_partner_material_curve_gate_001",
+                "to": "source_enterprise_partner_submission_pending"
+              },
+              {
+                "edge_type": "card_to_evidence",
+                "from": "pkc_r22_partner_material_curve_gate_001",
+                "to": "record_r22_partner_material_gate_001"
+              },
+              {
+                "edge_type": "card_to_payload_case_ref",
+                "from": "pkc_r22_partner_material_curve_gate_001",
+                "to": "record_r22_partner_material_gate_001"
+              }
+            ],
+            "evidence_refs": [
+              {
+                "artifact_uri": "data/rag/enterprise/r22_partner_submission_metadata_samples.jsonl",
+                "evidence_id": "record_r22_partner_material_gate_001",
+                "evidence_type": "cleaned_record",
+                "source_hash": "d8cc48e0994341d5ebf909f0b30bff925297f395991274c54a79abbb43dd9705",
+                "source_id": "source_enterprise_partner_submission_pending"
+              }
+            ],
+            "formal_index_allowed": false,
+            "license_status": "pending_partner_data_agreement",
+            "ranking_reasons": [
+              "keyword_match:curve",
+              "keyword_match:gate",
+              "keyword_match:intake",
+              "keyword_match:material",
+              "keyword_match:metadata",
+              "keyword_match:partner",
+              "filter_match:source_id",
+              "filter_match:permission_level",
+              "filter_match:process_action",
+              "candidate_only",
+              "human_review_required",
+              "formal_index_blocked",
+              "license_gate:pending_partner_data_agreement"
+            ],
+            "review_status": "needs_license_review",
+            "score": 26,
+            "source_id": "source_enterprise_partner_submission_pending",
+            "source_permission_level": "P3",
+            "text_hash": "76b4729fb4d54e30c0030e0eca3d3f1f9732773a6e4b6c78405e4e0e46b5f409"
+          }
+        ],
+        "max_entries": 3,
+        "object_type": "ProcessRagCandidateIndexRetrievalTrace",
+        "phase": "R25",
+        "query": "partner material curve metadata intake gate",
+        "query_terms": [
+          "curve",
+          "gate",
+          "intake",
+          "material",
+          "metadata",
+          "partner"
+        ],
+        "result_id": "retrieval_r25_partner_material_curve_gate",
+        "review_status": "candidate",
+        "schema_version": "autoform.process_rag_index_eval.r25.v1"
+      },
+      "status": "pass",
+      "top_score": 26
+    },
+    {
+      "expected_card_ids": [
+        "pkc_r21_autoform_public_site_page_003"
+      ],
+      "failures": [],
+      "formal_index_allowed_count": 0,
+      "matched_card_ids": [
+        "pkc_r21_autoform_public_site_page_003"
+      ],
+      "matched_entry_count": 1,
+      "query": "AutoForm BiW assembly process chain public page metadata",
+      "query_id": "eval_r25_autoform_biw_process_chain",
+      "recall_at_k": 1.0,
+      "retrieval_trace": {
+        "blocked_actions": [
+          "auto_ingest",
+          "bulk_crawl",
+          "bulk_download",
+          "compute_embedding",
+          "control_gui",
+          "submit_solver",
+          "train_neural_index",
+          "write_formal_engineering_state",
+          "write_formal_index"
+        ],
+        "candidate_entry_count": 37,
+        "created_at": "2026-06-03T12:00:00+00:00",
+        "excluded_entries": [
+          {
+            "card_id": "pkc_r15_material_dc04_pending_001",
+            "card_type": "MaterialCard",
+            "entry_id": "idx_pkc_r15_material_dc04_pending_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_enterprise_internal_dataset_pending"
+          },
+          {
+            "card_id": "pkc_r15_operation_route_d20_pending_001",
+            "card_type": "OperationRoute",
+            "entry_id": "idx_pkc_r15_operation_route_d20_pending_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_enterprise_internal_dataset_pending"
+          },
+          {
+            "card_id": "pkc_r15_parameter_blank_thickness_pending_001",
+            "card_type": "ParameterWindow",
+            "entry_id": "idx_pkc_r15_parameter_blank_thickness_pending_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_enterprise_internal_dataset_pending"
+          },
+          {
+            "card_id": "pkc_r15_process_case_dc04_d20_pending_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r15_process_case_dc04_d20_pending_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_enterprise_internal_dataset_pending"
+          },
+          {
+            "card_id": "pkc_r15_quality_traceability_gate_001",
+            "card_type": "QualityCriteria",
+            "entry_id": "idx_pkc_r15_quality_traceability_gate_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_enterprise_internal_dataset_pending"
+          },
+          {
+            "card_id": "pkc_r15_public_literature_metadata_arxiv_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r15_public_literature_metadata_arxiv_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_arxiv_api_metadata"
+          },
+          {
+            "card_id": "pkc_r21_crossref_public_metadata_case_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_crossref_public_metadata_case_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_crossref_rest_metadata"
+          },
+          {
+            "card_id": "pkc_r21_crossref_public_metadata_case_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_crossref_public_metadata_case_002",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_crossref_rest_metadata"
+          },
+          {
+            "card_id": "pkc_r21_crossref_public_metadata_case_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_crossref_public_metadata_case_003",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_crossref_rest_metadata"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_process_chain_case_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_process_chain_case_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_process_chain_case_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_process_chain_case_002",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_process_chain_case_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_process_chain_case_003",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_mdr_materials_metadata_case_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_mdr_materials_metadata_case_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_materials_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_mdr_materials_metadata_case_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_mdr_materials_metadata_case_002",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_materials_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_mdr_materials_metadata_case_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_mdr_materials_metadata_case_003",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_materials_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_factory_operations_case_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_factory_operations_case_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_factory_operations_case_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_factory_operations_case_002",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_factory_operations_case_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_factory_operations_case_003",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_autoform_public_site_page_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_autoform_public_site_page_001",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_autoform_public_site_metadata"
+          },
+          {
+            "card_id": "pkc_r21_autoform_public_site_page_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_autoform_public_site_page_002",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_autoform_public_site_metadata"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_logistics_chain_case_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_logistics_chain_case_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_logistics_chain_case_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_logistics_chain_case_002",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_logistics_chain_case_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_logistics_chain_case_003",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r22_partner_material_curve_gate_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r22_partner_material_curve_gate_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_enterprise_partner_submission_pending"
+          },
+          {
+            "card_id": "pkc_r22_partner_process_route_gate_001",
+            "card_type": "OperationRoute",
+            "entry_id": "idx_pkc_r22_partner_process_route_gate_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_enterprise_partner_submission_pending"
+          },
+          {
+            "card_id": "pkc_r22_partner_withdrawal_quality_gate_001",
+            "card_type": "QualityCriteria",
+            "entry_id": "idx_pkc_r22_partner_withdrawal_quality_gate_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_enterprise_partner_submission_pending"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_002",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_003",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_004",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_004",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_005",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_005",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_006",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_006",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_007",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_007",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_008",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_008",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_009",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_009",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_010",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_010",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          }
+        ],
+        "excluded_entry_count": 36,
+        "filters": {
+          "exclude_expired": true,
+          "process_action": "biw_assembly_process_chain_public_metadata_review",
+          "source_ids": [
+            "source_autoform_public_site_metadata"
+          ]
+        },
+        "formal_index_allowed_count": 0,
+        "human_review_status": "required",
+        "index_id": "index_r24_process_rag_candidate_snapshot",
+        "index_schema_version": "autoform.process_rag_candidate_index.r24.v1",
+        "matched_entry_count": 1,
+        "matches": [
+          {
+            "allowed_usage": "catalog_only",
+            "card_id": "pkc_r21_autoform_public_site_page_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_autoform_public_site_page_003",
+            "evidence_graph_refs": [
+              {
+                "edge_type": "card_to_source",
+                "from": "pkc_r21_autoform_public_site_page_003",
+                "to": "source_autoform_public_site_metadata"
+              },
+              {
+                "edge_type": "card_to_evidence",
+                "from": "pkc_r21_autoform_public_site_page_003",
+                "to": "record_r21_autoform_public_site_003_biw_assembly_process_chain"
+              },
+              {
+                "edge_type": "card_to_payload_case_ref",
+                "from": "pkc_r21_autoform_public_site_page_003",
+                "to": "https://www.autoform.com/en/topics/biw-assembly-process-chain/"
+              }
+            ],
+            "evidence_refs": [
+              {
+                "artifact_uri": "data/rag/enterprise/r21_autoform_public_site_metadata_samples.jsonl",
+                "evidence_id": "record_r21_autoform_public_site_003_biw_assembly_process_chain",
+                "evidence_type": "cleaned_record",
+                "source_hash": "32387ae66796d7aebc7fd82a0bd0ff412753e4c879d893d66e12be1c49472615",
+                "source_id": "source_autoform_public_site_metadata"
+              }
+            ],
+            "formal_index_allowed": false,
+            "license_status": "official_site_copyright_public_metadata_only",
+            "ranking_reasons": [
+              "keyword_match:assembly",
+              "keyword_match:autoform",
+              "keyword_match:biw",
+              "keyword_match:chain",
+              "keyword_match:metadata",
+              "keyword_match:page",
+              "keyword_match:process",
+              "keyword_match:public",
+              "filter_match:source_id",
+              "filter_match:process_action",
+              "candidate_only",
+              "human_review_required",
+              "formal_index_blocked",
+              "license_gate:official_site_copyright_public_metadata_only"
+            ],
+            "review_status": "needs_license_review",
+            "score": 27,
+            "source_id": "source_autoform_public_site_metadata",
+            "source_permission_level": "P1",
+            "text_hash": "af06703f59fa7e52e38afd172d23621d96e2b89c33a61bf54b7ad233b7a5526e"
+          }
+        ],
+        "max_entries": 3,
+        "object_type": "ProcessRagCandidateIndexRetrievalTrace",
+        "phase": "R25",
+        "query": "AutoForm BiW assembly process chain public page metadata",
+        "query_terms": [
+          "assembly",
+          "autoform",
+          "biw",
+          "chain",
+          "metadata",
+          "page",
+          "process",
+          "public"
+        ],
+        "result_id": "retrieval_r25_autoform_biw_process_chain",
+        "review_status": "candidate",
+        "schema_version": "autoform.process_rag_index_eval.r25.v1"
+      },
+      "status": "pass",
+      "top_score": 27
+    },
+    {
+      "expected_card_ids": [
+        "pkc_r23_nist_pdr_mfg_case_006"
+      ],
+      "failures": [],
+      "formal_index_allowed_count": 0,
+      "matched_card_ids": [
+        "pkc_r23_nist_pdr_mfg_case_006"
+      ],
+      "matched_entry_count": 1,
+      "query": "NIST manufacturing cost guide metadata",
+      "query_id": "eval_r25_nist_manufacturing_cost_guide",
+      "recall_at_k": 1.0,
+      "retrieval_trace": {
+        "blocked_actions": [
+          "auto_ingest",
+          "bulk_crawl",
+          "bulk_download",
+          "compute_embedding",
+          "control_gui",
+          "submit_solver",
+          "train_neural_index",
+          "write_formal_engineering_state",
+          "write_formal_index"
+        ],
+        "candidate_entry_count": 37,
+        "created_at": "2026-06-03T12:00:00+00:00",
+        "excluded_entries": [
+          {
+            "card_id": "pkc_r15_material_dc04_pending_001",
+            "card_type": "MaterialCard",
+            "entry_id": "idx_pkc_r15_material_dc04_pending_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_enterprise_internal_dataset_pending"
+          },
+          {
+            "card_id": "pkc_r15_operation_route_d20_pending_001",
+            "card_type": "OperationRoute",
+            "entry_id": "idx_pkc_r15_operation_route_d20_pending_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_enterprise_internal_dataset_pending"
+          },
+          {
+            "card_id": "pkc_r15_parameter_blank_thickness_pending_001",
+            "card_type": "ParameterWindow",
+            "entry_id": "idx_pkc_r15_parameter_blank_thickness_pending_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_enterprise_internal_dataset_pending"
+          },
+          {
+            "card_id": "pkc_r15_process_case_dc04_d20_pending_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r15_process_case_dc04_d20_pending_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_enterprise_internal_dataset_pending"
+          },
+          {
+            "card_id": "pkc_r15_quality_traceability_gate_001",
+            "card_type": "QualityCriteria",
+            "entry_id": "idx_pkc_r15_quality_traceability_gate_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_enterprise_internal_dataset_pending"
+          },
+          {
+            "card_id": "pkc_r15_public_literature_metadata_arxiv_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r15_public_literature_metadata_arxiv_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_arxiv_api_metadata"
+          },
+          {
+            "card_id": "pkc_r21_crossref_public_metadata_case_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_crossref_public_metadata_case_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_crossref_rest_metadata"
+          },
+          {
+            "card_id": "pkc_r21_crossref_public_metadata_case_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_crossref_public_metadata_case_002",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_crossref_rest_metadata"
+          },
+          {
+            "card_id": "pkc_r21_crossref_public_metadata_case_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_crossref_public_metadata_case_003",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_crossref_rest_metadata"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_process_chain_case_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_process_chain_case_001",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_process_chain_case_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_process_chain_case_002",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_process_chain_case_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_process_chain_case_003",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_mdr_materials_metadata_case_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_mdr_materials_metadata_case_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_materials_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_mdr_materials_metadata_case_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_mdr_materials_metadata_case_002",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_materials_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_mdr_materials_metadata_case_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_mdr_materials_metadata_case_003",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_materials_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_factory_operations_case_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_factory_operations_case_001",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_factory_operations_case_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_factory_operations_case_002",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_factory_operations_case_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_factory_operations_case_003",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_autoform_public_site_page_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_autoform_public_site_page_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_autoform_public_site_metadata"
+          },
+          {
+            "card_id": "pkc_r21_autoform_public_site_page_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_autoform_public_site_page_002",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_autoform_public_site_metadata"
+          },
+          {
+            "card_id": "pkc_r21_autoform_public_site_page_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_autoform_public_site_page_003",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_autoform_public_site_metadata"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_logistics_chain_case_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_logistics_chain_case_001",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_logistics_chain_case_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_logistics_chain_case_002",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_logistics_chain_case_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_logistics_chain_case_003",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r22_partner_material_curve_gate_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r22_partner_material_curve_gate_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_enterprise_partner_submission_pending"
+          },
+          {
+            "card_id": "pkc_r22_partner_process_route_gate_001",
+            "card_type": "OperationRoute",
+            "entry_id": "idx_pkc_r22_partner_process_route_gate_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_enterprise_partner_submission_pending"
+          },
+          {
+            "card_id": "pkc_r22_partner_withdrawal_quality_gate_001",
+            "card_type": "QualityCriteria",
+            "entry_id": "idx_pkc_r22_partner_withdrawal_quality_gate_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_enterprise_partner_submission_pending"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_001",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_002",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_003",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_004",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_004",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_005",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_005",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_007",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_007",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_008",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_008",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_009",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_009",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_010",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_010",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          }
+        ],
+        "excluded_entry_count": 36,
+        "filters": {
+          "exclude_expired": true,
+          "process_action": "manufacturing_cost_model_metadata_review",
+          "source_ids": [
+            "source_nist_public_data_repository"
+          ]
+        },
+        "formal_index_allowed_count": 0,
+        "human_review_status": "required",
+        "index_id": "index_r24_process_rag_candidate_snapshot",
+        "index_schema_version": "autoform.process_rag_candidate_index.r24.v1",
+        "matched_entry_count": 1,
+        "matches": [
+          {
+            "allowed_usage": "catalog_only",
+            "card_id": "pkc_r23_nist_pdr_mfg_case_006",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_006",
+            "evidence_graph_refs": [
+              {
+                "edge_type": "card_to_source",
+                "from": "pkc_r23_nist_pdr_mfg_case_006",
+                "to": "source_nist_public_data_repository"
+              },
+              {
+                "edge_type": "card_to_evidence",
+                "from": "pkc_r23_nist_pdr_mfg_case_006",
+                "to": "record_r23_nist_pdr_mfg_006_10_18434_m32048"
+              },
+              {
+                "edge_type": "card_to_payload_case_ref",
+                "from": "pkc_r23_nist_pdr_mfg_case_006",
+                "to": "10.18434/m32048"
+              }
+            ],
+            "evidence_refs": [
+              {
+                "artifact_uri": "data/rag/enterprise/r23_nist_pdr_manufacturing_metadata_samples.jsonl",
+                "evidence_id": "record_r23_nist_pdr_mfg_006_10_18434_m32048",
+                "evidence_type": "cleaned_record",
+                "source_hash": "e56edda110003f21d798fe428d1c16707827e676eb09e96816079c370c9b5e9c",
+                "source_id": "source_nist_public_data_repository"
+              }
+            ],
+            "formal_index_allowed": false,
+            "license_status": "nist_open_license_present_item_scope_review_required",
+            "ranking_reasons": [
+              "keyword_match:cost",
+              "keyword_match:guide",
+              "keyword_match:manufacturing",
+              "keyword_match:metadata",
+              "keyword_match:nist",
+              "filter_match:source_id",
+              "filter_match:process_action",
+              "candidate_only",
+              "human_review_required",
+              "formal_index_blocked",
+              "license_gate:nist_open_license_present_item_scope_review_required"
+            ],
+            "review_status": "needs_license_review",
+            "score": 21,
+            "source_id": "source_nist_public_data_repository",
+            "source_permission_level": "P1",
+            "text_hash": "799c728b2d5433db5a7c344bc49bb3f9e233245ef4efebc57024a640f8f017d9"
+          }
+        ],
+        "max_entries": 5,
+        "object_type": "ProcessRagCandidateIndexRetrievalTrace",
+        "phase": "R25",
+        "query": "NIST manufacturing cost guide metadata",
+        "query_terms": [
+          "cost",
+          "guide",
+          "manufacturing",
+          "metadata",
+          "nist"
+        ],
+        "result_id": "retrieval_r25_nist_manufacturing_cost_guide",
+        "review_status": "candidate",
+        "schema_version": "autoform.process_rag_index_eval.r25.v1"
+      },
+      "status": "pass",
+      "top_score": 21
+    },
+    {
+      "expected_card_ids": [
+        "pkc_r21_nist_pdr_logistics_chain_case_002"
+      ],
+      "failures": [],
+      "formal_index_allowed_count": 0,
+      "matched_card_ids": [
+        "pkc_r21_nist_pdr_logistics_chain_case_002"
+      ],
+      "matched_entry_count": 1,
+      "query": "SysML discrete event logistics DELS metadata",
+      "query_id": "eval_r25_nist_logistics_sysml_dels",
+      "recall_at_k": 1.0,
+      "retrieval_trace": {
+        "blocked_actions": [
+          "auto_ingest",
+          "bulk_crawl",
+          "bulk_download",
+          "compute_embedding",
+          "control_gui",
+          "submit_solver",
+          "train_neural_index",
+          "write_formal_engineering_state",
+          "write_formal_index"
+        ],
+        "candidate_entry_count": 37,
+        "created_at": "2026-06-03T12:00:00+00:00",
+        "excluded_entries": [
+          {
+            "card_id": "pkc_r15_material_dc04_pending_001",
+            "card_type": "MaterialCard",
+            "entry_id": "idx_pkc_r15_material_dc04_pending_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_enterprise_internal_dataset_pending"
+          },
+          {
+            "card_id": "pkc_r15_operation_route_d20_pending_001",
+            "card_type": "OperationRoute",
+            "entry_id": "idx_pkc_r15_operation_route_d20_pending_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_enterprise_internal_dataset_pending"
+          },
+          {
+            "card_id": "pkc_r15_parameter_blank_thickness_pending_001",
+            "card_type": "ParameterWindow",
+            "entry_id": "idx_pkc_r15_parameter_blank_thickness_pending_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_enterprise_internal_dataset_pending"
+          },
+          {
+            "card_id": "pkc_r15_process_case_dc04_d20_pending_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r15_process_case_dc04_d20_pending_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_enterprise_internal_dataset_pending"
+          },
+          {
+            "card_id": "pkc_r15_quality_traceability_gate_001",
+            "card_type": "QualityCriteria",
+            "entry_id": "idx_pkc_r15_quality_traceability_gate_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_enterprise_internal_dataset_pending"
+          },
+          {
+            "card_id": "pkc_r15_public_literature_metadata_arxiv_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r15_public_literature_metadata_arxiv_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_arxiv_api_metadata"
+          },
+          {
+            "card_id": "pkc_r21_crossref_public_metadata_case_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_crossref_public_metadata_case_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_crossref_rest_metadata"
+          },
+          {
+            "card_id": "pkc_r21_crossref_public_metadata_case_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_crossref_public_metadata_case_002",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_crossref_rest_metadata"
+          },
+          {
+            "card_id": "pkc_r21_crossref_public_metadata_case_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_crossref_public_metadata_case_003",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_crossref_rest_metadata"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_process_chain_case_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_process_chain_case_001",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_process_chain_case_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_process_chain_case_002",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_process_chain_case_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_process_chain_case_003",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_mdr_materials_metadata_case_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_mdr_materials_metadata_case_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_materials_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_mdr_materials_metadata_case_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_mdr_materials_metadata_case_002",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_materials_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_mdr_materials_metadata_case_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_mdr_materials_metadata_case_003",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_nist_materials_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_factory_operations_case_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_factory_operations_case_001",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_factory_operations_case_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_factory_operations_case_002",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_factory_operations_case_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_factory_operations_case_003",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_autoform_public_site_page_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_autoform_public_site_page_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_autoform_public_site_metadata"
+          },
+          {
+            "card_id": "pkc_r21_autoform_public_site_page_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_autoform_public_site_page_002",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_autoform_public_site_metadata"
+          },
+          {
+            "card_id": "pkc_r21_autoform_public_site_page_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_autoform_public_site_page_003",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_autoform_public_site_metadata"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_logistics_chain_case_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_logistics_chain_case_001",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_logistics_chain_case_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_logistics_chain_case_003",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r22_partner_material_curve_gate_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r22_partner_material_curve_gate_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_enterprise_partner_submission_pending"
+          },
+          {
+            "card_id": "pkc_r22_partner_process_route_gate_001",
+            "card_type": "OperationRoute",
+            "entry_id": "idx_pkc_r22_partner_process_route_gate_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_enterprise_partner_submission_pending"
+          },
+          {
+            "card_id": "pkc_r22_partner_withdrawal_quality_gate_001",
+            "card_type": "QualityCriteria",
+            "entry_id": "idx_pkc_r22_partner_withdrawal_quality_gate_001",
+            "reasons": [
+              "process_action_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_enterprise_partner_submission_pending"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_001",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_002",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_003",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_004",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_004",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_005",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_005",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_006",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_006",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_007",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_007",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_008",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_008",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_009",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_009",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_010",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_010",
+            "reasons": [
+              "process_action_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          }
+        ],
+        "excluded_entry_count": 36,
+        "filters": {
+          "exclude_expired": true,
+          "process_action": "discrete_event_logistics_sysml_metadata_review",
+          "source_ids": [
+            "source_nist_public_data_repository"
+          ]
+        },
+        "formal_index_allowed_count": 0,
+        "human_review_status": "required",
+        "index_id": "index_r24_process_rag_candidate_snapshot",
+        "index_schema_version": "autoform.process_rag_candidate_index.r24.v1",
+        "matched_entry_count": 1,
+        "matches": [
+          {
+            "allowed_usage": "catalog_only",
+            "card_id": "pkc_r21_nist_pdr_logistics_chain_case_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_logistics_chain_case_002",
+            "evidence_graph_refs": [
+              {
+                "edge_type": "card_to_source",
+                "from": "pkc_r21_nist_pdr_logistics_chain_case_002",
+                "to": "source_nist_public_data_repository"
+              },
+              {
+                "edge_type": "card_to_evidence",
+                "from": "pkc_r21_nist_pdr_logistics_chain_case_002",
+                "to": "record_r21_nist_pdr_process_chain_002_10_18434_m32203"
+              },
+              {
+                "edge_type": "card_to_payload_case_ref",
+                "from": "pkc_r21_nist_pdr_logistics_chain_case_002",
+                "to": "10.18434/M32203"
+              }
+            ],
+            "evidence_refs": [
+              {
+                "artifact_uri": "data/rag/enterprise/r21_nist_pdr_process_chain_metadata_samples.jsonl",
+                "evidence_id": "record_r21_nist_pdr_process_chain_002_10_18434_m32203",
+                "evidence_type": "cleaned_record",
+                "source_hash": "decf2e76ef4bea156bb53e3f715e037bf9e957fd2bece78f61807f5e61225b02",
+                "source_id": "source_nist_public_data_repository"
+              }
+            ],
+            "formal_index_allowed": false,
+            "license_status": "nist_open_license_present_item_scope_review_required",
+            "ranking_reasons": [
+              "keyword_match:dels",
+              "keyword_match:discrete",
+              "keyword_match:event",
+              "keyword_match:logistics",
+              "keyword_match:metadata",
+              "keyword_match:sysml",
+              "filter_match:source_id",
+              "filter_match:process_action",
+              "candidate_only",
+              "human_review_required",
+              "formal_index_blocked",
+              "license_gate:nist_open_license_present_item_scope_review_required"
+            ],
+            "review_status": "needs_license_review",
+            "score": 23,
+            "source_id": "source_nist_public_data_repository",
+            "source_permission_level": "P1",
+            "text_hash": "16488882186ed9e04e1a5558abb3e03b362756051fd050018cffe28ee6136f1a"
+          }
+        ],
+        "max_entries": 5,
+        "object_type": "ProcessRagCandidateIndexRetrievalTrace",
+        "phase": "R25",
+        "query": "SysML discrete event logistics DELS metadata",
+        "query_terms": [
+          "dels",
+          "discrete",
+          "event",
+          "logistics",
+          "metadata",
+          "sysml"
+        ],
+        "result_id": "retrieval_r25_nist_logistics_sysml_dels",
+        "review_status": "candidate",
+        "schema_version": "autoform.process_rag_index_eval.r25.v1"
+      },
+      "status": "pass",
+      "top_score": 23
+    },
+    {
+      "expected_card_ids": [],
+      "failures": [],
+      "formal_index_allowed_count": 0,
+      "matched_card_ids": [],
+      "matched_entry_count": 0,
+      "query": "partner process route metadata",
+      "query_id": "eval_r25_partner_permission_filtered",
+      "recall_at_k": 1.0,
+      "retrieval_trace": {
+        "blocked_actions": [
+          "auto_ingest",
+          "bulk_crawl",
+          "bulk_download",
+          "compute_embedding",
+          "control_gui",
+          "submit_solver",
+          "train_neural_index",
+          "write_formal_engineering_state",
+          "write_formal_index"
+        ],
+        "candidate_entry_count": 37,
+        "created_at": "2026-06-03T12:00:00+00:00",
+        "excluded_entries": [
+          {
+            "card_id": "pkc_r15_material_dc04_pending_001",
+            "card_type": "MaterialCard",
+            "entry_id": "idx_pkc_r15_material_dc04_pending_001",
+            "reasons": [
+              "permission_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_enterprise_internal_dataset_pending"
+          },
+          {
+            "card_id": "pkc_r15_operation_route_d20_pending_001",
+            "card_type": "OperationRoute",
+            "entry_id": "idx_pkc_r15_operation_route_d20_pending_001",
+            "reasons": [
+              "permission_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_enterprise_internal_dataset_pending"
+          },
+          {
+            "card_id": "pkc_r15_parameter_blank_thickness_pending_001",
+            "card_type": "ParameterWindow",
+            "entry_id": "idx_pkc_r15_parameter_blank_thickness_pending_001",
+            "reasons": [
+              "permission_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_enterprise_internal_dataset_pending"
+          },
+          {
+            "card_id": "pkc_r15_process_case_dc04_d20_pending_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r15_process_case_dc04_d20_pending_001",
+            "reasons": [
+              "permission_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_enterprise_internal_dataset_pending"
+          },
+          {
+            "card_id": "pkc_r15_quality_traceability_gate_001",
+            "card_type": "QualityCriteria",
+            "entry_id": "idx_pkc_r15_quality_traceability_gate_001",
+            "reasons": [
+              "permission_filtered",
+              "source_filtered"
+            ],
+            "source_id": "source_enterprise_internal_dataset_pending"
+          },
+          {
+            "card_id": "pkc_r15_public_literature_metadata_arxiv_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r15_public_literature_metadata_arxiv_001",
+            "reasons": [
+              "source_filtered"
+            ],
+            "source_id": "source_arxiv_api_metadata"
+          },
+          {
+            "card_id": "pkc_r21_crossref_public_metadata_case_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_crossref_public_metadata_case_001",
+            "reasons": [
+              "source_filtered"
+            ],
+            "source_id": "source_crossref_rest_metadata"
+          },
+          {
+            "card_id": "pkc_r21_crossref_public_metadata_case_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_crossref_public_metadata_case_002",
+            "reasons": [
+              "source_filtered"
+            ],
+            "source_id": "source_crossref_rest_metadata"
+          },
+          {
+            "card_id": "pkc_r21_crossref_public_metadata_case_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_crossref_public_metadata_case_003",
+            "reasons": [
+              "source_filtered"
+            ],
+            "source_id": "source_crossref_rest_metadata"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_process_chain_case_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_process_chain_case_001",
+            "reasons": [
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_process_chain_case_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_process_chain_case_002",
+            "reasons": [
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_process_chain_case_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_process_chain_case_003",
+            "reasons": [
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_mdr_materials_metadata_case_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_mdr_materials_metadata_case_001",
+            "reasons": [
+              "source_filtered"
+            ],
+            "source_id": "source_nist_materials_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_mdr_materials_metadata_case_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_mdr_materials_metadata_case_002",
+            "reasons": [
+              "source_filtered"
+            ],
+            "source_id": "source_nist_materials_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_mdr_materials_metadata_case_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_mdr_materials_metadata_case_003",
+            "reasons": [
+              "source_filtered"
+            ],
+            "source_id": "source_nist_materials_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_factory_operations_case_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_factory_operations_case_001",
+            "reasons": [
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_factory_operations_case_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_factory_operations_case_002",
+            "reasons": [
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_factory_operations_case_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_factory_operations_case_003",
+            "reasons": [
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_autoform_public_site_page_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_autoform_public_site_page_001",
+            "reasons": [
+              "source_filtered"
+            ],
+            "source_id": "source_autoform_public_site_metadata"
+          },
+          {
+            "card_id": "pkc_r21_autoform_public_site_page_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_autoform_public_site_page_002",
+            "reasons": [
+              "source_filtered"
+            ],
+            "source_id": "source_autoform_public_site_metadata"
+          },
+          {
+            "card_id": "pkc_r21_autoform_public_site_page_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_autoform_public_site_page_003",
+            "reasons": [
+              "source_filtered"
+            ],
+            "source_id": "source_autoform_public_site_metadata"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_logistics_chain_case_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_logistics_chain_case_001",
+            "reasons": [
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_logistics_chain_case_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_logistics_chain_case_002",
+            "reasons": [
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r21_nist_pdr_logistics_chain_case_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r21_nist_pdr_logistics_chain_case_003",
+            "reasons": [
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r22_partner_material_curve_gate_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r22_partner_material_curve_gate_001",
+            "reasons": [
+              "permission_filtered"
+            ],
+            "source_id": "source_enterprise_partner_submission_pending"
+          },
+          {
+            "card_id": "pkc_r22_partner_process_route_gate_001",
+            "card_type": "OperationRoute",
+            "entry_id": "idx_pkc_r22_partner_process_route_gate_001",
+            "reasons": [
+              "permission_filtered"
+            ],
+            "source_id": "source_enterprise_partner_submission_pending"
+          },
+          {
+            "card_id": "pkc_r22_partner_withdrawal_quality_gate_001",
+            "card_type": "QualityCriteria",
+            "entry_id": "idx_pkc_r22_partner_withdrawal_quality_gate_001",
+            "reasons": [
+              "permission_filtered"
+            ],
+            "source_id": "source_enterprise_partner_submission_pending"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_001",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_001",
+            "reasons": [
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_002",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_002",
+            "reasons": [
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_003",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_003",
+            "reasons": [
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_004",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_004",
+            "reasons": [
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_005",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_005",
+            "reasons": [
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_006",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_006",
+            "reasons": [
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_007",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_007",
+            "reasons": [
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_008",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_008",
+            "reasons": [
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_009",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_009",
+            "reasons": [
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          },
+          {
+            "card_id": "pkc_r23_nist_pdr_mfg_case_010",
+            "card_type": "ProcessCase",
+            "entry_id": "idx_pkc_r23_nist_pdr_mfg_case_010",
+            "reasons": [
+              "source_filtered"
+            ],
+            "source_id": "source_nist_public_data_repository"
+          }
+        ],
+        "excluded_entry_count": 37,
+        "filters": {
+          "allowed_permission_levels": [
+            "P1"
+          ],
+          "exclude_expired": true,
+          "source_ids": [
+            "source_enterprise_partner_submission_pending"
+          ]
+        },
+        "formal_index_allowed_count": 0,
+        "human_review_status": "required",
+        "index_id": "index_r24_process_rag_candidate_snapshot",
+        "index_schema_version": "autoform.process_rag_candidate_index.r24.v1",
+        "matched_entry_count": 0,
+        "matches": [],
+        "max_entries": 3,
+        "object_type": "ProcessRagCandidateIndexRetrievalTrace",
+        "phase": "R25",
+        "query": "partner process route metadata",
+        "query_terms": [
+          "metadata",
+          "partner",
+          "process",
+          "route"
+        ],
+        "result_id": "retrieval_r25_partner_permission_filtered",
+        "review_status": "candidate",
+        "schema_version": "autoform.process_rag_index_eval.r25.v1"
+      },
+      "status": "pass",
+      "top_score": 0
+    }
+  ],
+  "schema_version": "autoform.process_rag_index_eval.r25.v1",
+  "status": "pass"
+}

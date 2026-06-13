@@ -16,10 +16,10 @@
 
 ## 物理交付
 
-- `enterprise_data/source_whitelist.csv`：补入 5 个外部候选源。
-- `enterprise_data/source_review_registry.csv`：记录 robots、条款、访问频率、缓存策略、许可证范围和当前决策。
+- `data/rag/enterprise/source_whitelist.csv`：补入 5 个外部候选源。
+- `data/rag/enterprise/source_review_registry.csv`：记录 robots、条款、访问频率、缓存策略、许可证范围和当前决策。
 - `docs/enterprise_data_contract.md`：补入外部候选源复核记录说明。
-- `enterprise_data/README.md`：补入 `source_review_registry.csv` 入口。
+- `data/rag/enterprise/README.md`：补入 `source_review_registry.csv` 入口。
 - `tests/test_enterprise_data_contract.py`：补充外部候选源复核测试。
 
 ## 复核证据
@@ -37,7 +37,7 @@
 - 为 Crossref 和 arXiv 设定 User-Agent 或 contact header。
 - 为每个来源建立小批量访问限速。
 - 为 Zenodo、NIST 和 AutoForm 官网逐条确认许可或公开使用范围。
-- 把采样结果写入 `enterprise_data/raw_data/manifests/`，并用 `source_manifest.template.csv` 记录 checksum、访问时间、版本、适用范围和限制。
+- 把采样结果写入 `data/rag/enterprise/raw_data/manifests/`，并用 `source_manifest.template.csv` 记录 checksum、访问时间、版本、适用范围和限制。
 - 仍然不进入批量抓取和自动入库。
 
 ## 方法论沉淀

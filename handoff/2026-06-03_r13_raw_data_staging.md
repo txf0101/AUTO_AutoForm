@@ -2,7 +2,7 @@
 
 ## 本轮结论
 
-已建立 `enterprise_data/raw_data/` 原始数据暂存目录。当前阶段只保留目录规则、来源清单模板、人工样本区和隔离区；未启动外网爬取、文件下载或自动入库。
+已建立 `data/rag/enterprise/raw_data/` 原始数据暂存目录。当前阶段只保留目录规则、来源清单模板、人工样本区和隔离区；未启动外网爬取、文件下载或自动入库。
 
 ## 已读资料
 
@@ -13,18 +13,18 @@
 
 ## 交付物
 
-- `enterprise_data/raw_data/README.md`：暂存目录规则、结构和门禁。
-- `enterprise_data/raw_data/.gitignore`：默认忽略真实原始文件，只保留规则文件、模板和占位文件。
-- `enterprise_data/raw_data/source_manifest.template.csv`：来源登记清单模板。
-- `enterprise_data/raw_data/manifests/.gitkeep`：人工确认后的来源清单目录占位。
-- `enterprise_data/raw_data/manual_samples/.gitkeep`：R14 小批量人工样本目录占位。
-- `enterprise_data/raw_data/quarantine/.gitkeep`：隔离样本目录占位。
+- `data/rag/enterprise/raw_data/README.md`：暂存目录规则、结构和门禁。
+- `data/rag/enterprise/raw_data/.gitignore`：默认忽略真实原始文件，只保留规则文件、模板和占位文件。
+- `data/rag/enterprise/raw_data/source_manifest.template.csv`：来源登记清单模板。
+- `data/rag/enterprise/raw_data/manifests/.gitkeep`：人工确认后的来源清单目录占位。
+- `data/rag/enterprise/raw_data/manual_samples/.gitkeep`：R14 小批量人工样本目录占位。
+- `data/rag/enterprise/raw_data/quarantine/.gitkeep`：隔离样本目录占位。
 
 ## 下一步门禁
 
 开始任何外部抓取前，需要补齐以下条件：
 
-- 来源已经进入 `enterprise_data/source_whitelist.csv`。
+- 来源已经进入 `data/rag/enterprise/source_whitelist.csv`。
 - 许可状态、robots 约束、访问频率、用途边界和引用范围已经复核。
 - `source_manifest.template.csv` 能记录访问时间、版本、校验值、适用范围和限制。
 - R14 小批量清洗测试能处理该来源的人工样本。

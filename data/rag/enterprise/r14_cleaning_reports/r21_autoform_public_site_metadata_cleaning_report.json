@@ -1,0 +1,145 @@
+{
+  "batch_limit": 20,
+  "batch_size": 3,
+  "clean_record_count": 3,
+  "cleaning_result": {
+    "batch_limit": 20,
+    "batch_size": 3,
+    "cleaned_records": [
+      {
+        "cleaning_status": "clean",
+        "domain": "official_autoform_public_page_metadata",
+        "errors": [],
+        "normalized_payload": {
+          "canonical_url": "https://www.autoform.com/en/products/autoform-forming/",
+          "final_url": "https://www.autoform.com/en/products/autoform-forming/",
+          "h1_candidates_limited": [],
+          "license_review_status": "copyright_public_metadata_only_needs_review",
+          "meta_description": null,
+          "metadata_retention_scope": "page_title_canonical_selected_meta_tags_only",
+          "og_description": null,
+          "og_title": null,
+          "page_category": "product_suite_metadata",
+          "process_action": "sheet_metal_forming_public_product_metadata_review",
+          "raw_response_relpath": "data/rag/enterprise/raw_data/manual_samples/r21_autoform_public_site_metadata_20260603/autoform_public_page_metadata_001_autoform_forming_20260603.json",
+          "raw_response_sha256": "f1735a268dac74adcd3b5f2cbc8807c169942f7c1eb51d1943e06012c601b2e9",
+          "response_body_sha256_not_retained": "fa263329ffb3bc26f9571706d0ffcdd77f3e45bba4acffaab20882fc61dcd75e",
+          "retrieved_at": "2026-06-03T09:03:20.077335+00:00",
+          "review_status": "candidate",
+          "source_owner": "AutoForm Engineering GmbH",
+          "title": "AutoForm Forming",
+          "url": "https://www.autoform.com/en/products/autoform-forming/"
+        },
+        "object_type": "EnterpriseCleanedRecord",
+        "record_id": "record_r21_autoform_public_site_001_autoform_forming",
+        "review_status": "candidate",
+        "source_hash": "a815b5338824744415cab8ffb3e8924a29856fa9aca825a026389ebeef1ca7c4",
+        "source_id": "source_autoform_public_site_metadata"
+      },
+      {
+        "cleaning_status": "clean",
+        "domain": "official_autoform_public_page_metadata",
+        "errors": [],
+        "normalized_payload": {
+          "canonical_url": "https://www.autoform.com/en/products/autoform-forming/autoform-formingsolver/",
+          "final_url": "https://www.autoform.com/en/products/autoform-forming/autoform-formingsolver/",
+          "h1_candidates_limited": [
+            "AutoForm-FormingSolver"
+          ],
+          "license_review_status": "copyright_public_metadata_only_needs_review",
+          "meta_description": null,
+          "metadata_retention_scope": "page_title_canonical_selected_meta_tags_only",
+          "og_description": null,
+          "og_title": null,
+          "page_category": "solver_product_metadata",
+          "process_action": "forming_solver_public_product_metadata_review",
+          "raw_response_relpath": "data/rag/enterprise/raw_data/manual_samples/r21_autoform_public_site_metadata_20260603/autoform_public_page_metadata_002_autoform_formingsolver_20260603.json",
+          "raw_response_sha256": "76a19c08675c584fb3f36ee0cf673bcf78aa47dcbce7a9889c4782413cb00cc4",
+          "response_body_sha256_not_retained": "4acf7934f25da546f839b819608621c40b88ad12222568412fed3b61d5626949",
+          "retrieved_at": "2026-06-03T09:03:20.077335+00:00",
+          "review_status": "candidate",
+          "source_owner": "AutoForm Engineering GmbH",
+          "title": "AutoForm-FormingSolver",
+          "url": "https://www.autoform.com/en/products/autoform-forming/autoform-formingsolver/"
+        },
+        "object_type": "EnterpriseCleanedRecord",
+        "record_id": "record_r21_autoform_public_site_002_autoform_formingsolver",
+        "review_status": "candidate",
+        "source_hash": "fe92595259422477b28b0a9665d3cdeb5382c4f2f5a960dc5c1c1233f2f3f6f2",
+        "source_id": "source_autoform_public_site_metadata"
+      },
+      {
+        "cleaning_status": "clean",
+        "domain": "official_autoform_public_page_metadata",
+        "errors": [],
+        "normalized_payload": {
+          "canonical_url": "https://www.autoform.com/en/topics/biw-assembly-process-chain/",
+          "final_url": "https://www.autoform.com/en/topics/biw-assembly-process-chain/",
+          "h1_candidates_limited": [
+            "Overview"
+          ],
+          "license_review_status": "copyright_public_metadata_only_needs_review",
+          "meta_description": null,
+          "metadata_retention_scope": "page_title_canonical_selected_meta_tags_only",
+          "og_description": null,
+          "og_title": null,
+          "page_category": "process_chain_topic_metadata",
+          "process_action": "biw_assembly_process_chain_public_metadata_review",
+          "raw_response_relpath": "data/rag/enterprise/raw_data/manual_samples/r21_autoform_public_site_metadata_20260603/autoform_public_page_metadata_003_biw_assembly_process_chain_20260603.json",
+          "raw_response_sha256": "279803f9179f557035a745968ffca8fc06aa3014917bb9ae1419bbbbf3dc2675",
+          "response_body_sha256_not_retained": "ff603fbfefb6eb13092ab7f9a5f6ea9309a35fa00780239ef8d70e368d9b5006",
+          "retrieved_at": "2026-06-03T09:03:20.077335+00:00",
+          "review_status": "candidate",
+          "source_owner": "AutoForm Engineering GmbH",
+          "title": "BiW Assembly Process Chain",
+          "url": "https://www.autoform.com/en/topics/biw-assembly-process-chain/"
+        },
+        "object_type": "EnterpriseCleanedRecord",
+        "record_id": "record_r21_autoform_public_site_003_biw_assembly_process_chain",
+        "review_status": "candidate",
+        "source_hash": "32387ae66796d7aebc7fd82a0bd0ff412753e4c879d893d66e12be1c49472615",
+        "source_id": "source_autoform_public_site_metadata"
+      }
+    ],
+    "created_at": "2026-06-03T09:03:25.839288+00:00",
+    "object_type": "EnterpriseSmallBatchCleaningResult",
+    "schema_version": "autoform.enterprise_small_batch_cleaning.r14.v1",
+    "status": "pass"
+  },
+  "collection_attempts": [
+    {
+      "raw_response_sha256_values": [
+        "f1735a268dac74adcd3b5f2cbc8807c169942f7c1eb51d1943e06012c601b2e9",
+        "76a19c08675c584fb3f36ee0cf673bcf78aa47dcbce7a9889c4782413cb00cc4",
+        "279803f9179f557035a745968ffca8fc06aa3014917bb9ae1419bbbbf3dc2675"
+      ],
+      "record_count": 3,
+      "retrieved_at": "2026-06-03T09:03:20.077335+00:00",
+      "source_id": "source_autoform_public_site_metadata",
+      "status": "sampled_three_public_page_metadata_only"
+    },
+    {
+      "checked_at": "2026-06-03T17:03:20+08:00",
+      "reason": "AutoForm imprint shows copyright notice, so R21 keeps title, canonical URL and selected meta tags only.",
+      "source_id": "source_autoform_public_site_metadata",
+      "status": "full_html_not_retained"
+    }
+  ],
+  "created_at": "2026-06-03T09:03:20.077335+00:00",
+  "manifest_refs": [
+    "data/rag/enterprise/raw_data/manifests/2026-06-03_r21_autoform_public_site_metadata_manifest.csv"
+  ],
+  "next_phase_gate": "R21 AutoForm public site records remain official page metadata only; no product documentation scraping, formal index write, solver, GUI control, or engineering state write is allowed before legal and owner review.",
+  "object_type": "EnterpriseSmallBatchCleaningReport",
+  "phase": "R21",
+  "quarantined_record_count": 0,
+  "report_id": "report_r21_autoform_public_site_metadata_cleaning",
+  "schema_version": "autoform.enterprise_small_batch_cleaning_report.r14.v1",
+  "source_ids": [
+    "source_autoform_public_site_metadata"
+  ],
+  "source_review_refs": [
+    "data/rag/enterprise/source_review_registry.csv"
+  ],
+  "status": "pass"
+}

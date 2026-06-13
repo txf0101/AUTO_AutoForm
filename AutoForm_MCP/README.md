@@ -1,6 +1,6 @@
 # AutoForm_MCP
 
-Version: `MCP_V1.1`
+Version: `MCP_V1.8`
 
 ## Install And Connect First
 
@@ -41,7 +41,7 @@ conda activate afagent
 python -c "import autoform_mcp_agent.mcp_server; print('mcp import ok')"
 ```
 
-Replace `<repo-root>` below with the absolute path of this `AutoForm_MCP` folder on the current computer. Do not copy another user's absolute path.
+Replace `<repo-root>` below with the absolute path of the full workspace root on the current computer. The workspace must contain both `autoform_core/` and `AutoForm_MCP/`. Do not copy another user's absolute path.
 
 下面所有 `<repo-root>` 都要替换成当前电脑上这个 `AutoForm_MCP` 文件夹的绝对路径。不要复制别人电脑上的绝对路径。
 
@@ -59,7 +59,7 @@ startup_timeout_sec = 60
 enabled = true
 
 [mcp_servers."autoform-mcp".env]
-PYTHONPATH = '<repo-root>'
+PYTHONPATH = '<repo-root>;<repo-root>\AutoForm_MCP'
 ```
 
 If Codex cannot find `conda`, use the Python executable inside your `afagent` environment:
@@ -74,7 +74,7 @@ startup_timeout_sec = 60
 enabled = true
 
 [mcp_servers."autoform-mcp".env]
-PYTHONPATH = '<repo-root>'
+PYTHONPATH = '<repo-root>;<repo-root>\AutoForm_MCP'
 ```
 
 Common Windows examples are `C:\Users\<user>\miniconda3\envs\afagent\python.exe` and `C:\ProgramData\miniconda3\envs\afagent\python.exe`. Use the path that exists on the target computer.
@@ -86,7 +86,7 @@ Windows 上常见位置包括 `C:\Users\<user>\miniconda3\envs\afagent\python.ex
 PowerShell:
 
 ```powershell
-claude mcp add --transport stdio --scope user --env PYTHONPATH="<repo-root>" autoform-mcp -- conda run -n afagent python -m autoform_mcp_agent.mcp_server
+claude mcp add --transport stdio --scope user --env PYTHONPATH="<repo-root>;<repo-root>\AutoForm_MCP" autoform-mcp -- conda run -n afagent python -m autoform_mcp_agent.mcp_server
 claude mcp list
 claude mcp get autoform-mcp
 ```
@@ -94,7 +94,7 @@ claude mcp get autoform-mcp
 cmd:
 
 ```cmd
-claude mcp add --transport stdio --scope user --env PYTHONPATH="<repo-root>" autoform-mcp -- conda run -n afagent python -m autoform_mcp_agent.mcp_server
+claude mcp add --transport stdio --scope user --env PYTHONPATH="<repo-root>;<repo-root>\AutoForm_MCP" autoform-mcp -- conda run -n afagent python -m autoform_mcp_agent.mcp_server
 claude mcp list
 claude mcp get autoform-mcp
 ```
@@ -104,7 +104,7 @@ If quoting is awkward, use JSON:
 如果命令行引号不好处理，可以用 JSON：
 
 ```powershell
-claude mcp add-json autoform-mcp '{"type":"stdio","command":"conda","args":["run","-n","afagent","python","-m","autoform_mcp_agent.mcp_server"],"env":{"PYTHONPATH":"<repo-root>"}}'
+claude mcp add-json autoform-mcp '{"type":"stdio","command":"conda","args":["run","-n","afagent","python","-m","autoform_mcp_agent.mcp_server"],"env":{"PYTHONPATH":"<repo-root>;<repo-root>\\AutoForm_MCP"}}'
 ```
 
 ## OpenCalw Or Any Stdio MCP Host
@@ -144,15 +144,19 @@ After connecting from a host, verify in this order:
 
 1. Read `autoform://status`, or call `autoform_status_snapshot`.
 2. Call `autoform_discover_installation`.
-3. Call `autoform_result_blockers` to see the MCP_V1.1 result-review boundary.
+3. Call `autoform_result_blockers` to see the MCP_V1.8 result-review boundary.
 4. Keep execution tools in planning mode until you really want AutoForm to run.
 5. Use `execute=true` only after the project, license, output folder, and visible desktop are confirmed.
 
-## What V1.1 Contains
+## What V1.8 Contains
 
-MCP_V1.1 exposes 112 `autoform_` tools and the `autoform://status` resource. The count is checked by `tests/test_mcp_tools.py`.
+MCP_V1.8 exposes 112 `autoform_` tools and the `autoform://status` resource. The count is checked by `tests/test_mcp_tools.py`.
 
-MCP_V1.1 暴露 112 个 `autoform_` 工具，并提供 `autoform://status` 资源。工具数量由 `tests/test_mcp_tools.py` 检查。
+MCP_V1.8 暴露 112 个 `autoform_` 工具，并提供 `autoform://status` 资源。工具数量由 `tests/test_mcp_tools.py` 检查。
+
+V1.8 keeps the V1.1 result-review scope and adds a smaller, safer GUI follow-up path: `autoform_result_set_view` now accepts `title_contains` and `target_pid`, so a host can switch the current AutoForm result window without reopening an example project. `autoform_r12_project_view_demo` also accepts `view_sequence`; when this argument is omitted, the tool only opens or plans the project window and does not send view shortcuts.
+
+V1.8 保留 V1.1 的结果审阅范围，并补齐更精确的 GUI 续接路径：`autoform_result_set_view` 现在接收 `title_contains` 和 `target_pid`，host 可以把视角切换限定到当前 AutoForm 结果窗口，避免重新打开示例工程。`autoform_r12_project_view_demo` 新增 `view_sequence`；省略该参数时，工具只打开或规划工程窗口，不发送视角快捷键。
 
 Common tools:
 
@@ -164,7 +168,7 @@ Common tools:
 | `autoform_official_sample_run_summary` | Summarize local official-example run evidence from `run_manifest.json` files. |
 | `autoform_result_inventory` | Inspect result-like files in a run folder or workspace. |
 | `autoform_result_plan_review` | Convert a result-review request into a structured plan. |
-| `autoform_result_set_view` | Plan or execute verified view shortcuts such as isometric, top, front, and side. |
+| `autoform_result_set_view` | Plan or execute verified view shortcuts such as isometric, top, front, and side; V1.8 can target one window by title or PID. |
 | `autoform_result_play_forming_animation` | Use a guarded playback profile or a manual observation profile. |
 | `autoform_gui_window_snapshot` | List visible AutoForm windows and interaction-ready windows. |
 | `autoform_gui_restore_window` | Restore a visible AutoForm project window before audited GUI actions. |
@@ -179,14 +183,14 @@ Common tools:
 | `autoform_official_sample_run_summary` | 从 `run_manifest.json` 汇总本机官方样例运行证据。 |
 | `autoform_result_inventory` | 检查运行目录或工作区里的结果类文件。 |
 | `autoform_result_plan_review` | 把结果审阅请求整理成结构化计划。 |
-| `autoform_result_set_view` | 规划或执行已验证的等轴测、俯视、正视和侧视快捷键。 |
+| `autoform_result_set_view` | 规划或执行已验证的等轴测、俯视、正视和侧视快捷键；V1.8 可以按窗口标题或 PID 定向。 |
 | `autoform_result_play_forming_animation` | 使用受控播放 profile 或人工观察 profile。 |
 | `autoform_gui_window_snapshot` | 列出可见 AutoForm 窗口和可交互窗口。 |
 | `autoform_gui_restore_window` | 在审计型 GUI 动作前恢复可见 AutoForm 工程窗口。 |
 
-MCP_V1.1 does not generate engineering pass/fail reports. It returns evidence, readiness checks, GUI boundaries, and review plans. Engineering threshold rules remain future optional input.
+MCP_V1.8 does not generate engineering pass/fail reports. It returns evidence, readiness checks, GUI boundaries, and review plans. Engineering threshold rules remain future optional input.
 
-MCP_V1.1 不生成工程判断报告。它返回证据、就绪检查、GUI 边界和审阅计划。工程阈值规则属于后续可选输入。
+MCP_V1.8 不生成工程判断报告。它返回证据、就绪检查、GUI 边界和审阅计划。工程阈值规则属于后续可选输入。
 
 ## Portability Rules
 
@@ -215,12 +219,12 @@ New-Item -ItemType Directory -Force -Path $env:TEMP | Out-Null
 python -m pytest tests\test_mcp_tools.py tests\test_gui_automation.py tests\test_result_viewer.py tests\test_r12_demo.py tests\test_project_workflow.py tests\test_process.py -q --basetemp tmp\pytest_mcp
 ```
 
-Expected MCP_V1.1 result in this workspace:
+Expected MCP_V1.8 result in this workspace:
 
-当前工作区 MCP_V1.1 的预期结果：
+当前工作区 MCP_V1.8 的预期结果：
 
 ```text
-54 passed
+57 passed
 ```
 
 ## Project Layout

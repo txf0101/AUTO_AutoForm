@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 from zipfile import ZipFile
 
-from autoform_agent.quicklink import (
+from autoform_core.quicklink import (
     compare_quicklink_exports,
     get_blank_info,
     get_die_face,
@@ -24,7 +24,7 @@ from autoform_agent.quicklink import (
     quicklink_schema,
     validate_quicklink_standard,
 )
-from autoform_agent.paths import AutoFormInstallation
+from autoform_core.paths import AutoFormInstallation
 
 
 QUICKLINK_XML = """<?xml version="1.0" encoding="UTF-8"?>
@@ -132,7 +132,7 @@ def test_quicklink_archive_inventory_and_compare(tmp_path: Path) -> None:
 def test_list_quicklink_exports_reads_manifest(tmp_path: Path) -> None:
     archive = tmp_path / "quicklinkExport.zip"
     archive.write_text("zip bytes are not read by list", encoding="utf-8")
-    export_dir = tmp_path / "autoform_agent_data" / "quicklink" / "20260523_201658"
+    export_dir = tmp_path / "data/runtime/agent" / "quicklink" / "20260523_201658"
     export_dir.mkdir(parents=True)
     manifest = {
         "collected_at": "20260523_201658",
@@ -184,7 +184,7 @@ def test_quicklink_bridge_status_detects_matching_script(tmp_path: Path, monkeyp
                 "chcp 65001 >nul",
                 'set "QUICKLINK_ARCHIVE=%~1"',
                 f'set "PYTHONPATH={workspace.resolve()};%PYTHONPATH%"',
-                f'"python.exe" -m autoform_agent.quicklink_bridge "%QUICKLINK_ARCHIVE%" --workspace "{workspace.resolve()}"',
+                f'"python.exe" -m autoform_core.quicklink_bridge "%QUICKLINK_ARCHIVE%" --workspace "{workspace.resolve()}"',
                 "exit /b %ERRORLEVEL%",
                 "",
             ]

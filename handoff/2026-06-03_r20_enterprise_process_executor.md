@@ -19,7 +19,7 @@
 | --- | --- |
 | `autoform_agent/enterprise_process_executor.py` | R20 编排入口，串联 R16 证据包、R17 候选规划、中心补丁审查、人工确认、R19 运行、结果证据包和报告草案。 |
 | `schemas/enterprise_process_executor_run.schema.json` | R20 顶层对象 schema。 |
-| `enterprise_data/r20_enterprise_process_executor_run.sample.json` | 企业证据充足、人工确认、工具规划完成和报告草案生成的对象样例。 |
+| `data/rag/enterprise/r20_enterprise_process_executor_run.sample.json` | 企业证据充足、人工确认、工具规划完成和报告草案生成的对象样例。 |
 | `fixtures/r20_enterprise_process_executor_events.jsonl` | 前端可回放的 R20 事件流。 |
 | `tests/test_enterprise_process_executor.py` | 覆盖成功闭环、无企业数据、证据冲突、人工拒绝、执行审批缺失和 fixture 回放。 |
 | `docs/enterprise_process_executor.md` | R20 Python 入口、输出对象、验收状态和执行边界说明。 |
@@ -31,12 +31,12 @@
 - `python -m py_compile autoform_agent\enterprise_process_executor.py`
 - `python -m pytest tests\test_enterprise_process_executor.py -q`
 - `python -m pytest tests\test_process_rag.py tests\test_enterprise_process_planning.py tests\test_agent_system_runtime.py tests\test_enterprise_process_executor.py -q`
-- `python -m pytest frontend\tests\smoke_test.py frontend\tests\http_smoke_test.py -q`
-- `C:\Users\Tang Xufeng\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe frontend\tests\smoke-test.mjs`
+- `python -m pytest apps\workbench\tests\smoke_test.py apps\workbench\tests\http_smoke_test.py -q`
+- `C:\Users\Tang Xufeng\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe apps\workbench\tests\smoke-test.mjs`
 - `$env:TEMP=tmp\pytest_temp; $env:TMP=tmp\pytest_temp; python -m pytest -q`
 - `python -m autoform_agent.cli public-release-scan`
 - R20 相关新增代码、schema、样例和 fixture 禁用句式扫描
-- in-app browser 回放 `http://127.0.0.1:8765/frontend/index.html?fixture=../fixtures/r20_enterprise_process_executor_events.jsonl`
+- in-app browser 回放 `http://127.0.0.1:8765/apps/workbench/index.html?fixture=../fixtures/r20_enterprise_process_executor_events.jsonl`
 
 浏览器回放证据：
 

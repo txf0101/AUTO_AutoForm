@@ -1,6 +1,8 @@
-"""这个文件登记项目里已有和预留的 Agent 角色。每个角色都带有职责、输入输出和源码依据，避免角色定义变成口头约定。
+"""Agent role registry for the AutoForm multi-agent runtime.
 
-This file registers the active and reserved Agent roles in the project. Each role carries responsibilities, inputs, outputs, and source evidence so role design remains traceable.
+The registry is intentionally data-oriented.  Each role records local source
+evidence, default tools, and handoff targets so routing remains inspectable by
+tests, CLI output, and the workbench.
 """
 
 from __future__ import annotations
@@ -11,19 +13,12 @@ from typing import Iterable
 from .contracts import AgentRoleSpec
 
 
-# The first business-facing roles are the names shown in the frontend graph and
-# in the new development DOCX files. Older implementation roles remain below so
-# existing CLI commands, tests, and historical events keep working while the UI
-# presents a cleaner nine-agent model.
 DEFAULT_AGENT_ROLES: tuple[AgentRoleSpec, ...] = (
     AgentRoleSpec(
         role_id="manager",
         display_name="AutoForm Manager Agent",
-        responsibility="理解用户目标、分派专业 Agent、汇总证据和最终答复。",
-        source_files=(
-            "autoform_agent/agent_runtime.py",
-            "docs/api_runtime_call_chain.md",
-        ),
+        responsibility="Coordinate the request, choose specialist agents, summarize evidence, and return the final response.",
+        source_files=("autoform_agent/agent_runtime.py", "docs/api_runtime_call_chain.md"),
         default_tools=("build_runtime_tool_catalog", "run_agent_runtime_turn"),
         handoff_targets=(
             "installation",
@@ -32,25 +27,22 @@ DEFAULT_AGENT_ROLES: tuple[AgentRoleSpec, ...] = (
             "result_review",
             "quicklink",
             "materials",
-            "demand_triage_agent",
+            "demand_process_planning_agent",
             "geometry_data_agent",
-            "rag_evidence_agent",
             "material_agent",
-            "process_planning_agent",
-            "script_agent",
-            "reporting",
+            "process_setting_agent",
+            "solver_execution_agent",
+            "postprocessing_agent",
+            "diagnosis_optimization_agent",
+            "report_collation_agent",
             "mcp_gateway",
         ),
     ),
     AgentRoleSpec(
         role_id="center_agent",
-        display_name="中心Agent",
-        responsibility="统一接收用户目标，生成任务卡和任务图，分配专业 Agent，审查 ContextPatch，维护审批、事件流和阶段复盘。",
-        source_files=(
-            "autoform_agent/agent_system/kernel.py",
-            "autoform_agent/agent_runtime.py",
-            "VC开发文档/Auto_Autoform思路整理/06_Agent开发规划_01_中心Agent.docx",
-        ),
+        display_name="Center Agent",
+        responsibility="Build the task card, task DAG, context view, ContextPatch review, audit events, and specialist routing.",
+        source_files=("autoform_agent/agent_system/kernel.py", "docs/multi_agent_architecture.md"),
         default_tools=("build_center_agent_plan", "validate_context_patch", "build_agent_tool_gateway"),
         handoff_targets=(
             "demand_process_planning_agent",
@@ -65,53 +57,33 @@ DEFAULT_AGENT_ROLES: tuple[AgentRoleSpec, ...] = (
     ),
     AgentRoleSpec(
         role_id="demand_process_planning_agent",
-        display_name="需求与工艺规划Agent",
-        responsibility="把用户目标转成仿真准备任务书，识别缺失信息、任务风险、初步工艺路线和下一步专业 Agent 路由。",
-        source_files=(
-            "autoform_agent/preparation_agents.py",
-            "VC开发文档/Auto_Autoform思路整理/06_Agent开发规划_02_需求与工艺规划Agent.docx",
-        ),
+        display_name="Demand And Process Planning Agent",
+        responsibility="Translate the user goal into preparation tasks, missing information, risks, and an initial process route.",
+        source_files=("autoform_agent/preparation_agents.py", "docs/multi_agent_architecture.md"),
         default_tools=("triage_request", "build_process_plan", "retrieve_evidence_bundle"),
         handoff_targets=("center_agent", "geometry_data_agent", "material_agent", "process_setting_agent"),
     ),
     AgentRoleSpec(
         role_id="process_setting_agent",
-        display_name="工艺设置Agent",
-        responsibility="围绕工序、坯料、压边力、拉延筋、润滑、模面和求解前设置生成候选 ProcessContextPatch。",
-        source_files=(
-            "autoform_agent/preparation_agents.py",
-            "autoform_agent/project_workflow.py",
-            "VC开发文档/Auto_Autoform思路整理/06_Agent开发规划_05_工艺设置Agent.docx",
-        ),
+        display_name="Process Setting Agent",
+        responsibility="Prepare candidate process settings for operations, blank, drawbeads, lubrication, die face, and solver setup.",
+        source_files=("autoform_agent/preparation_agents.py", "autoform_core/project_workflow.py"),
         default_tools=("build_process_plan", "autoform_resolve_project", "autoform_project_run"),
         handoff_targets=("center_agent", "solver_execution_agent", "diagnosis_optimization_agent"),
     ),
     AgentRoleSpec(
         role_id="solver_execution_agent",
-        display_name="求解执行Agent",
-        responsibility="在审批通过后提交 AutoForm 求解，监控许可证、队列、进程、日志和运行副本状态，输出 SolverRunRecord。",
-        source_files=(
-            "autoform_agent/solver.py",
-            "autoform_agent/project_workflow.py",
-            "VC开发文档/Auto_Autoform思路整理/06_Agent开发规划_06_求解执行Agent.docx",
-        ),
-        default_tools=(
-            "autoform_solver_capability_specs",
-            "autoform_forming_solver_kinematic_plan",
-            "autoform_forming_solver_kinematic_batch_probe",
-            "autoform_project_run",
-        ),
+        display_name="Solver Execution Agent",
+        responsibility="Plan or submit AutoForm solver work after approval and track license, queue, process, log, and run records.",
+        source_files=("autoform_core/solver.py", "autoform_core/project_workflow.py"),
+        default_tools=("autoform_solver_capability_specs", "autoform_forming_solver_kinematic_plan", "autoform_project_run"),
         handoff_targets=("center_agent", "postprocessing_agent", "diagnosis_optimization_agent"),
     ),
     AgentRoleSpec(
         role_id="postprocessing_agent",
-        display_name="后处理Agent",
-        responsibility="读取结果工程、窗口状态和结果证据，组织减薄、FLD、起皱、回弹、动画和截图取证。",
-        source_files=(
-            "autoform_agent/result_viewer.py",
-            "autoform_agent/gui_automation.py",
-            "VC开发文档/Auto_Autoform思路整理/06_Agent开发规划_07_后处理Agent.docx",
-        ),
+        display_name="Postprocessing Agent",
+        responsibility="Read result projects, windows, result variables, views, animation routes, screenshots, and evidence boundaries.",
+        source_files=("autoform_core/result_viewer.py", "autoform_core/gui_automation.py"),
         default_tools=(
             "autoform_result_query_capabilities",
             "autoform_result_readiness",
@@ -122,94 +94,49 @@ DEFAULT_AGENT_ROLES: tuple[AgentRoleSpec, ...] = (
     ),
     AgentRoleSpec(
         role_id="diagnosis_optimization_agent",
-        display_name="诊断与优化Agent",
-        responsibility="把求解日志、后处理指标、材料和工艺证据转成缺陷诊断、原因假设、优化方案和验证计划。",
-        source_files=(
-            "autoform_agent/results.py",
-            "autoform_agent/result_viewer.py",
-            "VC开发文档/Auto_Autoform思路整理/06_Agent开发规划_08_诊断与优化Agent.docx",
-        ),
+        display_name="Diagnosis And Optimization Agent",
+        responsibility="Turn solver logs, postprocessing indicators, material facts, and process evidence into diagnosis and improvement plans.",
+        source_files=("autoform_core/results.py", "autoform_core/result_viewer.py"),
         default_tools=("autoform_result_inventory", "autoform_result_blockers", "autoform_official_sample_run_summary"),
         handoff_targets=("center_agent", "process_setting_agent", "solver_execution_agent", "report_collation_agent"),
     ),
     AgentRoleSpec(
         role_id="report_collation_agent",
-        display_name="报告整理Agent",
-        responsibility="整理任务背景、输入、证据、求解记录、后处理结论、诊断建议和交付物索引，生成报告草案和证据包。",
-        source_files=(
-            "autoform_agent/report.py",
-            "autoform_agent/results.py",
-            "autoform_agent/release.py",
-            "VC开发文档/Auto_Autoform思路整理/06_Agent开发规划_09_报告整理Agent.docx",
-        ),
-        default_tools=(
-            "autoform_result_inventory",
-            "autoform_report_delivery_plan",
-            "autoform_report_inventory",
-            "autoform_release_readiness_check",
-        ),
+        display_name="Report Collation Agent",
+        responsibility="Collect task background, inputs, evidence, solver records, review conclusions, suggestions, and delivery indexes.",
+        source_files=("autoform_core/report.py", "autoform_core/results.py", "autoform_core/release.py"),
+        default_tools=("autoform_result_inventory", "autoform_report_delivery_plan", "autoform_release_readiness_check"),
         handoff_targets=("center_agent",),
     ),
     AgentRoleSpec(
         role_id="installation",
         display_name="Installation And Diagnostics Agent",
-        responsibility="读取本机 AutoForm 安装、环境快照、队列状态、日志和诊断包计划。",
-        source_files=(
-            "autoform_agent/paths.py",
-            "autoform_agent/diagnostics.py",
-            "autoform_agent/config.py",
-            "autoform_agent/queue.py",
-        ),
-        default_tools=(
-            "autoform_discover_installation",
-            "autoform_status_snapshot",
-            "autoform_environment_snapshot",
-            "autoform_queue_health_check",
-        ),
+        responsibility="Inspect local AutoForm installation, environment, queues, logs, diagnostics, and readiness snapshots.",
+        source_files=("autoform_core/paths.py", "autoform_core/diagnostics.py", "autoform_core/config.py", "autoform_core/queue.py"),
+        default_tools=("autoform_discover_installation", "autoform_status_snapshot", "autoform_environment_snapshot"),
         handoff_targets=("manager", "project_workflow", "solver"),
     ),
     AgentRoleSpec(
         role_id="project_workflow",
         display_name="Project Workflow Agent",
-        responsibility="解析官方示例或用户工程，规划工程复制、GUI 打开和可复现运行链路。",
-        source_files=(
-            "autoform_agent/project_workflow.py",
-            "autoform_agent/process.py",
-            "autoform_agent/inventory.py",
-        ),
-        default_tools=(
-            "autoform_resolve_project",
-            "autoform_project_run",
-            "autoform_example_project_baseline",
-        ),
+        responsibility="Resolve official examples or user projects and plan project copy, GUI open, and reproducible run workflows.",
+        source_files=("autoform_core/project_workflow.py", "autoform_core/process.py", "autoform_core/inventory.py"),
+        default_tools=("autoform_resolve_project", "autoform_project_run", "autoform_example_project_baseline"),
         handoff_targets=("manager", "solver", "result_review", "reporting"),
     ),
     AgentRoleSpec(
         role_id="solver",
         display_name="Solver Agent",
-        responsibility="规划求解器、后处理和批量探测命令，并把真实执行保持在显式执行参数之后。",
-        source_files=(
-            "autoform_agent/solver.py",
-            "tests/test_solver.py",
-        ),
-        default_tools=(
-            "autoform_solver_capability_specs",
-            "autoform_forming_solver_kinematic_plan",
-            "autoform_forming_solver_full_plan",
-            "autoform_solver_command_probe",
-        ),
+        responsibility="Prepare solver, postsolver, and batch probe command plans while keeping real execution behind explicit parameters.",
+        source_files=("autoform_core/solver.py", "tests/test_solver.py"),
+        default_tools=("autoform_solver_capability_specs", "autoform_forming_solver_full_plan", "autoform_solver_command_probe"),
         handoff_targets=("manager", "project_workflow", "result_review", "reporting"),
     ),
     AgentRoleSpec(
         role_id="result_review",
         display_name="Result Review Agent",
-        responsibility="组织 AutoForm GUI 后处理路线，映射结果栏目、视角、动画和截图证据，并保留未取证控件的边界说明。",
-        source_files=(
-            "autoform_agent/result_viewer.py",
-            "autoform_agent/gui_automation.py",
-            "autoform_agent/mcp_tools/gui.py",
-            "tests/test_result_viewer.py",
-        ),
+        responsibility="Map AutoForm result tasks, variables, views, animation profiles, and screenshot evidence.",
+        source_files=("autoform_core/result_viewer.py", "autoform_core/gui_automation.py", "autoform_core/tool_registry/gui.py"),
         default_tools=(
             "autoform_result_query_capabilities",
             "autoform_result_gui_evidence",
@@ -227,144 +154,85 @@ DEFAULT_AGENT_ROLES: tuple[AgentRoleSpec, ...] = (
     AgentRoleSpec(
         role_id="quicklink",
         display_name="QuickLink Agent",
-        responsibility="安装和检查 QuickLink bridge，解析导出包，并生成标准化结构。",
-        source_files=(
-            "autoform_agent/quicklink.py",
-            "autoform_agent/quicklink_bridge.py",
-            "tests/test_quicklink.py",
-        ),
-        default_tools=(
-            "autoform_install_quicklink_bridge",
-            "autoform_list_quicklink_exports",
-            "autoform_parse_quicklink_xml",
-            "autoform_quicklink_schema",
-        ),
+        responsibility="Install and inspect the QuickLink bridge, parse exports, and generate normalized QuickLink structures.",
+        source_files=("autoform_core/quicklink.py", "autoform_core/quicklink_bridge.py", "tests/test_quicklink.py"),
+        default_tools=("autoform_install_quicklink_bridge", "autoform_list_quicklink_exports", "autoform_quicklink_schema"),
         handoff_targets=("manager", "project_workflow", "reporting"),
     ),
     AgentRoleSpec(
         role_id="materials",
         display_name="Materials Agent",
-        responsibility="检查、安装、备份和去重 AutoForm 材料文件。",
-        source_files=(
-            "autoform_agent/materials.py",
-            "tests/test_materials.py",
-        ),
-        default_tools=(
-            "autoform_list_material_libraries",
-            "autoform_install_materials",
-            "autoform_material_library_backup_plan",
-            "autoform_inspect_material_file",
-        ),
+        responsibility="Inspect, install, back up, deduplicate, and validate AutoForm material files.",
+        source_files=("autoform_core/materials.py", "tests/test_materials.py"),
+        default_tools=("autoform_list_material_libraries", "autoform_install_materials", "autoform_inspect_material_file"),
         handoff_targets=("manager", "reporting"),
     ),
     AgentRoleSpec(
         role_id="demand_triage_agent",
         display_name="Demand Triage Agent",
-        responsibility="生成 DemandTriageCard、MissingInfoChecklist 和下一步专业 Agent 路由。",
-        source_files=(
-            "autoform_agent/preparation_agents.py",
-            "tests/test_preparation_agents.py",
-            "policy/permission_matrix.md",
-        ),
+        responsibility="Produce DemandTriageCard, MissingInfoChecklist, and next-agent routing for low-risk preparation.",
+        source_files=("autoform_agent/preparation_agents.py", "tests/test_preparation_agents.py"),
         default_tools=("triage_request",),
         handoff_targets=("manager", "geometry_data_agent", "rag_evidence_agent"),
     ),
     AgentRoleSpec(
         role_id="geometry_data_agent",
-        display_name="几何与数据Agent",
-        responsibility="生成 PartCard、DataChecklist、CandidateValue 和几何数据候选补丁。",
-        source_files=(
-            "autoform_agent/preparation_agents.py",
-            "tests/test_preparation_agents.py",
-            "policy/permission_matrix.md",
-        ),
-        default_tools=("build_part_data_check",),
-        handoff_targets=("manager", "rag_evidence_agent", "material_agent", "process_planning_agent"),
+        display_name="Geometry And Data Agent",
+        responsibility="Produce PartCard, DataChecklist, CandidateValue, geometry measurements, and geometry ContextPatch candidates.",
+        source_files=("autoform_agent/preparation_agents.py", "autoform_core/flex_scripts/script_agent.py"),
+        default_tools=("build_part_data_check", "autoform_script_catalog", "autoform_script_run"),
+        handoff_targets=("manager", "demand_process_planning_agent", "material_agent", "process_setting_agent"),
     ),
     AgentRoleSpec(
         role_id="rag_evidence_agent",
         display_name="RAG Evidence Agent",
-        responsibility="读取 source registry，执行最小检索评测，并打包 EvidenceBundle。",
-        source_files=(
-            "autoform_agent/preparation_agents.py",
-            "source_registry.csv",
-            "card_schema.yaml",
-            "eval_queries.jsonl",
-            "tests/test_preparation_agents.py",
-        ),
-        default_tools=("load_source_registry", "retrieve_evidence_bundle"),
-        handoff_targets=("manager", "material_agent", "process_planning_agent"),
+        responsibility="Collect process knowledge cards, enterprise source facts, and retrieval evidence for planning decisions.",
+        source_files=("autoform_agent/process_knowledge.py", "autoform_agent/process_rag.py", "data/rag/enterprise/README.md"),
+        default_tools=("retrieve_evidence_bundle",),
+        handoff_targets=("manager", "demand_process_planning_agent", "report_collation_agent"),
     ),
     AgentRoleSpec(
         role_id="material_agent",
-        display_name="材料Agent",
-        responsibility="生成 MaterialCard、MaterialGapList、MaterialPatch 和 ReviewRequest。",
-        source_files=(
-            "autoform_agent/preparation_agents.py",
-            "tests/test_preparation_agents.py",
-            "policy/permission_matrix.md",
-        ),
-        default_tools=("build_material_review",),
-        handoff_targets=("manager", "process_planning_agent", "human_reviewer"),
+        display_name="Material Agent",
+        responsibility="Prepare MaterialCard, material gaps, material source candidates, and guarded material assignment workflows.",
+        source_files=("autoform_agent/preparation_agents.py", "autoform_core/material_assignment_workflow.py", "autoform_core/materials.py"),
+        default_tools=("build_material_plan", "autoform_assign_material_to_project", "autoform_list_material_libraries"),
+        handoff_targets=("manager", "geometry_data_agent", "process_setting_agent"),
     ),
     AgentRoleSpec(
         role_id="process_planning_agent",
         display_name="Process Planning Agent",
-        responsibility="生成 ProcessPlanCard、OperationRoute、ParameterCandidate 和 SimulationPlan 候选。",
-        source_files=(
-            "autoform_agent/preparation_agents.py",
-            "tests/test_preparation_agents.py",
-            "policy/permission_matrix.md",
-        ),
+        responsibility="Produce operation routes, parameter candidates, simulation plans, and preparation-stage process records.",
+        source_files=("autoform_agent/preparation_agents.py", "docs/multi_agent_architecture.md"),
         default_tools=("build_process_plan",),
-        handoff_targets=("manager", "script_agent", "autoform_adapter"),
+        handoff_targets=("manager", "process_setting_agent", "solver_execution_agent"),
     ),
     AgentRoleSpec(
         role_id="script_agent",
-        display_name="Low-risk Script Agent",
-        responsibility="读取 script_registry.yaml，执行 L0 至 L2 低风险脚本记录并生成 ScriptRunRecord。",
-        source_files=(
-            "autoform_agent/preparation_agents.py",
-            "script_registry.yaml",
-            "tests/test_preparation_agents.py",
-            "policy/permission_matrix.md",
-        ),
-        default_tools=("load_script_registry", "run_low_risk_script"),
-        handoff_targets=("manager", "validator"),
+        display_name="Script Agent",
+        responsibility="Read the stable flexible-script registry and run approved low-risk scripts with ScriptRunRecord output.",
+        source_files=("autoform_core/flex_scripts/script_agent.py", "script_library/flex/registry.yaml"),
+        default_tools=("autoform_script_catalog", "autoform_script_run"),
+        handoff_targets=("manager", "geometry_data_agent", "reporting"),
     ),
     AgentRoleSpec(
         role_id="reporting",
-        display_name="Reporting And Evidence Agent",
-        responsibility="清点结果证据、报告模板、发布检查和可交付包计划。",
-        source_files=(
-            "autoform_agent/results.py",
-            "autoform_agent/report.py",
-            "autoform_agent/release.py",
-            "autoform_agent/safety.py",
-        ),
-        default_tools=(
-            "autoform_result_inventory",
-            "autoform_report_delivery_plan",
-            "autoform_report_inventory",
-            "autoform_release_readiness_check",
-        ),
-        handoff_targets=("manager", "project_workflow", "solver", "result_review"),
+        display_name="Reporting Agent",
+        responsibility="Create result inventories, report packages, release checks, and public-scan plans.",
+        source_files=("autoform_core/results.py", "autoform_core/report.py", "autoform_core/release.py", "autoform_core/safety.py"),
+        default_tools=("autoform_result_inventory", "autoform_report_delivery_plan", "autoform_release_readiness_check"),
+        handoff_targets=("manager",),
     ),
     AgentRoleSpec(
         role_id="mcp_gateway",
         display_name="MCP Gateway Agent",
-        responsibility="把外部 MCP host 请求和内部 Agent 工具意图映射到当前 MCP 同源工具层，并维护 AutoForm 控制边界。",
+        responsibility="Expose the same AutoForm tool wrappers to external MCP hosts and the internal AgentToolGateway boundary.",
         source_files=(
-            "autoform_agent/mcp_server.py",
-            "autoform_agent/mcp_tools/__init__.py",
+            "AutoForm_MCP/autoform_mcp_agent/mcp_server.py",
+            "autoform_core/tool_registry/__init__.py",
             "autoform_agent/agent_system/tool_gateway.py",
-            "tests/test_mcp_tools.py",
         ),
-        default_tools=(
-            "autoform_status_snapshot",
-            "build_agent_tool_gateway",
-            "AgentToolGateway.call_tool",
-        ),
+        default_tools=("autoform_status_snapshot", "build_agent_tool_gateway", "AgentToolGateway.call_tool"),
         handoff_targets=("manager", "installation", "project_workflow", "result_review"),
     ),
 )
@@ -410,13 +278,13 @@ class AgentRoleRegistry:
         return tuple(selected), tuple(missing)
 
     def as_dict(self) -> dict[str, list[dict]]:
-        """Return a JSON ready registry snapshot."""
+        """Return a JSON-ready registry snapshot."""
 
         return {"roles": [role.as_dict() for role in self.list_roles()]}
 
 
 def build_default_agent_registry() -> AgentRoleRegistry:
-    """Create the repository grounded AutoForm Agent role registry."""
+    """Create the repository-grounded AutoForm Agent role registry."""
 
     registry = AgentRoleRegistry()
     for role in DEFAULT_AGENT_ROLES:

@@ -1,0 +1,237 @@
+{
+  "applicability": "materials=manufacturing_systems_metadata; process_actions=factory_work_cell_metadata_review;manufacturing_process_chain_metadata_review",
+  "card_refs": [
+    {
+      "allowed_usage": "catalog_only",
+      "applicability": {
+        "applicable_lines": [
+          "not_applicable_until_scope_and_owner_review"
+        ],
+        "applicable_materials": [
+          "manufacturing_systems_metadata"
+        ],
+        "conflict_status": "none",
+        "part_features": [
+          "factory_operations_metadata_only"
+        ],
+        "process_actions": [
+          "factory_work_cell_metadata_review"
+        ]
+      },
+      "card_id": "pkc_r21_nist_pdr_factory_operations_case_001",
+      "card_type": "ProcessCase",
+      "formal_index_allowed": false,
+      "license_status": "nist_open_license_present_item_scope_review_required",
+      "limitation": "NIST PDR metadata only; downloadable data files, engineering applicability and responsible owner are not confirmed.",
+      "ranking_reasons": [
+        "text_match:cell",
+        "text_match:factory",
+        "text_match:metadata",
+        "text_match:operations",
+        "text_match:review",
+        "text_match:scope",
+        "text_match:work"
+      ],
+      "review_status": "needs_license_review",
+      "score": 7,
+      "source_id": "source_nist_public_data_repository",
+      "source_permission_level": "P1",
+      "version": "1.1.1"
+    },
+    {
+      "allowed_usage": "catalog_only",
+      "applicability": {
+        "applicable_lines": [
+          "not_applicable_until_scope_and_owner_review"
+        ],
+        "applicable_materials": [
+          "manufacturing_systems_metadata"
+        ],
+        "conflict_status": "none",
+        "part_features": [
+          "factory_operations_metadata_only"
+        ],
+        "process_actions": [
+          "factory_work_cell_metadata_review"
+        ]
+      },
+      "card_id": "pkc_r21_nist_pdr_factory_operations_case_002",
+      "card_type": "ProcessCase",
+      "formal_index_allowed": false,
+      "license_status": "nist_open_license_present_item_scope_review_required",
+      "limitation": "NIST PDR metadata only; downloadable data files, engineering applicability and responsible owner are not confirmed.",
+      "ranking_reasons": [
+        "text_match:cell",
+        "text_match:factory",
+        "text_match:metadata",
+        "text_match:operations",
+        "text_match:review",
+        "text_match:scope",
+        "text_match:work"
+      ],
+      "review_status": "needs_license_review",
+      "score": 7,
+      "source_id": "source_nist_public_data_repository",
+      "source_permission_level": "P1",
+      "version": "1.0.1"
+    },
+    {
+      "allowed_usage": "catalog_only",
+      "applicability": {
+        "applicable_lines": [
+          "not_applicable_until_scope_and_owner_review"
+        ],
+        "applicable_materials": [
+          "manufacturing_systems_metadata"
+        ],
+        "conflict_status": "none",
+        "part_features": [
+          "factory_operations_metadata_only"
+        ],
+        "process_actions": [
+          "factory_work_cell_metadata_review"
+        ]
+      },
+      "card_id": "pkc_r21_nist_pdr_factory_operations_case_003",
+      "card_type": "ProcessCase",
+      "formal_index_allowed": false,
+      "license_status": "nist_open_license_present_item_scope_review_required",
+      "limitation": "NIST PDR metadata only; downloadable data files, engineering applicability and responsible owner are not confirmed.",
+      "ranking_reasons": [
+        "text_match:cell",
+        "text_match:factory",
+        "text_match:metadata",
+        "text_match:operations",
+        "text_match:review",
+        "text_match:scope",
+        "text_match:work"
+      ],
+      "review_status": "needs_license_review",
+      "score": 7,
+      "source_id": "source_nist_public_data_repository",
+      "source_permission_level": "P1",
+      "version": "1.0.1"
+    }
+  ],
+  "collection_phase": "R21",
+  "confidence": "low",
+  "conflict_status": "blocked_evidence_present",
+  "created_at": "2026-06-03T08:50:36.837876+00:00",
+  "evidence_bundle_id": "evidence_r21_nist_pdr_factory_operations_scope_gate",
+  "evidence_refs": [
+    {
+      "artifact_uri": "data/rag/enterprise/r21_nist_pdr_factory_operations_metadata_samples.jsonl",
+      "evidence_id": "record_r21_nist_pdr_factory_ops_001_10_18434_m32242",
+      "evidence_type": "cleaned_record",
+      "source_hash": "217487cabffbfa7e5d91acbcc833cdc288adebee77da86f90d722825eb23eef0",
+      "source_id": "source_nist_public_data_repository"
+    },
+    {
+      "artifact_uri": "data/rag/enterprise/r21_nist_pdr_factory_operations_metadata_samples.jsonl",
+      "evidence_id": "record_r21_nist_pdr_factory_ops_002_10_18434_mds2_1941",
+      "evidence_type": "cleaned_record",
+      "source_hash": "e7a691f9156f4908142a9ccbc023fbefb1b4b82f6283fee1320019cda2586405",
+      "source_id": "source_nist_public_data_repository"
+    },
+    {
+      "artifact_uri": "data/rag/enterprise/r21_nist_pdr_factory_operations_metadata_samples.jsonl",
+      "evidence_id": "record_r21_nist_pdr_factory_ops_003_10_18434_m32077",
+      "evidence_type": "cleaned_record",
+      "source_hash": "db70934297373a7e4de5aca0309ca55f62513d3f7cedc8fc23570b9d17ee0a2c",
+      "source_id": "source_nist_public_data_repository"
+    }
+  ],
+  "filters": {
+    "review_statuses": [
+      "needs_license_review"
+    ],
+    "source_ids": [
+      "source_nist_public_data_repository"
+    ]
+  },
+  "human_review_status": "required",
+  "limitation": "NIST PDR metadata only; downloadable data files, engineering applicability and responsible owner are not confirmed. | Candidate bundle only; it cannot update formal engineering state or submit AutoForm solving. | R21 NIST PDR factory operations bundle is for retrieval evaluation only and cannot trigger solver, GUI control, or formal engineering state writes.",
+  "object_type": "EvidenceBundle",
+  "phase": "R16",
+  "query": "factory operations work-cell metadata scope review",
+  "retrieval_run": {
+    "blocked_actions": [
+      "write_formal_engineering_state",
+      "submit_solver",
+      "control_gui"
+    ],
+    "candidate_card_count": 3,
+    "excluded_cards": [],
+    "filters_applied": {
+      "review_statuses": [
+        "needs_license_review"
+      ],
+      "source_ids": [
+        "source_nist_public_data_repository"
+      ]
+    },
+    "formal_index_allowed_count": 0,
+    "index_version": "autoform.process_rag.r16.v1",
+    "matched_card_count": 3,
+    "ranking_explanation": [
+      {
+        "card_id": "pkc_r21_nist_pdr_factory_operations_case_001",
+        "reasons": [
+          "text_match:cell",
+          "text_match:factory",
+          "text_match:metadata",
+          "text_match:operations",
+          "text_match:review",
+          "text_match:scope",
+          "text_match:work"
+        ],
+        "score": 7
+      },
+      {
+        "card_id": "pkc_r21_nist_pdr_factory_operations_case_002",
+        "reasons": [
+          "text_match:cell",
+          "text_match:factory",
+          "text_match:metadata",
+          "text_match:operations",
+          "text_match:review",
+          "text_match:scope",
+          "text_match:work"
+        ],
+        "score": 7
+      },
+      {
+        "card_id": "pkc_r21_nist_pdr_factory_operations_case_003",
+        "reasons": [
+          "text_match:cell",
+          "text_match:factory",
+          "text_match:metadata",
+          "text_match:operations",
+          "text_match:review",
+          "text_match:scope",
+          "text_match:work"
+        ],
+        "score": 7
+      }
+    ],
+    "retrieval_run_id": "retrieval_evidence_r21_nist_pdr_factory_operations_scope_gate"
+  },
+  "review_status": "candidate",
+  "schema_version": "autoform.process_rag_evidence_bundle.r16.v1",
+  "source_refs": [
+    {
+      "applicability": "Public manufacturing and factory-operations metadata for process chain catalog candidates; R21 PDR sample total=6 selected records across two controlled responses",
+      "captured_at": "2026-06-03T16:50:36+08:00",
+      "license_status": "nist_open_license_present_item_scope_review_required",
+      "limitation": "Metadata only; data files and landing pages are not downloaded; item license, engineering applicability and responsible owner require review",
+      "path_or_url": "https://data.nist.gov/rmm/records",
+      "permission_level": "P1",
+      "review_status": "candidate",
+      "reviewed": false,
+      "source_id": "source_nist_public_data_repository",
+      "source_type": "public_metadata_api",
+      "title": "NIST Public Data Repository metadata"
+    }
+  ],
+  "summary": "R16 candidate EvidenceBundle matched 3 process knowledge cards: ProcessCase; conflict_status=blocked_evidence_present."
+}

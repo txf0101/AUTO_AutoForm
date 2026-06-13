@@ -32,7 +32,7 @@
 ## 验证记录
 
 - `python -m py_compile autoform_agent\agent_runtime.py autoform_agent\release.py autoform_agent\cli.py autoform_agent\__init__.py` 通过。
-- `python -m pytest -q --basetemp=<tmp> tests\test_release.py tests\test_agent_runtime.py frontend\tests\smoke_test.py` 返回 `27 passed`。
+- `python -m pytest -q --basetemp=<tmp> tests\test_release.py tests\test_agent_runtime.py apps\workbench\tests\smoke_test.py` 返回 `27 passed`。
 - `python -m autoform_agent.cli release-readiness` 返回 `ready=true`、`version=1.4.0`、`version_ready=true`、`expected_version=1.4.0`。
 - `python -m autoform_agent.cli public-release-scan` 返回 `safe_to_publish=true`、`finding_count=0`。
 - 禁用句式扫描通过。

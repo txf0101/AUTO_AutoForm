@@ -6,8 +6,8 @@ This test file checks report delivery plans and result-material inventory. Read 
 from pathlib import Path
 from zipfile import ZipFile
 
-from autoform_agent.paths import AutoFormInstallation
-from autoform_agent.report import report_inventory, report_log_events
+from autoform_core.paths import AutoFormInstallation
+from autoform_core.report import report_inventory, report_log_events
 
 
 def test_report_inventory_reads_templates_and_markers(tmp_path: Path) -> None:

@@ -5,7 +5,7 @@
 - 主计划 DOCX：`VC开发文档/Auto_Autoform思路整理/AutoForm多Agent系统整体任务规划矛盾检查与Vibecoding开发计划.docx`，R11 要求用户输入到阶段总结可完整回放，并包含 UI、中心、需求、几何、RAG、材料、工艺和脚本事件。
 - 事件 fixture：`fixtures/r11_low_risk_prepare_events.jsonl`。
 - R7 来源登记：`source_registry.csv`、`card_schema.yaml`、`eval_queries.jsonl`。
-- R10 脚本登记：`script_registry.yaml`。
+- R10 脚本登记：`script_library/flex/registry.yaml`。
 
 ## 回放结论
 

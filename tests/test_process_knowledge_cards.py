@@ -21,12 +21,12 @@ from autoform_agent.process_knowledge import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
-FIXTURE_PATH = ROOT / "enterprise_data" / "r15_process_knowledge_cards.sample.json"
+FIXTURE_PATH = ROOT / "data" / "rag" / "enterprise" / "r15_process_knowledge_cards.sample.json"
 SCHEMA_PATH = ROOT / "schemas" / "process_knowledge_card.schema.json"
 
 
 def _sources():
-    return load_source_whitelist(ROOT / "enterprise_data" / "source_whitelist.csv")
+    return load_source_whitelist(ROOT / "data" / "rag" / "enterprise" / "source_whitelist.csv")
 
 
 def _fixture_cards() -> list[dict]:
@@ -65,23 +65,23 @@ def test_r15_fixture_covers_required_card_types_and_stays_candidate() -> None:
 
 def test_r15_fixture_is_rebuilt_from_r14_cleaning_outputs() -> None:
     sources = _sources()
-    records = load_jsonl_records(ROOT / "enterprise_data" / "r14_small_batch_samples.jsonl")
+    records = load_jsonl_records(ROOT / "data" / "rag" / "enterprise" / "r14_small_batch_samples.jsonl")
     cleaning = clean_enterprise_sample_records(records, sources=sources)
     internal_cards = build_process_knowledge_cards_from_cleaned_records(
         cleaning["cleaned_records"],
         sources=sources,
-        artifact_uri="enterprise_data/r14_small_batch_samples.jsonl",
+        artifact_uri="data/rag/enterprise/r14_small_batch_samples.jsonl",
         created_at="2026-06-03T04:00:00+00:00",
     )
     report = json.loads(
-        (ROOT / "enterprise_data" / "r14_cleaning_reports" / "arxiv_metadata_sample_cleaning_report.json").read_text(
+        (ROOT / "data" / "rag" / "enterprise" / "r14_cleaning_reports" / "arxiv_metadata_sample_cleaning_report.json").read_text(
             encoding="utf-8"
         )
     )
     arxiv_cards = build_process_case_cards_from_cleaning_report(
         report,
         sources=sources,
-        artifact_uri="enterprise_data/r14_external_metadata_samples.jsonl",
+        artifact_uri="data/rag/enterprise/r14_external_metadata_samples.jsonl",
         created_at="2026-06-03T04:00:00+00:00",
     )
 

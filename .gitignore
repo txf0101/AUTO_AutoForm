@@ -6,6 +6,7 @@ __pycache__/
 !.env.example
 
 autoform_agent_data/
+data/runtime/
 tmp/
 output/
 tmp_material_install_check/

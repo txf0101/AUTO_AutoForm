@@ -16,9 +16,9 @@
 | --- | --- |
 | `schemas/process_knowledge_card.schema.json` | R15 `ProcessKnowledgeCard` schema，覆盖来源、证据、版本、适用范围、参数窗口、质量风险和人工确认字段。 |
 | `autoform_agent/process_knowledge.py` | R15 知识卡生成器和校验器，可从 R14 清洗记录生成候选卡，并判断正式检索索引准入状态。 |
-| `enterprise_data/r15_process_knowledge_cards.sample.json` | R15 样例 fixture，包含 6 张卡，覆盖五类卡片对象。 |
+| `data/rag/enterprise/r15_process_knowledge_cards.sample.json` | R15 样例 fixture，包含 6 张卡，覆盖五类卡片对象。 |
 | `tests/test_process_knowledge_cards.py` | R15 专项测试，覆盖生成复现、字段完整性、材料曲线、参数窗口、质量阈值、证据缺失、适用范围冲突、过期卡和 arXiv 许可证门禁。 |
-| `card_schema.yaml`、`schemas/index.md`、`enterprise_data/README.md`、`docs/enterprise_data_contract.md`、`docs/beginner_onboarding_zh.md`、`docs/multi_agent_architecture.md` | 同步新增 R15 资产说明和后续 R16 边界。 |
+| `card_schema.yaml`、`schemas/index.md`、`data/rag/enterprise/README.md`、`docs/enterprise_data_contract.md`、`docs/beginner_onboarding_zh.md`、`docs/multi_agent_architecture.md` | 同步新增 R15 资产说明和后续 R16 边界。 |
 
 ## 关键判断
 
@@ -33,7 +33,7 @@ arXiv 单条元数据样本已经通过 R14 清洗，但 license 字段为空。
 - `python -m pytest -q --basetemp tmp\pytest_r15_full`：189 passed。
 - `python -m autoform_agent.cli public-release-scan`：`safe_to_publish=true`，`finding_count=0`。
 - 本轮触碰文件执行 `git diff --check -- <R15 paths>`：通过。
-- 全局 `git diff --check` 仍报告既有改动 `frontend/styles.css:475` 与 `start_autoform_agent.ps1:327` 的 EOF 空行问题；这两个文件不在本轮 R15 修改范围。
+- 全局 `git diff --check` 仍报告既有改动 `apps/workbench/styles.css:475` 与 `start_autoform_agent.ps1:327` 的 EOF 空行问题；这两个文件不在本轮 R15 修改范围。
 
 ## 后续建议
 

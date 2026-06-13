@@ -5,8 +5,8 @@ This test file checks solver plans, execution results, and log decisions. Read e
 
 from pathlib import Path
 
-from autoform_agent.paths import AutoFormInstallation
-from autoform_agent.solver import (
+from autoform_core.paths import AutoFormInstallation
+from autoform_core.solver import (
     forming_job_check_plan,
     forming_solver_full_batch_probe,
     forming_solver_full_plan,

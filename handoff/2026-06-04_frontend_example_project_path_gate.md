@@ -33,7 +33,7 @@
   - 增加官方示例工程路径查询的本地确定性分支。
   - 该分支调用 `list_example_projects()`，不依赖外部模型，返回官方示例目录和 `.afd` 文件清单。
   - 运行时工具目录同时暴露 `autoform_list_example_projects` 和兼容名 `autoform_example_projects`。
-- `frontend/app.js`
+- `apps/workbench/app.js`
   - URL 参数提供 `endpoint` 时，同步终端初始行中的 `Local bridge` 地址。
 - `tests/test_agent_runtime.py`
   - 增加官方示例路径查询不依赖外部模型的回归测试。
@@ -49,15 +49,15 @@
   - 输入：`找一下官方的示例项目地址在哪里`
   - 结果：`directApiCalled=false`，`deterministicLocalAnswer=true`，`autoform_list_example_projects:completed`，返回 `Solver_R13.afd` 等 7 个示例。
 - 前端页面输入：
-  - 页面：`http://127.0.0.1:8767/frontend/index.html?endpoint=http%3A%2F%2F127.0.0.1%3A4318%2Fapi%2Fagent`
+  - 页面：`http://127.0.0.1:8767/apps/workbench/index.html?endpoint=http%3A%2F%2F127.0.0.1%3A4318%2Fapi%2Fagent`
   - 输入同一句客户问题后，页面显示 `C:\ProgramData\AutoForm\AFplus\R13F\test` 和 7 个官方示例。
   - 页面检查：未出现 `Tool name is not registered in the R5 AgentToolGateway` 或 `rejected_unknown_tool`。
 
 ## 验证命令
 
-- `python -m pytest --basetemp=tmp\pytest-basetemp tests/test_agent_runtime.py tests/test_p0_contracts.py tests/test_inventory.py frontend/tests/smoke_test.py -q`
+- `python -m pytest --basetemp=tmp\pytest-basetemp tests/test_agent_runtime.py tests/test_p0_contracts.py tests/test_inventory.py apps/workbench/tests/smoke_test.py -q`
   - 结果：`30 passed in 0.93s`
-- `C:\Users\Tang Xufeng\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe frontend/tests/smoke-test.mjs`
+- `C:\Users\Tang Xufeng\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe apps/workbench/tests/smoke-test.mjs`
   - 结果：`frontend smoke test passed`
 - `python -m autoform_agent.cli public-release-scan`
   - 结果：`safe_to_publish=true`，`finding_count=0`
@@ -70,7 +70,7 @@
 
 - 测试桥：`http://127.0.0.1:4318/api/agent`
   - 进程：`python -m autoform_agent.http_bridge --host 127.0.0.1 --port 4318`
-- 静态页面：`http://127.0.0.1:8767/frontend/index.html`
+- 静态页面：`http://127.0.0.1:8767/apps/workbench/index.html`
   - 进程：`python -m http.server 8767 --bind 127.0.0.1 --directory F:\【项目和任务】\EIT\2026\AUTO_AutoForm`
 
 ## 后续门禁

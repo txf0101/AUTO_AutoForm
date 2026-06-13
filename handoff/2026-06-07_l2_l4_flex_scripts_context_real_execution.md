@@ -21,7 +21,7 @@
 - 扩展 sandbox promote：审批记录必须匹配 `sandbox_id`、`skill_id`、`approved_by` 和当前 `validation_report_hash`；通过后写入新的 `versions/<vN>/`，不覆盖已有版本。
 - 扩展 `cad_measure_geometry_v1`：新增 `cad-parser-probe`，支持 parser `auto`、`stl_builtin`、`cadquery`、`freecadcmd`。STL 继续用内置 bbox；STEP 可在 CadQuery/OCP 或 FreeCADCmd 可用时实测。
 - 新增 `execution_context` 合并与压缩：runtime、CLI `agent-turn` 和前端 `conversationContext` 都保留当前工程、待审批动作、可续接动作、已批准动作、脚本运行记录、上下文补丁、证据目录和最近工具结果。
-- 前端 `frontend/app.js` 展示审批状态、可续接动作、CAD parser、bbox、blocked reason、filename candidate、最近脚本运行和证据目录。
+- 前端 `apps/workbench/app.js` 展示审批状态、可续接动作、CAD parser、bbox、blocked reason、filename candidate、最近脚本运行和证据目录。
 - 新增 schema：`script_static_audit_schema.json`、`script_dependency_report_schema.json`、`script_approval_record_schema.json`、`execution_context_schema.json`，并更新 `schemas/index.md`。
 
 ## 真实环境结果
@@ -40,7 +40,7 @@
 ```powershell
 python -m py_compile autoform_agent/flex_scripts/contracts.py autoform_agent/flex_scripts/dependencies.py autoform_agent/flex_scripts/security.py autoform_agent/flex_scripts/approvals.py autoform_agent/flex_scripts/validators.py autoform_agent/flex_scripts/sandbox.py autoform_agent/flex_scripts/runner.py autoform_agent/flex_scripts/script_agent.py autoform_agent/flex_scripts/cad_measurement.py autoform_agent/cli.py autoform_agent/agent_runtime.py
 python -m pytest -q
-node frontend/tests/smoke-test.mjs
+node apps/workbench/tests/smoke-test.mjs
 python -m autoform_agent cad-parser-probe
 python -m autoform_agent cad-measure-geometry --source-geometry-path "C:\Users\Tang Xufeng\Desktop\薄板30-40-3.STEP" --length-unit mm --parser auto
 python -m autoform_agent project-run --example Solver_R13 --mode kinematic --threads 1 --output-root output/project_runs --execute --timeout 120

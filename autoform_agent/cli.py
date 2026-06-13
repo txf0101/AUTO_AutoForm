@@ -10,7 +10,7 @@ import json
 import sys
 from pathlib import Path
 
-from .af_api import (
+from autoform_core.af_api import (
     af_api_build_preview,
     af_api_template_plan,
     check_af_api_build_env,
@@ -18,7 +18,7 @@ from .af_api import (
 )
 from .agent_runtime import load_agent_runtime_config, run_agent_runtime_turn
 from .agent_system import build_center_agent_plan, build_default_agent_registry, plan_agent_system_turn
-from .commands import (
+from autoform_core.commands import (
     executable_command_plan,
     executable_help_probe,
     list_command_specs,
@@ -26,18 +26,18 @@ from .commands import (
     material_conversion_plan,
     report_ms_office_plan,
 )
-from .config import get_logging_config, get_queue_config, get_remote_hosts
-from .coverage import help_topic_agent_mapping, module_coverage_matrix
+from autoform_core.config import get_logging_config, get_queue_config, get_remote_hosts
+from autoform_core.coverage import help_topic_agent_mapping, module_coverage_matrix
 from .credentials import credential_fingerprint
-from .diagnostics import (
+from autoform_core.diagnostics import (
     autoform_status_snapshot,
     collect_gui_project_events,
     collect_recent_autoform_logs,
     diagnostic_bundle_plan,
     environment_snapshot,
 )
-from .extension import internal_extension_boundary
-from .flex_scripts import (
+from autoform_core.extension import internal_extension_boundary
+from autoform_core.flex_scripts import (
     cad_parser_probe,
     script_approval_create,
     script_audit,
@@ -51,8 +51,8 @@ from .flex_scripts import (
     script_sample_run,
     script_validate,
 )
-from .geometry_import_workflow import import_geometry_to_new_project
-from .gui_automation import (
+from autoform_core.geometry_import_workflow import import_geometry_to_new_project
+from autoform_core.gui_automation import (
     autoform_window_snapshot,
     capture_desktop_screenshot,
     click_autoform_window,
@@ -62,7 +62,7 @@ from .gui_automation import (
     restore_autoform_window,
     visible_window_control_demo,
 )
-from .inventory import (
+from autoform_core.inventory import (
     get_afd_project_summary,
     get_afd_readable_index,
     inspect_afd,
@@ -70,8 +70,8 @@ from .inventory import (
     list_executables,
     list_help_topics,
 )
-from .jobs import archive_job, cancel_job, job_logs, job_status, list_jobs, submit_job, wait_for_job
-from .materials import (
+from autoform_core.jobs import archive_job, cancel_job, job_logs, job_status, list_jobs, submit_job, wait_for_job
+from autoform_core.materials import (
     archive_members,
     find_duplicate_material_files,
     inspect_material_file,
@@ -80,18 +80,18 @@ from .materials import (
     material_library_backup_plan,
     result_to_json,
 )
-from .material_assignment_workflow import assign_material_to_project
-from .paths import discover_installations, get_default_installation
+from autoform_core.material_assignment_workflow import assign_material_to_project
+from autoform_core.paths import discover_installations, get_default_installation
 from .preparation_agents import (
     build_r11_low_risk_replay,
     retrieve_evidence_bundle,
     run_low_risk_script,
     triage_request,
 )
-from .process import collect_forming_job_logs, forming_job_plan, open_afd, run_forming_job, start_forming_ui
-from .project_workflow import example_project_baseline, official_sample_run_summary, project_run_workflow, resolve_project_input
-from .queue import lsf_command_plan, queue_client_probe, queue_command_plan, queue_health_check
-from .quicklink import (
+from autoform_core.process import collect_forming_job_logs, forming_job_plan, open_afd, run_forming_job, start_forming_ui
+from autoform_core.project_workflow import example_project_baseline, official_sample_run_summary, project_run_workflow, resolve_project_input
+from autoform_core.queue import lsf_command_plan, queue_client_probe, queue_command_plan, queue_health_check
+from autoform_core.quicklink import (
     compare_quicklink_exports,
     get_blank_info,
     get_die_face,
@@ -109,11 +109,11 @@ from .quicklink import (
     quicklink_schema,
     validate_quicklink_standard,
 )
-from .r12_demo import r12_project_view_demo
-from .release import install_check_plan, release_package_plan, release_readiness_check
-from .report import report_inventory, report_log_events
-from .results import copy_result_evidence, report_delivery_plan, result_inventory
-from .result_viewer import (
+from autoform_core.r12_demo import r12_project_view_demo
+from autoform_core.release import install_check_plan, release_package_plan, release_readiness_check
+from autoform_core.report import report_inventory, report_log_events
+from autoform_core.results import copy_result_evidence, report_delivery_plan, result_inventory
+from autoform_core.result_viewer import (
     assess_result_review_readiness,
     build_result_review_plan,
     capture_result_evidence,
@@ -129,8 +129,8 @@ from .result_viewer import (
     set_result_view,
     view_control_evidence_protocol,
 )
-from .safety import public_release_scan, write_safety_plan
-from .solver import (
+from autoform_core.safety import public_release_scan, write_safety_plan
+from autoform_core.solver import (
     forming_job_check_plan,
     forming_solver_full_batch_probe,
     forming_solver_full_plan,
@@ -147,7 +147,7 @@ from .solver import (
 def main(argv: list[str] | None = None) -> int:
     """Parse command-line arguments, dispatch one subcommand, and return an exit code."""
 
-    # 这个函数的前半段只是在登记“用户可以输入哪些命令”和“每个命令要哪些参数”。
+    # 这个函数的前半段只是在登记用户可以输入哪些命令和每个命令要哪些参数。
     # 真正的 AutoForm 业务逻辑在下面的分发区和各业务模块里，读代码时可以先按命令名搜索。
     # The first half of this function only registers command names and their arguments.
     # The real AutoForm work happens in the dispatch section below and in business modules; search by command name when reading.
@@ -159,6 +159,9 @@ def main(argv: list[str] | None = None) -> int:
     status_parser = subparsers.add_parser("status", help="Print the read-only AutoForm Agent status snapshot.")
     status_parser.add_argument("--workspace", type=Path, help="Workspace root used to locate QuickLink exports and logs.")
 
+    # agent-turn 是命令行里的“模拟网页发 prompt”入口。
+    # 它会把终端里的一句话包装成和前端类似的 payload，
+    # 再交给 `agent_runtime.run_agent_runtime_turn()`，适合自测多轮上下文。
     agent_parser = subparsers.add_parser("agent-turn", help="Run one prompt through the backend direct API runtime.")
     agent_parser.add_argument("prompt", help="User prompt for the backend AutoForm API runtime.")
     agent_parser.add_argument("--conversation-id", default="cli", help="Stable id included in runtime metadata.")
@@ -270,7 +273,7 @@ def main(argv: list[str] | None = None) -> int:
     archive_parser.add_argument("archive", type=Path)
     archive_parser.add_argument("--limit", type=int)
 
-    # 小白读法：这里是在登记命令，不是在执行命令。
+    # 这里是在登记命令，不是在执行命令。
     # start-ui 只需要图形后端和 dry-run 开关，真实执行分支在下面的 main 后半段。
     start_parser = subparsers.add_parser("start-ui", help="Start AutoForm Forming.")
     start_parser.add_argument("--graphics", default="directx11", choices=["directx11", "opengl2"])
@@ -389,20 +392,20 @@ def main(argv: list[str] | None = None) -> int:
 
     # result-set-view 把“等轴测、俯视、+Z”等用户说法映射成后处理视角。
     # 默认只返回计划；加 --execute 才会尝试对可见 AutoForm 窗口发送快捷键。
-    result_view_parser = subparsers.add_parser("result-set-view", help="Map and plan a result view change.")
-    result_view_parser.add_argument("view")
-    result_view_parser.add_argument("--execute", action="store_true")
-    result_view_parser.add_argument("--no-screenshot", action="store_true")
-    result_view_parser.add_argument("--output-dir", type=Path, default=Path("tmp") / "result_review")
+    result_view_parser = subparsers.add_parser("result-set-view", help="Map and plan a result view change.") # 在主程序下，添加一个名为 result-set-view 的子命令，并为这个子命令创建一个专属的参数解析器
+    result_view_parser.add_argument("view") # 需要切换的结果视角，比如“等轴测”、“俯视”、“+Z”等。这个参数会被映射成后处理视角的名称，作为后续计划和执行的线索。
+    result_view_parser.add_argument("--execute", action="store_true") # 是否真正执行键盘快捷键操作。默认为 False（仅计划）
+    result_view_parser.add_argument("--no-screenshot", action="store_true") # 是否在执行后截图验证。默认为 False（不截图）
+    result_view_parser.add_argument("--output-dir", type=Path, default=Path("tmp") / "result_review") # 执行后截图的输出目录，默认为 tmp/result_review
 
     result_view_evidence_parser = subparsers.add_parser(
         "result-view-evidence",
         help="Plan, capture, or compare manual evidence for result view controls.",
-    )
-    result_view_evidence_parser.add_argument("--view")
-    result_view_evidence_parser.add_argument("--phase", default="plan", choices=("plan", "before", "after", "compare"))
-    result_view_evidence_parser.add_argument("--execute", action="store_true")
-    result_view_evidence_parser.add_argument("--output-dir", type=Path, default=Path("tmp") / "result_review_view_controls")
+    ) # 在主程序下，添加一个名为 result-view-evidence 的子命令，并为这个子命令创建一个专属的参数解析器。这块用于用于自动化测试、Agent 的执行审计或多轮对比
+    result_view_evidence_parser.add_argument("--view") # 需要验证的结果视角，比如“等轴测”、“俯视”、“+Z”等。这个参数会被映射成后处理视角的名称，作为后续计划、截图和对比的线索。
+    result_view_evidence_parser.add_argument("--phase", default="plan", choices=("plan", "before", "after", "compare")) # 计划、执行前截图、执行后截图、对比。默认是 plan（仅生成计划），也可以选择 before（执行前截图）、after（执行后截图）或 compare（对比之前 capture 的截图和当前状态）。
+    result_view_evidence_parser.add_argument("--execute", action="store_true") # 是否真正执行键盘快捷键操作。默认为 False（仅计划）
+    result_view_evidence_parser.add_argument("--output-dir", type=Path, default=Path("tmp") / "result_review_view_controls") # 计划和截图的输出目录，默认为 tmp/result_review_view_controls
 
     result_animation_parser = subparsers.add_parser(
         "result-play-animation",
@@ -864,6 +867,8 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parser.parse_args(argv)
 
+    # 从这里开始是分发区：argparse 已经知道用户输入了哪个子命令。
+    # 每个 if 块只把参数交给对应业务函数，CLI 自身不承载 AutoForm 规则。
     if args.command == "discover":
         installs = [install.as_dict() for install in discover_installations()]
         print(json.dumps(installs, ensure_ascii=False, indent=2))
@@ -900,6 +905,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "agent-turn":
+        # CLI 自测路径复用网页运行时。`--conversation-context` 可以传 JSON 字符串
+        # 或 JSON 文件路径，用来验证上一轮工程、审批和脚本结果能否被下一轮继续使用。
         payload = {
             "conversationId": args.conversation_id,
             "prompt": args.prompt,
@@ -1271,8 +1278,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "result-set-view":
-        # 结果视角切换先做语义映射，再决定是否执行快捷键。
-        # --no-screenshot 会关闭截图校验，适合课堂上只讲计划和映射。
+        # 结果视角切换先做语义映射，再决定是否执行快捷键。把参数发去set_result_view()函数，那里会根据view 参数找到对应的快捷键操作，并在执行前后进行截图验证（除非 --no-screenshot 被设置）
+        # --no-screenshot 会关闭截图校验
         _print_json(
             set_result_view(
                 args.view,
@@ -1281,7 +1288,7 @@ def main(argv: list[str] | None = None) -> int:
                 output_dir=args.output_dir,
             ),
             ensure_ascii=False,
-        )
+        ) # 传进来的参数和上面注册的一一对应；这个函数会根据 view 参数映射到具体的快捷键操作，并在执行前后进行截图验证（除非 --no-screenshot 被设置）。它的输出会包含映射结果和执行结果，供 CLI 打印
         return 0
 
     if args.command == "result-view-evidence":
@@ -1364,7 +1371,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "resolve-project":
-        _print_json(resolve_project_input(afd_path=args.afd, example_name=args.example), ensure_ascii=False)
+        _print_json(resolve_project_input(afd_path=args.afd, example_name=args.example), ensure_ascii=False) # 解析项目的输入
         return 0
 
     if args.command == "project-run":
@@ -1382,7 +1389,7 @@ def main(argv: list[str] | None = None) -> int:
                 workspace=args.workspace,
             ),
             ensure_ascii=False,
-        )
+        ) # 运行项目的完整工作流，包括解析、求解和结果处理
         return 0
 
     if args.command == "import-geometry-to-new-project":

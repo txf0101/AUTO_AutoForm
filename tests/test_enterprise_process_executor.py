@@ -14,8 +14,8 @@ from autoform_agent.enterprise_process_executor import (
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_PATH = ROOT / "schemas" / "enterprise_process_executor_run.schema.json"
-R16_BUNDLE_PATH = ROOT / "enterprise_data" / "r16_process_rag_evidence_bundle.sample.json"
-R20_SAMPLE_PATH = ROOT / "enterprise_data" / "r20_enterprise_process_executor_run.sample.json"
+R16_BUNDLE_PATH = ROOT / "data" / "rag" / "enterprise" / "r16_process_rag_evidence_bundle.sample.json"
+R20_SAMPLE_PATH = ROOT / "data" / "rag" / "enterprise" / "r20_enterprise_process_executor_run.sample.json"
 R20_FIXTURE_PATH = ROOT / "fixtures" / "r20_enterprise_process_executor_events.jsonl"
 
 

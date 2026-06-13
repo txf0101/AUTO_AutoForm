@@ -28,24 +28,24 @@
 | `AGENTS.md` | 修改需求、架构、测试、文档和复盘前需要读取相关 DOCX，并记录路径、时间戳、采用结论和待验证问题。 |
 | `docs/enterprise_data_contract.md` | R13/R14 只开放来源登记、小批量清洗和候选链路，批量网页爬取、批量文件下载和自动入库保持禁止。 |
 | `docs/retrieval_api.md` | R16 证据包当前只产生候选输入，正式索引准入数量为 0，正式字段只能在后续人工确认和上下文补丁审查后改变。 |
-| `enterprise_data/source_whitelist.csv` | 新增 `source_enterprise_partner_submission_pending`，状态为 `candidate`，权限等级 `P3`，禁止项保留 `bulk_crawl;bulk_download;auto_ingest`。 |
-| `enterprise_data/source_review_registry.csv` | 合作企业手工提交来源记录为 `not_applicable_partner_manual_submission`，当前只允许 metadata catalog gate。 |
+| `data/rag/enterprise/source_whitelist.csv` | 新增 `source_enterprise_partner_submission_pending`，状态为 `candidate`，权限等级 `P3`，禁止项保留 `bulk_crawl;bulk_download;auto_ingest`。 |
+| `data/rag/enterprise/source_review_registry.csv` | 合作企业手工提交来源记录为 `not_applicable_partner_manual_submission`，当前只允许 metadata catalog gate。 |
 | `schemas/enterprise_partner_submission.schema.json` | 定义合作企业提交元数据信封，要求 owner、保密等级、协议状态、缓存策略、撤回支持和批量动作阻断。 |
 | `docs/enterprise_partner_data_intake.md` | 说明合作企业输入链路、字段门禁和正式 RAG 准入条件。 |
 
 ## 原始样本与 manifest
 
-原始样本位于 `.gitignore` 覆盖的 `enterprise_data/raw_data/manual_samples/`。该文件是元数据信封样本，不含真实合作企业正文。
+原始样本位于 `.gitignore` 覆盖的 `data/rag/enterprise/raw_data/manual_samples/`。该文件是元数据信封样本，不含真实合作企业正文。
 
 | 来源 | 原始文件 | SHA256 | manifest | 状态 |
 | --- | --- | --- | --- | --- |
-| `source_enterprise_partner_submission_pending` | `enterprise_data/raw_data/manual_samples/r22_partner_submission_intake_20260603/partner_submission_gate_sample_20260603.json` | `7f4eba60fec501a76cc7b7813563dc845488df0170c8e1b1b6eeab057d3cfb1f` | `enterprise_data/raw_data/manifests/2026-06-03_r22_partner_submission_intake_manifest.csv` | `manual_metadata_envelope_only` |
+| `source_enterprise_partner_submission_pending` | `data/rag/enterprise/raw_data/manual_samples/r22_partner_submission_intake_20260603/partner_submission_gate_sample_20260603.json` | `7f4eba60fec501a76cc7b7813563dc845488df0170c8e1b1b6eeab057d3cfb1f` | `data/rag/enterprise/raw_data/manifests/2026-06-03_r22_partner_submission_intake_manifest.csv` | `manual_metadata_envelope_only` |
 
 下载文件：无。本轮只创建手工提交信封样本，未访问外部网站，未下载企业文件。
 
 ## R14/R15/R16 转换结果
 
-R14 文件：`enterprise_data/r22_partner_submission_metadata_samples.jsonl`
+R14 文件：`data/rag/enterprise/r22_partner_submission_metadata_samples.jsonl`
 
 | record_id | 内容范围 | source_hash | 状态 |
 | --- | --- | --- | --- |
@@ -55,19 +55,19 @@ R14 文件：`enterprise_data/r22_partner_submission_metadata_samples.jsonl`
 
 清洗报告：
 
-- `enterprise_data/r14_cleaning_reports/r22_partner_submission_intake_cleaning_report.json`
+- `data/rag/enterprise/r14_cleaning_reports/r22_partner_submission_intake_cleaning_report.json`
 - 状态 `pass`，清洗样本 3 条，隔离样本 0。
 - `source_hash` 计算基准为 `normalized_payload` 的稳定 JSON 序列化。
 
 R15 候选卡：
 
-- `enterprise_data/r22_partner_submission_cards.candidate.json`
+- `data/rag/enterprise/r22_partner_submission_cards.candidate.json`
 - 3 张卡分别覆盖材料曲线入口、工艺路线入口和撤回保密质量门禁。
 - 3 张卡均为 `needs_license_review`、`allowed_usage=catalog_only`、`formal_index_allowed=false`。
 
 R16 EvidenceBundle：
 
-- `enterprise_data/r22_partner_submission_evidence_bundle.sample.json`
+- `data/rag/enterprise/r22_partner_submission_evidence_bundle.sample.json`
 - `collection_phase=R22`，`conflict_status=blocked_evidence_present`，`formal_index_allowed_count=0`。
 - 阻断动作保持 `write_formal_engineering_state`、`submit_solver`、`control_gui`。
 

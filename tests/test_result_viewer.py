@@ -7,8 +7,8 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-import autoform_agent.result_viewer as result_viewer
-from autoform_agent.result_viewer import (
+import autoform_core.result_viewer as result_viewer
+from autoform_core.result_viewer import (
     assess_result_review_readiness,
     build_result_review_plan,
     classify_autoform_dialogs,

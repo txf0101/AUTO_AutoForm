@@ -8,8 +8,8 @@ import struct
 import subprocess
 import sys
 
-import autoform_agent.flex_scripts.sandbox as sandbox_module
-from autoform_agent.flex_scripts import (
+import autoform_core.flex_scripts.sandbox as sandbox_module
+from autoform_core.flex_scripts import (
     cad_parser_probe,
     script_approval_create,
     script_audit,
@@ -23,8 +23,8 @@ from autoform_agent.flex_scripts import (
     script_sample_run,
     script_validate,
 )
-from autoform_agent.flex_scripts.security import audit_python_file
-from autoform_agent.flex_scripts.cad_measurement import measure_cad_geometry
+from autoform_core.flex_scripts.security import audit_python_file
+from autoform_core.flex_scripts.cad_measurement import measure_cad_geometry
 
 
 ROOT = Path(__file__).resolve().parents[1]

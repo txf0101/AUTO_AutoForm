@@ -240,7 +240,7 @@ def add_command_scope_section(document: Document) -> None:
             "本地前端演示",
             "启动 HTTP bridge 与静态前端，展示状态、操作流、API 配置和本地只读能力。",
             "已调整为 API runtime 路线，前端通过 /api/agent 调用后端运行时",
-            "frontend\\README.md、http_bridge.py",
+            "apps\workbench\\README.md、http_bridge.py",
         ],
         [
             "发布与安装检查",
@@ -528,7 +528,7 @@ def add_next_work_section(document: Document) -> None:
             "P1 完成",
             "前端与 API runtime 交互完善",
             "前端经 HTTP bridge 调用 agent_runtime 的职责已记录在 README、docs\\api_runtime_call_chain.md 和新手指南中；runtime 已暴露工程解析与工程运行计划工具。",
-            "autoform_agent\\agent_runtime.py，frontend\\app.js，docs\\api_runtime_call_chain.md。",
+            "autoform_agent\\agent_runtime.py，apps\workbench\\app.js，docs\\api_runtime_call_chain.md。",
         ],
         [
             "P2 完成",
@@ -610,7 +610,7 @@ def add_appendix_section(document: Document) -> None:
         ["读取作业日志", r"python -m autoform_agent.cli job-registered-logs <job_id>"],
         ["清点结果证据", r"python -m autoform_agent.cli result-inventory --limit 20"],
         ["预演结果证据包", r"python -m autoform_agent.cli report-delivery-plan output\result_package --limit 20"],
-        ["规范化 QuickLink", r"python -m autoform_agent.cli quicklink-schema autoform_agent_data\quicklink\20260525_234139\quicklinkExport.zip"],
+        ["规范化 QuickLink", r"python -m autoform_agent.cli quicklink-schema data/runtime/agent\quicklink\20260525_234139\quicklinkExport.zip"],
         ["检查发布就绪", r"python -m autoform_agent.cli release-readiness"],
         ["公开发布扫描", r"python -m autoform_agent.cli public-release-scan"],
         ["生成写入回滚计划", r"python -m autoform_agent.cli write-safety-plan C:\ProgramData\AutoForm\AFplus\R13F\scripts\CodexAgentBridge.cmd --backup-root output\rollback"],

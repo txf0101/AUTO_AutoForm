@@ -25,7 +25,7 @@ from .process_rag import DEFAULT_PROCESS_RAG_BUNDLE, retrieve_process_evidence_b
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_R20_EXECUTOR_SAMPLE = ROOT / "enterprise_data" / "r20_enterprise_process_executor_run.sample.json"
+DEFAULT_R20_EXECUTOR_SAMPLE = ROOT / "data" / "rag" / "enterprise" / "r20_enterprise_process_executor_run.sample.json"
 DEFAULT_R20_EVENT_FIXTURE = ROOT / "fixtures" / "r20_enterprise_process_executor_events.jsonl"
 R20_SCHEMA_VERSION = "autoform.enterprise_process_executor.r20.v1"
 R20_DEFAULT_ROLES = (

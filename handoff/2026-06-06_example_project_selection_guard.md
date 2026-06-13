@@ -29,7 +29,7 @@
   - 更新官方示例打开测试，使用当前前端真实 payload：`projectOperation=example_project` 与 `exampleName`。
   - 新增泛化示例请求回归，确认残留 `exampleName=Solver_R13` 时不会调用工具。
 - 文档
-  - 更新 `README.md`、`frontend/README.md`、`docs/api_runtime_call_chain.md`、`docs/beginner_onboarding_zh.md`，说明官方示例工程必须由用户选择或 prompt 点名。
+  - 更新 `README.md`、`apps/workbench/README.md`、`docs/api_runtime_call_chain.md`、`docs/beginner_onboarding_zh.md`，说明官方示例工程必须由用户选择或 prompt 点名。
 
 ## 验证
 

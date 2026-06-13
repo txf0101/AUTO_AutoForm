@@ -23,13 +23,13 @@
 
 ## 已完成修改
 
-- `frontend/app.js`
+- `apps/workbench/app.js`
   - `sendPrompt` 调整为先渲染后端回复，再更新 `conversationContext`，保证下一轮请求包含本轮用户输入和本轮 Agent 结论。
   - live HTTP 回复不再把每条 `agent_message` 平铺为多个气泡，统一生成一条中心 Agent 摘要气泡。
   - 新增 `buildDialogTurnMessage`、`dialogSummaryText`、`buildDialogDetails`、`extractCurrentProjectFromReply` 和 `compactCurrentProjectForContext`。
   - 工程会话轨迹摘要优先使用后端显式摘要、中心 Agent 面向用户消息、工具结果摘要和清洗后的回复文本；命令式日志会被过滤。
   - 当前工程对象以 `conversationContext.current_project` 传给后端，字段包括 `schema_version`、`kind`、`label`、`example_name`、`afd_path`、`working_project`、`run_dir`、`last_tool`、`last_tool_status`、`gui_pid`、`source` 和 `updated_at`。
-- `frontend/styles.css`
+- `apps/workbench/styles.css`
   - 增加 `agent-message-details` 折叠明细样式，用原生 `details/summary` 展示本轮 Agent 明细、当前工程上下文、紧凑工具结果和必要审批状态。
 - `autoform_agent/agent_runtime.py`
   - 网关工具结果会整理 `runtime.currentProject`，受控 `autoform_project_run`、`autoform_resolve_project`、`autoform_start_ui` 等路径可以把后端判定的当前工程交给前端。
@@ -38,8 +38,8 @@
   - `existing_project` 缺少 `.afd` 路径时保持补路径提示，避免伪造当前工程对象。
 - 测试与文档
   - `tests/test_agent_runtime.py` 覆盖 `runtime.currentProject`、第二轮工程咨询复用当前工程、已有工程缺路径保护。
-  - `frontend/tests/smoke_test.py` 与 `frontend/tests/smoke-test.mjs` 增加 `current_project`、`buildDialogTurnMessage`、`extractCurrentProjectFromReply` 和 `agent-message-details` 标记检查。
-  - 已同步 `README.md`、`frontend/README.md`、`docs/api_runtime_call_chain.md` 和 `docs/beginner_onboarding_zh.md`。
+  - `apps/workbench/tests/smoke_test.py` 与 `apps/workbench/tests/smoke-test.mjs` 增加 `current_project`、`buildDialogTurnMessage`、`extractCurrentProjectFromReply` 和 `agent-message-details` 标记检查。
+  - 已同步 `README.md`、`apps/workbench/README.md`、`docs/api_runtime_call_chain.md` 和 `docs/beginner_onboarding_zh.md`。
 
 ## 验证记录
 
@@ -47,14 +47,14 @@
   - `python -m pytest tests/test_agent_runtime.py -q --basetemp tmp\pytest_dialog_context_runtime`
   - 结果：`31 passed`
 - 前端静态与 smoke 抽查：
-  - `C:\Users\Tang Xufeng\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe --check frontend\app.js`
+  - `C:\Users\Tang Xufeng\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe --check apps\workbench\app.js`
   - 结果：通过。
-  - `python -m pytest frontend/tests/smoke_test.py -q --basetemp tmp\pytest_dialog_context_frontend_smoke`
+  - `python -m pytest apps/workbench/tests/smoke_test.py -q --basetemp tmp\pytest_dialog_context_frontend_smoke`
   - 结果：`3 passed`
-  - `C:\Users\Tang Xufeng\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe frontend\tests\smoke-test.mjs`
+  - `C:\Users\Tang Xufeng\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe apps\workbench\tests\smoke-test.mjs`
   - 结果：`frontend smoke test passed`
 - 整合回归：
-  - `python -m pytest tests/test_agent_runtime.py frontend/tests/smoke_test.py frontend/tests/http_smoke_test.py -q --basetemp tmp\pytest_goal_dialog_context`
+  - `python -m pytest tests/test_agent_runtime.py apps/workbench/tests/smoke_test.py apps/workbench/tests/http_smoke_test.py -q --basetemp tmp\pytest_goal_dialog_context`
   - 结果：`35 passed in 10.30s`
 - 浏览器验证：
   - 工具：Node REPL 加 `playwright-core`，驱动本机 `C:\Program Files\Google\Chrome\Application\chrome.exe`。
@@ -64,7 +64,7 @@
   - 视口：桌面 `1440x950` 横向溢出 `0`，移动 `390x844` 横向溢出 `0`。
   - 截图：`tmp/dialog-context-desktop.png`、`tmp/dialog-context-mobile.png`。
 - 代码与文案检查：
-  - `git diff --check -- frontend\app.js frontend\styles.css autoform_agent\agent_runtime.py tests\test_agent_runtime.py frontend\tests\smoke_test.py frontend\tests\smoke-test.mjs README.md frontend\README.md docs\api_runtime_call_chain.md docs\beginner_onboarding_zh.md handoff\2026-06-05_dialog_summary_current_project_context.md`
+  - `git diff --check -- apps\workbench\app.js apps\workbench\styles.css autoform_agent\agent_runtime.py tests\test_agent_runtime.py apps\workbench\tests\smoke_test.py apps\workbench\tests\smoke-test.mjs README.md apps\workbench\README.md docs\api_runtime_call_chain.md docs\beginner_onboarding_zh.md handoff\2026-06-05_dialog_summary_current_project_context.md`
   - 结果：通过。
   - 禁用句式扫描：按项目计划要求的四类模式扫描本轮改动文件。
   - 结果：无命中。

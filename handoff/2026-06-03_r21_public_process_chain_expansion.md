@@ -31,10 +31,10 @@
 - 来源：`source_nist_public_data_repository`。
 - 请求：`https://data.nist.gov/rmm/records?searchphrase=manufacturing&limit=3`。
 - 响应状态：200。
-- 原始响应：`enterprise_data/raw_data/manual_samples/r21_controlled_expansion_20260603/nist_pdr_manufacturing_limit3_20260603.json`。
+- 原始响应：`data/rag/enterprise/raw_data/manual_samples/r21_controlled_expansion_20260603/nist_pdr_manufacturing_limit3_20260603.json`。
 - 原始响应 SHA256：`ef693f05ab0199418b61d15d61fd48625af654a78bca46dbb0d1032a800b0dfa`。
 - `retrieved_at`：`2026-06-03T08:03:16.652078+00:00`。
-- manifest：`enterprise_data/raw_data/manifests/2026-06-03_r21_nist_pdr_public_process_chain_manifest.csv`。
+- manifest：`data/rag/enterprise/raw_data/manifests/2026-06-03_r21_nist_pdr_public_process_chain_manifest.csv`。
 
 失败或隔离样本：
 
@@ -44,8 +44,8 @@
 
 清洗文件：
 
-- `enterprise_data/r21_public_process_chain_metadata_samples.jsonl`
-- `enterprise_data/r14_cleaning_reports/r21_nist_pdr_public_process_chain_cleaning_report.json`
+- `data/rag/enterprise/r21_public_process_chain_metadata_samples.jsonl`
+- `data/rag/enterprise/r14_cleaning_reports/r21_nist_pdr_public_process_chain_cleaning_report.json`
 
 清洗结果：
 
@@ -61,13 +61,13 @@
 
 R15 候选卡：
 
-- 文件：`enterprise_data/r21_public_process_chain_cards.candidate.json`。
+- 文件：`data/rag/enterprise/r21_public_process_chain_cards.candidate.json`。
 - 生成 3 张 `ProcessCase` 候选卡。
 - 每张卡均为 `review_status=needs_license_review`、`allowed_usage=catalog_only`、`formal_index_allowed=false`、`human_confirmation.status=pending`。
 
 R16 EvidenceBundle：
 
-- 文件：`enterprise_data/r21_public_process_chain_evidence_bundle.sample.json`。
+- 文件：`data/rag/enterprise/r21_public_process_chain_evidence_bundle.sample.json`。
 - 查询：`manufacturing process chain metadata scope review`。
 - `matched_card_count=3`。
 - `formal_index_allowed_count=0`。
@@ -88,19 +88,19 @@ R16 EvidenceBundle：
 
 进入版本库：
 
-- `enterprise_data/source_whitelist.csv`
-- `enterprise_data/source_review_registry.csv`
-- `enterprise_data/raw_data/manifests/2026-06-03_r21_nist_pdr_public_process_chain_manifest.csv`
-- `enterprise_data/r21_public_process_chain_metadata_samples.jsonl`
-- `enterprise_data/r14_cleaning_reports/r21_nist_pdr_public_process_chain_cleaning_report.json`
-- `enterprise_data/r21_public_process_chain_cards.candidate.json`
-- `enterprise_data/r21_public_process_chain_evidence_bundle.sample.json`
+- `data/rag/enterprise/source_whitelist.csv`
+- `data/rag/enterprise/source_review_registry.csv`
+- `data/rag/enterprise/raw_data/manifests/2026-06-03_r21_nist_pdr_public_process_chain_manifest.csv`
+- `data/rag/enterprise/r21_public_process_chain_metadata_samples.jsonl`
+- `data/rag/enterprise/r14_cleaning_reports/r21_nist_pdr_public_process_chain_cleaning_report.json`
+- `data/rag/enterprise/r21_public_process_chain_cards.candidate.json`
+- `data/rag/enterprise/r21_public_process_chain_evidence_bundle.sample.json`
 - `tests/test_enterprise_data_contract.py`
 - `handoff/2026-06-03_r21_public_process_chain_expansion.md`
 
 留在本地且被 `.gitignore` 排除：
 
-- `enterprise_data/raw_data/manual_samples/r21_controlled_expansion_20260603/nist_pdr_manufacturing_limit3_20260603.json`
+- `data/rag/enterprise/raw_data/manual_samples/r21_controlled_expansion_20260603/nist_pdr_manufacturing_limit3_20260603.json`
 
 ## 方法论沉淀
 

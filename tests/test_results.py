@@ -5,8 +5,8 @@ This test file checks result evidence packages and inventory output. Read each a
 
 from pathlib import Path
 
-import autoform_agent.results as results
-from autoform_agent.results import copy_result_evidence, report_delivery_plan, result_inventory
+import autoform_core.results as results
+from autoform_core.results import copy_result_evidence, report_delivery_plan, result_inventory
 
 
 def test_result_inventory_reads_files_logs_and_quicklink(tmp_path: Path, monkeypatch) -> None:

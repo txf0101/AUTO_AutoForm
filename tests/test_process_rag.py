@@ -16,16 +16,16 @@ from autoform_agent.process_rag import (
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_PATH = ROOT / "schemas" / "process_rag_evidence_bundle.schema.json"
-SAMPLE_PATH = ROOT / "enterprise_data" / "r16_process_rag_evidence_bundle.sample.json"
-EVAL_PATH = ROOT / "enterprise_data" / "r16_process_rag_eval_queries.jsonl"
+SAMPLE_PATH = ROOT / "data" / "rag" / "enterprise" / "r16_process_rag_evidence_bundle.sample.json"
+EVAL_PATH = ROOT / "data" / "rag" / "enterprise" / "r16_process_rag_eval_queries.jsonl"
 
 
 def _cards() -> list[dict]:
-    return load_process_knowledge_cards(ROOT / "enterprise_data" / "r15_process_knowledge_cards.sample.json")
+    return load_process_knowledge_cards(ROOT / "data" / "rag" / "enterprise" / "r15_process_knowledge_cards.sample.json")
 
 
 def _sources():
-    return load_source_whitelist(ROOT / "enterprise_data" / "source_whitelist.csv")
+    return load_source_whitelist(ROOT / "data" / "rag" / "enterprise" / "source_whitelist.csv")
 
 
 def test_r16_schema_fixture_and_eval_queries_exist() -> None:

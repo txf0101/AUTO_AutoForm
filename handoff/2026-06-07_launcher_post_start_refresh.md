@@ -27,7 +27,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\start_autoform_agent.ps1 -
 python -m pytest tests/test_launcher_scripts.py -q
 powershell -NoProfile -ExecutionPolicy Bypass -File .\start_autoform_agent.ps1 -Mode ApiWithFrontend -RestartServices
 Invoke-WebRequest -UseBasicParsing -Uri http://127.0.0.1:4317/health -TimeoutSec 5
-Invoke-WebRequest -UseBasicParsing -Uri http://127.0.0.1:8765/frontend/index.html?bridge=http -TimeoutSec 5
+Invoke-WebRequest -UseBasicParsing -Uri http://127.0.0.1:8765/apps/workbench/index.html?bridge=http -TimeoutSec 5
 ```
 
 结果：启动器测试 `3 passed`；实际启动命令退出码为 0；HTTP bridge health 返回 `ok=true`；前端页面返回 `status=200`。最新 PID 文件记录 `http_bridge.pid=30808`、`frontend.pid=48852`，两个进程均来自 `C:\Users\Tang Xufeng\.conda\envs\afagent\python.exe`。最新 `http_bridge.stderr.log` 为空，前端 stderr 内容为 `http.server` 访问日志。

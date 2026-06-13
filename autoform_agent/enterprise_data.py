@@ -18,8 +18,8 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_ENTERPRISE_CONTRACT = ROOT / "enterprise_data" / "r13_enterprise_data_contract.sample.json"
-DEFAULT_SOURCE_WHITELIST = ROOT / "enterprise_data" / "source_whitelist.csv"
+DEFAULT_ENTERPRISE_CONTRACT = ROOT / "data" / "rag" / "enterprise" / "r13_enterprise_data_contract.sample.json"
+DEFAULT_SOURCE_WHITELIST = ROOT / "data" / "rag" / "enterprise" / "source_whitelist.csv"
 SMALL_BATCH_LIMIT = 20
 SOURCE_ID_PATTERN = re.compile(r"^source_[a-z0-9_]+$")
 FIELD_ID_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")

@@ -19,9 +19,9 @@
 - `schemas/enterprise_data_contract.schema.json`：R13 企业数据接口契约 schema。
 - `schemas/enterprise_source_whitelist.schema.json`：来源白名单行级 schema。
 - `schemas/enterprise_ingestion_record.schema.json`：R14 小批量接入记录 schema。
-- `enterprise_data/r13_enterprise_data_contract.sample.json`：覆盖材料、几何零件、工艺路线、历史案例和质量规则的初始契约样例。
-- `enterprise_data/source_whitelist.csv`：初始来源白名单，当前包含本地项目资料、内部资料占位和公开资料候选目录。
-- `enterprise_data/r14_small_batch_samples.jsonl`：R14 小批量清洗样本。
+- `data/rag/enterprise/r13_enterprise_data_contract.sample.json`：覆盖材料、几何零件、工艺路线、历史案例和质量规则的初始契约样例。
+- `data/rag/enterprise/source_whitelist.csv`：初始来源白名单，当前包含本地项目资料、内部资料占位和公开资料候选目录。
+- `data/rag/enterprise/r14_small_batch_samples.jsonl`：R14 小批量清洗样本。
 - `autoform_agent/enterprise_data.py`：契约校验、白名单校验、目录摘要和小批量清洗验证函数。
 - `tests/test_enterprise_data_contract.py`：R13/R14 专项测试。
 - `docs/enterprise_data_contract.md`：R13/R14 阶段说明和门禁。

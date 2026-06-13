@@ -40,14 +40,14 @@ def test_cmd_launcher_calls_power_shell_with_bypass_policy() -> None:
 
 def test_codex_mcp_config_template_points_to_stdio_server() -> None:
     """Verify the Codex config snippet starts the portable stdio MCP server."""
-    snippet = (ROOT / "codex_mcp_config.autoform-agent.toml").read_text(encoding="utf-8")
+    snippet = (ROOT / "AutoForm_MCP" / "codex_mcp_config.autoform-mcp.toml").read_text(encoding="utf-8")
 
-    assert '[mcp_servers."autoform-agent"]' in snippet
+    assert '[mcp_servers."autoform-mcp"]' in snippet
     assert "command = 'conda'" in snippet
-    assert "args = ['run', '-n', 'afagent', 'python', '-m', 'autoform_agent.mcp_server']" in snippet
+    assert "args = ['run', '-n', 'afagent', 'python', '-m', 'autoform_mcp_agent.mcp_server']" in snippet
     assert "PYTHONPATH" in snippet
     assert "afagent" in snippet
     # The public template must remain reusable on another developer's computer.
-    assert "PYTHONPATH = '<path-to-cloned-repo>'" in snippet
+    assert "PYTHONPATH = '<repo-root>;<repo-root>\\AutoForm_MCP'" in snippet
     assert "Tang Xufeng" not in snippet
     assert "AUTO_AutoForm" not in snippet

@@ -37,7 +37,7 @@ def test_r22_partner_submission_schema_and_doc_exist() -> None:
 
 
 def test_r22_partner_source_whitelist_and_review_gate_are_candidate_only() -> None:
-    sources = load_source_whitelist(ROOT / "enterprise_data" / "source_whitelist.csv")
+    sources = load_source_whitelist(ROOT / "data" / "rag" / "enterprise" / "source_whitelist.csv")
     validation = validate_source_whitelist(sources)
     source = next(item for item in sources if item.source_id == SOURCE_ID)
 
@@ -49,7 +49,7 @@ def test_r22_partner_source_whitelist_and_review_gate_are_candidate_only() -> No
     assert {"bulk_crawl", "bulk_download", "auto_ingest"} <= set(source.prohibited_actions)
     assert not any("bulk" in action for action in source.allowed_actions)
 
-    with (ROOT / "enterprise_data" / "source_review_registry.csv").open("r", encoding="utf-8-sig", newline="") as handle:
+    with (ROOT / "data" / "rag" / "enterprise" / "source_review_registry.csv").open("r", encoding="utf-8-sig", newline="") as handle:
         rows = list(csv.DictReader(handle))
     row = next(item for item in rows if item["source_id"] == SOURCE_ID)
 
@@ -61,8 +61,8 @@ def test_r22_partner_source_whitelist_and_review_gate_are_candidate_only() -> No
 
 
 def test_r22_partner_manifest_and_r14_records_keep_raw_body_out_of_git() -> None:
-    manifest_path = ROOT / "enterprise_data" / "raw_data" / "manifests" / "2026-06-03_r22_partner_submission_intake_manifest.csv"
-    sample_path = ROOT / "enterprise_data" / "r22_partner_submission_metadata_samples.jsonl"
+    manifest_path = ROOT / "data" / "rag" / "enterprise" / "raw_data" / "manifests" / "2026-06-03_r22_partner_submission_intake_manifest.csv"
+    sample_path = ROOT / "data" / "rag" / "enterprise" / "r22_partner_submission_metadata_samples.jsonl"
 
     with manifest_path.open("r", encoding="utf-8-sig", newline="") as handle:
         manifest_rows = list(csv.DictReader(handle))
@@ -74,7 +74,7 @@ def test_r22_partner_manifest_and_r14_records_keep_raw_body_out_of_git() -> None
     assert manifest["source_id"] == SOURCE_ID
     assert manifest["collection_status"] == "manual_metadata_envelope_only"
     assert manifest["prohibited_actions"] == "bulk_crawl;bulk_download;auto_ingest"
-    assert manifest["local_file_relpath"].startswith("enterprise_data/raw_data/manual_samples/")
+    assert manifest["local_file_relpath"].startswith("data/rag/enterprise/raw_data/manual_samples/")
     assert manifest["checksum"] == samples[0]["normalized_payload"]["raw_response_sha256"]
     assert "confidential body" in manifest["limitation"]
 
@@ -94,10 +94,10 @@ def test_r22_partner_manifest_and_r14_records_keep_raw_body_out_of_git() -> None
 
 
 def test_r22_partner_cleaning_report_cards_and_bundle_keep_manual_gate_closed() -> None:
-    report = _read_json(ROOT / "enterprise_data" / "r14_cleaning_reports" / "r22_partner_submission_intake_cleaning_report.json")
-    cards_fixture = _read_json(ROOT / "enterprise_data" / "r22_partner_submission_cards.candidate.json")
-    bundle = _read_json(ROOT / "enterprise_data" / "r22_partner_submission_evidence_bundle.sample.json")
-    sources = load_source_whitelist(ROOT / "enterprise_data" / "source_whitelist.csv")
+    report = _read_json(ROOT / "data" / "rag" / "enterprise" / "r14_cleaning_reports" / "r22_partner_submission_intake_cleaning_report.json")
+    cards_fixture = _read_json(ROOT / "data" / "rag" / "enterprise" / "r22_partner_submission_cards.candidate.json")
+    bundle = _read_json(ROOT / "data" / "rag" / "enterprise" / "r22_partner_submission_evidence_bundle.sample.json")
+    sources = load_source_whitelist(ROOT / "data" / "rag" / "enterprise" / "source_whitelist.csv")
 
     assert report["phase"] == "R22"
     assert report["status"] == "pass"

@@ -18,11 +18,11 @@
 - `autoform_agent/agent_runtime.py`
   - 对 `autoform_start_ui` 的 `blocked_requires_approval` 增加专门解释，明确说明已经进入 MCP 网关，阻断原因为本轮请求没有携带本机执行批准。
   - 回复文本给出可操作步骤：勾选本机 MCP 工具控制批准后重新发送。
-- `frontend/index.html`
+- `apps/workbench/index.html`
   - 将复选框文案从示例工程执行语义扩展到 AutoForm 控制语义，覆盖新建工程和 GUI 启动场景；后续已进一步统一为本机 MCP 工具控制批准。
-- `frontend/app.js`
+- `apps/workbench/app.js`
   - 每次发送请求前都输出本机控制批准状态，使命令输出能直接显示当前批准状态；后续日志字段已统一为 `mcp_control`。
-- `README.md`、`frontend/README.md`、`docs/api_runtime_call_chain.md`、`docs/beginner_onboarding_zh.md`
+- `README.md`、`apps/workbench/README.md`、`docs/api_runtime_call_chain.md`、`docs/beginner_onboarding_zh.md`
   - 同步前端开关语义和未批准阻断时的用户操作路径。
 - `tests/test_agent_runtime.py`
   - 用用户日志里的“AutoFrom，打开，并且新建一个项目”固定回归测试，确认未批准时仍进入 `autoform_start_ui`，并在回复中包含批准缺失和开关文案。
@@ -36,5 +36,5 @@
 ## 仍需验证
 
 - 本轮验证覆盖后端文本、前端静态结构和单元测试，不真实启动 AutoForm。
-- 真实页面复测时需要重新启动前端和 bridge，确保浏览器加载当前 `frontend/index.html` 与 `frontend/app.js`。
+- 真实页面复测时需要重新启动前端和 bridge，确保浏览器加载当前 `apps/workbench/index.html` 与 `apps/workbench/app.js`。
 - 若目标是全自动创建 AutoForm 空白工程，还需要新增可审计的新建工程向导 MCP wrapper，并补充对应审批策略、GUI 证据和测试。

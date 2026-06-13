@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from autoform_agent import material_assignment_workflow as workflow
+from autoform_core import material_assignment_workflow as workflow
 
 
 def test_resolve_assignment_project_path_uses_explicit_afd(tmp_path: Path) -> None:

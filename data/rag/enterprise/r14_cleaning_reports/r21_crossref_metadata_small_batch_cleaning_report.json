@@ -1,0 +1,154 @@
+{
+  "batch_limit": 20,
+  "batch_size": 3,
+  "clean_record_count": 3,
+  "cleaning_result": {
+    "batch_limit": 20,
+    "batch_size": 3,
+    "cleaned_records": [
+      {
+        "cleaning_status": "clean",
+        "domain": "public_literature_metadata",
+        "errors": [],
+        "normalized_payload": {
+          "api_url": "https://api.crossref.org/works?query.bibliographic=sheet%20metal%20forming%20optimization&rows=3",
+          "authors": [
+            "Suman Deb"
+          ],
+          "container_title": "Analysis and Optimization of Sheet Metal Forming Processes",
+          "created": "2024-4-18",
+          "doi": "10.1201/9781003441755-1",
+          "indexed": "2025-2-21",
+          "is_referenced_by_count": 0,
+          "issued": "2024-4-18",
+          "license": [],
+          "license_review_status": "needs_license_review",
+          "published_online": "",
+          "published_print": "2024-4-18",
+          "query": "sheet metal forming optimization",
+          "raw_response_relpath": "data/rag/enterprise/raw_data/manual_samples/r21_controlled_small_batch_20260603/crossref_sheet_metal_forming_optimization_rows3_20260603.json",
+          "raw_response_sha256": "fb6f6db02d86a7d603ed67994983b2dbad9d4478659eef30fc92e42706b60fba",
+          "reference_count": 0,
+          "retrieved_at": "2026-06-03T07:34:51.371076+00:00",
+          "review_status": "candidate",
+          "subjects": [],
+          "title": "Roll Forming in Sheet Metal Forming",
+          "type": "book-chapter",
+          "url": "https://doi.org/10.1201/9781003441755-1"
+        },
+        "object_type": "EnterpriseCleanedRecord",
+        "record_id": "record_r21_crossref_metadata_001_10_1201_9781003441755_1",
+        "review_status": "candidate",
+        "source_hash": "70f88b0a2a32a80f8906b2181d6fe1bf643580a83bb7f136333e7b1bf1096ec3",
+        "source_id": "source_crossref_rest_metadata"
+      },
+      {
+        "cleaning_status": "clean",
+        "domain": "public_literature_metadata",
+        "errors": [],
+        "normalized_payload": {
+          "api_url": "https://api.crossref.org/works?query.bibliographic=sheet%20metal%20forming%20optimization&rows=3",
+          "authors": [],
+          "container_title": "Sheet Metal Forming Optimization",
+          "created": "2017-10-18",
+          "doi": "10.1201/9781315156101-2",
+          "indexed": "2024-5-8",
+          "is_referenced_by_count": 0,
+          "issued": "2017-10-18",
+          "license": [],
+          "license_review_status": "needs_license_review",
+          "published_online": "2017-10-18",
+          "published_print": "2017-10-31",
+          "query": "sheet metal forming optimization",
+          "raw_response_relpath": "data/rag/enterprise/raw_data/manual_samples/r21_controlled_small_batch_20260603/crossref_sheet_metal_forming_optimization_rows3_20260603.json",
+          "raw_response_sha256": "fb6f6db02d86a7d603ed67994983b2dbad9d4478659eef30fc92e42706b60fba",
+          "reference_count": 31,
+          "retrieved_at": "2026-06-03T07:34:51.371076+00:00",
+          "review_status": "candidate",
+          "subjects": [],
+          "title": "Introduction to Metal Forming",
+          "type": "book-chapter",
+          "url": "https://doi.org/10.1201/9781315156101-2"
+        },
+        "object_type": "EnterpriseCleanedRecord",
+        "record_id": "record_r21_crossref_metadata_002_10_1201_9781315156101_2",
+        "review_status": "candidate",
+        "source_hash": "53afe83a666fef1e61701ed3ad3de053dca2c09ad986a2c08336b67ed831137c",
+        "source_id": "source_crossref_rest_metadata"
+      },
+      {
+        "cleaning_status": "clean",
+        "domain": "public_literature_metadata",
+        "errors": [],
+        "normalized_payload": {
+          "api_url": "https://api.crossref.org/works?query.bibliographic=sheet%20metal%20forming%20optimization&rows=3",
+          "authors": [
+            "Hitesh Dnyaneshwar Mhatre",
+            "Amrut Mulay"
+          ],
+          "container_title": "Analysis and Optimization of Sheet Metal Forming Processes",
+          "created": "2024-4-18",
+          "doi": "10.1201/9781003441755-18",
+          "indexed": "2025-2-21",
+          "is_referenced_by_count": 0,
+          "issued": "2024-4-18",
+          "license": [],
+          "license_review_status": "needs_license_review",
+          "published_online": "",
+          "published_print": "2024-4-18",
+          "query": "sheet metal forming optimization",
+          "raw_response_relpath": "data/rag/enterprise/raw_data/manual_samples/r21_controlled_small_batch_20260603/crossref_sheet_metal_forming_optimization_rows3_20260603.json",
+          "raw_response_sha256": "fb6f6db02d86a7d603ed67994983b2dbad9d4478659eef30fc92e42706b60fba",
+          "reference_count": 0,
+          "retrieved_at": "2026-06-03T07:34:51.371076+00:00",
+          "review_status": "candidate",
+          "subjects": [],
+          "title": "Fracture Formation Limits in Sheet Metal Forming",
+          "type": "book-chapter",
+          "url": "https://doi.org/10.1201/9781003441755-18"
+        },
+        "object_type": "EnterpriseCleanedRecord",
+        "record_id": "record_r21_crossref_metadata_003_10_1201_9781003441755_18",
+        "review_status": "candidate",
+        "source_hash": "5af647af90ce1e92cef84d5d097b4836308e852a456cd02e05cdc7efcbc4fa24",
+        "source_id": "source_crossref_rest_metadata"
+      }
+    ],
+    "created_at": "2026-06-03T07:37:55.715204+00:00",
+    "object_type": "EnterpriseSmallBatchCleaningResult",
+    "schema_version": "autoform.enterprise_small_batch_cleaning.r14.v1",
+    "status": "pass"
+  },
+  "collection_attempts": [
+    {
+      "raw_response_sha256": "fb6f6db02d86a7d603ed67994983b2dbad9d4478659eef30fc92e42706b60fba",
+      "record_count": 3,
+      "retrieved_at": "2026-06-03T07:34:51.371076+00:00",
+      "source_id": "source_crossref_rest_metadata",
+      "status": "sampled_once_metadata_only"
+    },
+    {
+      "checked_at": "2026-06-03T15:32:52+08:00",
+      "reason": "export.arxiv.org robots returned 429 and API request returned Rate exceeded",
+      "source_id": "source_arxiv_api_metadata",
+      "status": "rate_limited_not_sampled"
+    }
+  ],
+  "created_at": "2026-06-03T07:37:55.715204+00:00",
+  "manifest_refs": [
+    "data/rag/enterprise/raw_data/manifests/2026-06-03_r21_crossref_metadata_sample_manifest.csv"
+  ],
+  "next_phase_gate": "R21 output remains candidate metadata only; no formal index, solver, GUI control, or engineering state write is allowed before license and owner review.",
+  "object_type": "EnterpriseSmallBatchCleaningReport",
+  "phase": "R21",
+  "quarantined_record_count": 0,
+  "report_id": "report_r21_crossref_metadata_small_batch_cleaning",
+  "schema_version": "autoform.enterprise_small_batch_cleaning_report.r14.v1",
+  "source_ids": [
+    "source_crossref_rest_metadata"
+  ],
+  "source_review_refs": [
+    "data/rag/enterprise/source_review_registry.csv"
+  ],
+  "status": "pass"
+}

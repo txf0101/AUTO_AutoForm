@@ -1,0 +1,272 @@
+{
+  "cards": [
+    {
+      "allowed_usage": "catalog_only",
+      "applicability": {
+        "applicable_lines": [
+          "not_applicable_until_rights_scope_and_owner_review"
+        ],
+        "applicable_materials": [
+          "materials_metadata"
+        ],
+        "conflict_status": "none",
+        "part_features": [
+          "materials_or_simulation_tool_metadata_only"
+        ],
+        "process_actions": [
+          "welding_simulation_metadata_review"
+        ]
+      },
+      "card_id": "pkc_r21_nist_mdr_materials_metadata_case_001",
+      "card_type": "ProcessCase",
+      "created_at": "2026-06-03T08:24:48.340594+00:00",
+      "evidence_refs": [
+        {
+          "artifact_uri": "data/rag/enterprise/r21_nist_mdr_materials_metadata_samples.jsonl",
+          "evidence_id": "record_r21_nist_mdr_metadata_001_oai_materialsdata_nist_gov_11256_511",
+          "evidence_type": "cleaned_record",
+          "source_hash": "4dfe5701bfd88b9ca79bda8872f615e11a3f7c32d3324e705237e98f1cda96a2",
+          "source_id": "source_nist_materials_data_repository"
+        }
+      ],
+      "human_confirmation": {
+        "owner": "autoform_agent",
+        "required": true,
+        "status": "pending"
+      },
+      "key_parameter_windows": [
+        {
+          "basis_evidence_refs": [
+            "record_r21_nist_mdr_metadata_001_oai_materialsdata_nist_gov_11256_511"
+          ],
+          "lower": 1,
+          "parameter": "metadata_record_count",
+          "review_status": "candidate",
+          "unit": "count",
+          "upper": 1
+        }
+      ],
+      "license_status": "record_rights_field_requires_item_review",
+      "limitation": "NIST MDR OAI metadata only; rights, downloadable data files, engineering applicability and responsible owner are not confirmed.",
+      "object_type": "ProcessKnowledgeCard",
+      "owner": "autoform_agent",
+      "payload": {
+        "case_ref": "oai:materialsdata.nist.gov:11256/511",
+        "formal_index_allowed": false,
+        "identifiers": [
+          "None",
+          "http://hdl.handle.net/11256/511"
+        ],
+        "outcome_status": "metadata_only_no_engineering_outcome",
+        "rights": [
+          "ESI Group"
+        ],
+        "subjects": [
+          "materials science",
+          "Category"
+        ],
+        "title": "Virtual Welding and Assembly Suite",
+        "validation_status": "pass"
+      },
+      "phase": "R15",
+      "quality_risks": [
+        {
+          "basis_evidence_refs": [
+            "record_r21_nist_mdr_metadata_001_oai_materialsdata_nist_gov_11256_511"
+          ],
+          "risk_type": "rights_scope_and_owner_missing_blocks_process_use",
+          "severity": "blocked"
+        }
+      ],
+      "review_status": "needs_license_review",
+      "schema_version": "autoform.process_knowledge_card.r15.v1",
+      "source_id": "source_nist_materials_data_repository",
+      "title": "R21 candidate NIST MDR materials metadata case 1: Virtual Welding and Assembly Suite",
+      "valid_from": "2026-06-03",
+      "valid_until": "2026-12-31",
+      "version": "2015-10-22T16:45:31Z"
+    },
+    {
+      "allowed_usage": "catalog_only",
+      "applicability": {
+        "applicable_lines": [
+          "not_applicable_until_rights_scope_and_owner_review"
+        ],
+        "applicable_materials": [
+          "materials_metadata"
+        ],
+        "conflict_status": "none",
+        "part_features": [
+          "materials_or_simulation_tool_metadata_only"
+        ],
+        "process_actions": [
+          "materials_simulation_metadata_review"
+        ]
+      },
+      "card_id": "pkc_r21_nist_mdr_materials_metadata_case_002",
+      "card_type": "ProcessCase",
+      "created_at": "2026-06-03T08:24:48.340594+00:00",
+      "evidence_refs": [
+        {
+          "artifact_uri": "data/rag/enterprise/r21_nist_mdr_materials_metadata_samples.jsonl",
+          "evidence_id": "record_r21_nist_mdr_metadata_002_oai_materialsdata_nist_gov_11115_112",
+          "evidence_type": "cleaned_record",
+          "source_hash": "e0322f4f18c2776e8f64fb08bc5b443d02d0fe5db2c918376bd0733b5ce0b08a",
+          "source_id": "source_nist_materials_data_repository"
+        }
+      ],
+      "human_confirmation": {
+        "owner": "autoform_agent",
+        "required": true,
+        "status": "pending"
+      },
+      "key_parameter_windows": [
+        {
+          "basis_evidence_refs": [
+            "record_r21_nist_mdr_metadata_002_oai_materialsdata_nist_gov_11115_112"
+          ],
+          "lower": 1,
+          "parameter": "metadata_record_count",
+          "review_status": "candidate",
+          "unit": "count",
+          "upper": 1
+        }
+      ],
+      "license_status": "record_rights_field_requires_item_review",
+      "limitation": "NIST MDR OAI metadata only; rights, downloadable data files, engineering applicability and responsible owner are not confirmed.",
+      "object_type": "ProcessKnowledgeCard",
+      "owner": "autoform_agent",
+      "payload": {
+        "case_ref": "oai:materialsdata.nist.gov:11115/112",
+        "formal_index_allowed": false,
+        "identifiers": [
+          "http://hdl.handle.net/11115/112"
+        ],
+        "outcome_status": "metadata_only_no_engineering_outcome",
+        "rights": [
+          "Attribution-NonCommercial-ShareAlike 3.0 United States",
+          "http://creativecommons.org/licenses/by-nc-sa/3.0/us/"
+        ],
+        "subjects": [
+          "ZrO-X"
+        ],
+        "title": "ZrO-X",
+        "validation_status": "pass"
+      },
+      "phase": "R15",
+      "quality_risks": [
+        {
+          "basis_evidence_refs": [
+            "record_r21_nist_mdr_metadata_002_oai_materialsdata_nist_gov_11115_112"
+          ],
+          "risk_type": "rights_scope_and_owner_missing_blocks_process_use",
+          "severity": "blocked"
+        }
+      ],
+      "review_status": "needs_license_review",
+      "schema_version": "autoform.process_knowledge_card.r15.v1",
+      "source_id": "source_nist_materials_data_repository",
+      "title": "R21 candidate NIST MDR materials metadata case 2: ZrO-X",
+      "valid_from": "2026-06-03",
+      "valid_until": "2026-12-31",
+      "version": "2014-08-06T01:56:57Z"
+    },
+    {
+      "allowed_usage": "catalog_only",
+      "applicability": {
+        "applicable_lines": [
+          "not_applicable_until_rights_scope_and_owner_review"
+        ],
+        "applicable_materials": [
+          "materials_metadata"
+        ],
+        "conflict_status": "none",
+        "part_features": [
+          "materials_or_simulation_tool_metadata_only"
+        ],
+        "process_actions": [
+          "materials_simulation_metadata_review"
+        ]
+      },
+      "card_id": "pkc_r21_nist_mdr_materials_metadata_case_003",
+      "card_type": "ProcessCase",
+      "created_at": "2026-06-03T08:24:48.340594+00:00",
+      "evidence_refs": [
+        {
+          "artifact_uri": "data/rag/enterprise/r21_nist_mdr_materials_metadata_samples.jsonl",
+          "evidence_id": "record_r21_nist_mdr_metadata_003_oai_materialsdata_nist_gov_11256_446",
+          "evidence_type": "cleaned_record",
+          "source_hash": "15ed18ba3dd5e82fc03766483e01daf75b75f8755aadc5369364b8c50edc2174",
+          "source_id": "source_nist_materials_data_repository"
+        }
+      ],
+      "human_confirmation": {
+        "owner": "autoform_agent",
+        "required": true,
+        "status": "pending"
+      },
+      "key_parameter_windows": [
+        {
+          "basis_evidence_refs": [
+            "record_r21_nist_mdr_metadata_003_oai_materialsdata_nist_gov_11256_446"
+          ],
+          "lower": 1,
+          "parameter": "metadata_record_count",
+          "review_status": "candidate",
+          "unit": "count",
+          "upper": 1
+        }
+      ],
+      "license_status": "record_rights_field_requires_item_review",
+      "limitation": "NIST MDR OAI metadata only; rights, downloadable data files, engineering applicability and responsible owner are not confirmed.",
+      "object_type": "ProcessKnowledgeCard",
+      "owner": "autoform_agent",
+      "payload": {
+        "case_ref": "oai:materialsdata.nist.gov:11256/446",
+        "formal_index_allowed": false,
+        "identifiers": [
+          "http://hdl.handle.net/11256/446"
+        ],
+        "outcome_status": "metadata_only_no_engineering_outcome",
+        "rights": [
+          "Copyright SCM"
+        ],
+        "subjects": [
+          "modeling",
+          "actinides",
+          "petrochemistry",
+          "nanomaterials",
+          "organic electronics",
+          "photovoltaics",
+          "spectroscopic properties",
+          "materials science"
+        ],
+        "title": "ADF - molecular modeling suite",
+        "validation_status": "pass"
+      },
+      "phase": "R15",
+      "quality_risks": [
+        {
+          "basis_evidence_refs": [
+            "record_r21_nist_mdr_metadata_003_oai_materialsdata_nist_gov_11256_446"
+          ],
+          "risk_type": "rights_scope_and_owner_missing_blocks_process_use",
+          "severity": "blocked"
+        }
+      ],
+      "review_status": "needs_license_review",
+      "schema_version": "autoform.process_knowledge_card.r15.v1",
+      "source_id": "source_nist_materials_data_repository",
+      "title": "R21 candidate NIST MDR materials metadata case 3: ADF - molecular modeling suite",
+      "valid_from": "2026-06-03",
+      "valid_until": "2026-12-31",
+      "version": "2015-10-23T01:04:26Z"
+    }
+  ],
+  "collection_phase": "R21",
+  "created_at": "2026-06-03T08:24:48.340594+00:00",
+  "gate": "Candidate NIST MDR materials metadata cards only; formal_index_allowed remains false until rights, engineering scope and owner are reviewed.",
+  "object_type": "ProcessKnowledgeCardFixture",
+  "phase": "R15",
+  "schema_version": "autoform.process_knowledge_cards_fixture.r15.v1"
+}

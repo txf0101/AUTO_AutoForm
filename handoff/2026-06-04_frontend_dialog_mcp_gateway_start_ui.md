@@ -31,7 +31,7 @@
   - 覆盖“新建工程”未批准时进入 `blocked_requires_approval`。
   - 覆盖“新建工程”已批准时通过 `autoform_start_ui` 返回启动命令。
   - 覆盖“MCP 连接”问题通过 `autoform_status_snapshot` 返回可见工具证据。
-- `README.md`、`docs/api_runtime_call_chain.md`、`docs/beginner_onboarding_zh.md`、`frontend/README.md`
+- `README.md`、`docs/api_runtime_call_chain.md`、`docs/beginner_onboarding_zh.md`、`apps/workbench/README.md`
   - 同步说明网页对话到 MCP 同源工具的当前能力边界、审批语义和新建工程向导缺口。
 
 ## 方法沉淀

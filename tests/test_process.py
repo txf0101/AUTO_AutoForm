@@ -5,8 +5,8 @@ This test file checks AutoForm processes, solver commands, and GUI launch comman
 
 from pathlib import Path
 
-from autoform_agent.paths import AutoFormInstallation
-from autoform_agent.process import collect_forming_job_logs, forming_job_plan, open_afd_observer, start_forming_ui_observer
+from autoform_core.paths import AutoFormInstallation
+from autoform_core.process import collect_forming_job_logs, forming_job_plan, open_afd_observer, start_forming_ui_observer
 
 
 def _install(tmp_path: Path) -> AutoFormInstallation:

@@ -14,8 +14,8 @@ from autoform_agent.process_rag_index_eval import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
-QUERIES_PATH = ROOT / "enterprise_data" / "r25_process_rag_index_eval_queries.jsonl"
-REPORT_PATH = ROOT / "enterprise_data" / "r25_process_rag_index_eval_report.sample.json"
+QUERIES_PATH = ROOT / "data" / "rag" / "enterprise" / "r25_process_rag_index_eval_queries.jsonl"
+REPORT_PATH = ROOT / "data" / "rag" / "enterprise" / "r25_process_rag_index_eval_report.sample.json"
 SCHEMA_PATH = ROOT / "schemas" / "process_rag_index_eval_report.schema.json"
 
 

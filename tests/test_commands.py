@@ -5,14 +5,14 @@ This test file checks external command plans and safe defaults. Read each assert
 
 from pathlib import Path
 
-from autoform_agent.commands import (
+from autoform_core.commands import (
     executable_command_plan,
     executable_help_probe,
     list_command_specs,
     material_conversion_execute,
     material_conversion_plan,
 )
-from autoform_agent.paths import AutoFormInstallation
+from autoform_core.paths import AutoFormInstallation
 
 
 def test_list_command_specs_reports_local_paths(tmp_path: Path) -> None:

@@ -21,17 +21,17 @@ from .process_knowledge import load_process_knowledge_cards, validate_process_kn
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CANDIDATE_CARD_PATHS = (
-    ROOT / "enterprise_data" / "r15_process_knowledge_cards.sample.json",
-    ROOT / "enterprise_data" / "r21_process_knowledge_cards.candidate.json",
-    ROOT / "enterprise_data" / "r21_public_process_chain_cards.candidate.json",
-    ROOT / "enterprise_data" / "r21_nist_mdr_materials_cards.candidate.json",
-    ROOT / "enterprise_data" / "r21_nist_pdr_factory_operations_cards.candidate.json",
-    ROOT / "enterprise_data" / "r21_autoform_public_site_cards.candidate.json",
-    ROOT / "enterprise_data" / "r21_nist_pdr_process_chain_cards.candidate.json",
-    ROOT / "enterprise_data" / "r22_partner_submission_cards.candidate.json",
-    ROOT / "enterprise_data" / "r23_nist_pdr_manufacturing_cards.candidate.json",
+    ROOT / "data" / "rag" / "enterprise" / "r15_process_knowledge_cards.sample.json",
+    ROOT / "data" / "rag" / "enterprise" / "r21_process_knowledge_cards.candidate.json",
+    ROOT / "data" / "rag" / "enterprise" / "r21_public_process_chain_cards.candidate.json",
+    ROOT / "data" / "rag" / "enterprise" / "r21_nist_mdr_materials_cards.candidate.json",
+    ROOT / "data" / "rag" / "enterprise" / "r21_nist_pdr_factory_operations_cards.candidate.json",
+    ROOT / "data" / "rag" / "enterprise" / "r21_autoform_public_site_cards.candidate.json",
+    ROOT / "data" / "rag" / "enterprise" / "r21_nist_pdr_process_chain_cards.candidate.json",
+    ROOT / "data" / "rag" / "enterprise" / "r22_partner_submission_cards.candidate.json",
+    ROOT / "data" / "rag" / "enterprise" / "r23_nist_pdr_manufacturing_cards.candidate.json",
 )
-DEFAULT_RAG_CANDIDATE_INDEX = ROOT / "enterprise_data" / "r24_process_rag_candidate_index.sample.json"
+DEFAULT_RAG_CANDIDATE_INDEX = ROOT / "data" / "rag" / "enterprise" / "r24_process_rag_candidate_index.sample.json"
 TOKEN_PATTERN = re.compile(r"[a-zA-Z0-9_]+|[\u4e00-\u9fff]+")
 BLOCKED_ACTIONS = [
     "bulk_crawl",
@@ -141,7 +141,7 @@ def build_process_rag_candidate_index(
         },
         "storage_plan": {
             "candidate_snapshot_file": _relpath(DEFAULT_RAG_CANDIDATE_INDEX),
-            "raw_response_storage": "enterprise_data/raw_data/manual_samples remains gitignored",
+            "raw_response_storage": "data/rag/enterprise/raw_data/manual_samples remains gitignored",
             "formal_index_write_allowed": False,
         },
         "blocked_actions": BLOCKED_ACTIONS,

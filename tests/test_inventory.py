@@ -5,7 +5,7 @@ This test file checks installation inventory, example projects, and readable AFD
 
 from pathlib import Path
 
-from autoform_agent.inventory import (
+from autoform_core.inventory import (
     get_afd_project_summary,
     get_afd_readable_index,
     inspect_afd,

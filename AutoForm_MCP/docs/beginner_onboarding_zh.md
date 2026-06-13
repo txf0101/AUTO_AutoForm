@@ -59,18 +59,18 @@ codex_mcp_config.autoform-mcp.toml
 Claude Code 可以用：
 
 ```powershell
-claude mcp add --transport stdio --scope user --env PYTHONPATH="<repo-root>" autoform-mcp -- conda run -n afagent python -m autoform_mcp_agent.mcp_server
+claude mcp add --transport stdio --scope user --env PYTHONPATH="<repo-root>;<repo-root>\AutoForm_MCP" autoform-mcp -- conda run -n afagent python -m autoform_mcp_agent.mcp_server
 claude mcp list
 claude mcp get autoform-mcp
 ```
 
-其他 stdio MCP 客户端使用同样的命令结构：command 是 `conda`，args 是 `run -n afagent python -m autoform_mcp_agent.mcp_server`，环境变量 `PYTHONPATH` 指向 `<repo-root>`。
+其他 stdio MCP 客户端使用同样的命令结构：command 是 `conda`，args 是 `run -n afagent python -m autoform_mcp_agent.mcp_server`，环境变量 `PYTHONPATH` 指向 `<repo-root>;<repo-root>\AutoForm_MCP`。
 
 ## 连接后怎么用
 
 1. 先读取 `autoform://status`，或调用 `autoform_status_snapshot`。
 2. 再调用 `autoform_discover_installation`，确认本机 AutoForm 安装是否被发现。
-3. 需要了解 V1.1 结果审阅边界时，调用 `autoform_result_blockers`。
+3. 需要了解 V1.8 结果审阅边界时，调用 `autoform_result_blockers`。
 4. 需要规划工程运行时，调用 `autoform_project_run`，先不要传 `execute=true`。
 5. 只有确认工程、许可证、输出目录和可见桌面状态后，才给执行类工具传 `execute=true`。
 
@@ -114,14 +114,16 @@ New-Item -ItemType Directory -Force -Path $env:TEMP | Out-Null
 python -m pytest tests\test_mcp_tools.py tests\test_gui_automation.py tests\test_result_viewer.py tests\test_r12_demo.py tests\test_project_workflow.py tests\test_process.py -q --basetemp tmp\pytest_mcp
 ```
 
-当前 MCP_V1.1 预期结果是：
+当前 MCP_V1.8 预期结果是：
 
 ```text
-54 passed
+57 passed
 ```
 
-## V1.1 边界
+## V1.8 边界
 
-MCP_V1.1 暴露 112 个 `autoform_` 工具和 `autoform://status` 资源。
+MCP_V1.8 暴露 112 个 `autoform_` 工具和 `autoform://status` 资源。
 
-MCP_V1.1 不生成工程判断报告。它返回证据、就绪检查、GUI 边界和审阅计划。工程阈值和 pass/fail 结论属于后续可选输入。
+MCP_V1.8 不生成工程判断报告。它返回证据、就绪检查、GUI 边界和审阅计划。工程阈值和 pass/fail 结论属于后续可选输入。
+
+`autoform_r12_project_view_demo` 默认只打开或规划工程窗口，不会自动切到俯视再回等轴测。需要切视角时，调用方必须显式传入 `view_sequence`。如果已经有当前 AutoForm 结果窗口，优先用 `autoform_result_set_view`，并用 `title_contains` 或 `target_pid` 限定目标窗口。

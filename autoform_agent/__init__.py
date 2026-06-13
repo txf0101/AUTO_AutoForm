@@ -1,9 +1,10 @@
-"""这个包是 AutoForm Agent 的 Python 主包，其他命令行入口、MCP 工具、前端后端桥接和测试都会从这里导入能力。读这个文件时，只需要把它理解为项目的门牌号和版本入口。
+"""这个包是 AutoForm Agent 的 Python 主应用入口。共享 AutoForm 业务能力位于 `autoform_core`。
 
-This package is the main Python package for AutoForm Agent. Command-line tools, MCP wrappers, the local web bridge, and tests import shared capabilities through this package. Read this file as the front door and version marker for the project.
+This package is the main AutoForm Agent application entry point. Shared
+AutoForm business capabilities live in `autoform_core`.
 """
 
-from .paths import AutoFormInstallation, discover_installations, get_default_installation
+from autoform_core.paths import AutoFormInstallation, discover_installations, get_default_installation
 
 __version__ = "1.4.0"
 

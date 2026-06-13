@@ -14,8 +14,8 @@ from autoform_agent.enterprise_process_planning import (
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_PATH = ROOT / "schemas" / "enterprise_process_planning_result.schema.json"
-R16_BUNDLE_PATH = ROOT / "enterprise_data" / "r16_process_rag_evidence_bundle.sample.json"
-R17_FIXTURE_PATH = ROOT / "enterprise_data" / "r17_enterprise_process_plan_candidate.sample.json"
+R16_BUNDLE_PATH = ROOT / "data" / "rag" / "enterprise" / "r16_process_rag_evidence_bundle.sample.json"
+R17_FIXTURE_PATH = ROOT / "data" / "rag" / "enterprise" / "r17_enterprise_process_plan_candidate.sample.json"
 
 
 def _bundle() -> dict:

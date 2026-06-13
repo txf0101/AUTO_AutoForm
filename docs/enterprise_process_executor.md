@@ -50,7 +50,7 @@ R20 当前提供：
 
 - `autoform_agent/enterprise_process_executor.py`：R20 编排入口和校验函数。
 - `schemas/enterprise_process_executor_run.schema.json`：R20 顶层对象 schema。
-- `enterprise_data/r20_enterprise_process_executor_run.sample.json`：企业证据充足、人工确认、结果审阅规划工具完成和报告草案生成的样例。
+- `data/rag/enterprise/r20_enterprise_process_executor_run.sample.json`：企业证据充足、人工确认、结果审阅规划工具完成和报告草案生成的样例。
 - `fixtures/r20_enterprise_process_executor_events.jsonl`：前端回放事件流。
 - `tests/test_enterprise_process_executor.py`：覆盖成功闭环、无企业数据、证据冲突、人工拒绝和执行审批缺失。
 

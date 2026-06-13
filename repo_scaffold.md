@@ -4,7 +4,7 @@
 
 - 主计划文档：`VC开发文档/Auto_Autoform思路整理/AutoForm多Agent系统整体任务规划矛盾检查与Vibecoding开发计划.docx`，当前确认时间戳为 `2026-06-01 20:48:15`。
 - 主计划表 1 将 R0 至 R5 标记为 P0；表 5 将 R0 至 R3列为立即开工项。
-- 当前仓库已有后端源码目录 `autoform_agent/`、前端目录 `frontend/`、文档目录 `docs/` 和测试目录 `tests/`。
+- 当前仓库已有后端源码目录 `autoform_agent/`、前端目录 `apps/workbench/`、文档目录 `docs/` 和测试目录 `tests/`。
 
 ## P0 固定目录
 
@@ -12,7 +12,7 @@
 autoform_agent/                 现有 Python 业务实现和后端运行时
 autoform_agent/agent_system/    现有多 Agent 角色预留层
 backend/                        P0 事件网关、凭据边界和后端接口说明区域
-frontend/                       R3 静态工作台和本地事件回放区域
+apps/workbench/                       R3 静态工作台和本地事件回放区域
 schemas/                        R2 核心 JSON schema
 fixtures/                       R2 可回放样例事件
 policy/                         R1 权限矩阵和高风险动作边界

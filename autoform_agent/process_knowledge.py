@@ -15,7 +15,7 @@ from .enterprise_data import EnterpriseSource, utc_now
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_PROCESS_KNOWLEDGE_CARDS = ROOT / "enterprise_data" / "r15_process_knowledge_cards.sample.json"
+DEFAULT_PROCESS_KNOWLEDGE_CARDS = ROOT / "data" / "rag" / "enterprise" / "r15_process_knowledge_cards.sample.json"
 
 CARD_TYPES = {
     "MaterialCard",

@@ -5,8 +5,8 @@ This test file checks AutoForm installation path discovery. Read each assertion 
 
 from pathlib import Path
 
-import autoform_agent.paths as paths
-from autoform_agent.paths import AutoFormInstallation, discover_installations
+import autoform_core.paths as paths
+from autoform_core.paths import AutoFormInstallation, discover_installations
 
 
 def test_installation_path_overrides(monkeypatch, tmp_path: Path) -> None:

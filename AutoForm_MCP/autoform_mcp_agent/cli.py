@@ -28,14 +28,13 @@ import json
 import sys
 from pathlib import Path
 
-from .af_api import (
+from autoform_core.af_api import (
     af_api_build_preview,
     af_api_template_plan,
     check_af_api_build_env,
     list_af_api_modules,
 )
-from .agent_runtime import load_agent_runtime_config, run_agent_runtime_turn
-from .commands import (
+from autoform_core.commands import (
     executable_command_plan,
     executable_help_probe,
     list_command_specs,
@@ -43,17 +42,17 @@ from .commands import (
     material_conversion_plan,
     report_ms_office_plan,
 )
-from .config import get_logging_config, get_queue_config, get_remote_hosts
-from .coverage import help_topic_agent_mapping, module_coverage_matrix
-from .diagnostics import (
+from autoform_core.config import get_logging_config, get_queue_config, get_remote_hosts
+from autoform_core.coverage import help_topic_agent_mapping, module_coverage_matrix
+from autoform_core.diagnostics import (
     autoform_status_snapshot,
     collect_gui_project_events,
     collect_recent_autoform_logs,
     diagnostic_bundle_plan,
     environment_snapshot,
 )
-from .extension import internal_extension_boundary
-from .inventory import (
+from autoform_core.extension import internal_extension_boundary
+from autoform_core.inventory import (
     get_afd_project_summary,
     get_afd_readable_index,
     inspect_afd,
@@ -61,8 +60,8 @@ from .inventory import (
     list_executables,
     list_help_topics,
 )
-from .jobs import archive_job, cancel_job, job_logs, job_status, list_jobs, submit_job, wait_for_job
-from .materials import (
+from autoform_core.jobs import archive_job, cancel_job, job_logs, job_status, list_jobs, submit_job, wait_for_job
+from autoform_core.materials import (
     archive_members,
     find_duplicate_material_files,
     inspect_material_file,
@@ -71,14 +70,14 @@ from .materials import (
     material_library_backup_plan,
     result_to_json,
 )
-from .paths import discover_installations, get_default_installation
+from autoform_core.paths import discover_installations, get_default_installation
 # 这几个导入是演示案例 1 和案例 2 的真正业务函数来源：
 # - `start_forming_ui()`：准备或执行启动 AutoForm Forming UI 的命令。
 # - `open_afd()`：准备或执行打开一个 .afd 项目的命令。
-from .process import collect_forming_job_logs, forming_job_plan, open_afd, run_forming_job, start_forming_ui
-from .project_workflow import example_project_baseline, project_run_workflow, resolve_project_input
-from .queue import lsf_command_plan, queue_client_probe, queue_command_plan, queue_health_check
-from .quicklink import (
+from autoform_core.process import collect_forming_job_logs, forming_job_plan, open_afd, run_forming_job, start_forming_ui
+from autoform_core.project_workflow import example_project_baseline, project_run_workflow, resolve_project_input
+from autoform_core.queue import lsf_command_plan, queue_client_probe, queue_command_plan, queue_health_check
+from autoform_core.quicklink import (
     compare_quicklink_exports,
     get_blank_info,
     get_die_face,
@@ -96,11 +95,11 @@ from .quicklink import (
     quicklink_schema,
     validate_quicklink_standard,
 )
-from .release import install_check_plan, release_package_plan, release_readiness_check
-from .report import report_inventory, report_log_events
-from .results import copy_result_evidence, report_delivery_plan, result_inventory
-from .safety import public_release_scan, write_safety_plan
-from .solver import (
+from autoform_core.release import install_check_plan, release_package_plan, release_readiness_check
+from autoform_core.report import report_inventory, report_log_events
+from autoform_core.results import copy_result_evidence, report_delivery_plan, result_inventory
+from autoform_core.safety import public_release_scan, write_safety_plan
+from autoform_core.solver import (
     forming_job_check_plan,
     forming_solver_full_batch_probe,
     forming_solver_full_plan,
@@ -130,13 +129,6 @@ def main(argv: list[str] | None = None) -> int:
     status_parser = subparsers.add_parser("status", help="Print the read-only AutoForm Agent status snapshot.")
     status_parser.add_argument("--workspace", type=Path, help="Workspace root used to locate QuickLink exports and logs.")
 
-    agent_parser = subparsers.add_parser("agent-turn", help="Run one prompt through the backend OpenAI Agents SDK runtime.")
-    agent_parser.add_argument("prompt", help="User prompt for the backend AutoForm Agent runtime.")
-    agent_parser.add_argument("--conversation-id", default="cli", help="Stable id included in runtime metadata.")
-    agent_parser.add_argument("--max-turns", type=int, default=8, help="Maximum Agents SDK turns when cloud runtime is configured.")
-
-    agent_status_parser = subparsers.add_parser("agent-status", help="Inspect backend agent runtime configuration.")
-    agent_status_parser.add_argument("--json", action="store_true", help="Print machine-readable runtime status.")
 
     archive_parser = subparsers.add_parser("archive-list", help="List archive members with bsdtar.")
     archive_parser.add_argument("archive", type=Path)
@@ -564,43 +556,6 @@ def main(argv: list[str] | None = None) -> int:
         _print_json(autoform_status_snapshot(project_root=args.workspace), ensure_ascii=False)
         return 0
 
-    if args.command == "agent-status":
-        config = load_agent_runtime_config()
-        status = {
-            "provider": config.provider,
-            "model": config.model,
-            "base_url": config.base_url,
-            "api_mode": config.api_mode,
-            "api_key_configured": config.api_key_configured,
-            "api_key_source": config.api_key_source,
-            "sdk_available": config.sdk_available,
-            "project_root": str(config.project_root),
-            "tracing_enabled": config.tracing_enabled,
-        }
-        if args.json:
-            _print_json(status, ensure_ascii=False)
-        else:
-            print(f"provider: {status['provider']}")
-            print(f"model: {status['model']}")
-            print(f"api_mode: {status['api_mode']}")
-            print(f"sdk_available: {status['sdk_available']}")
-            print(f"api_key_configured: {status['api_key_configured']}")
-            print(f"api_key_source: {status['api_key_source']}")
-            print(f"project_root: {status['project_root']}")
-        return 0
-
-    if args.command == "agent-turn":
-        _print_json(
-            run_agent_runtime_turn(
-                {
-                    "conversationId": args.conversation_id,
-                    "prompt": args.prompt,
-                },
-                max_turns=args.max_turns,
-            ),
-            ensure_ascii=False,
-        )
-        return 0
 
     if args.command == "archive-list":
         members = archive_members(args.archive)

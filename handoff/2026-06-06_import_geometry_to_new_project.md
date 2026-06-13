@@ -11,7 +11,7 @@
 - `VC开发文档/Auto_Autoform思路整理/03_几何与数据Agent说明.docx`，时间戳 2026-06-01 晚间。采用结论：几何来源、单位、类型和证据路径要显式记录，方便后续几何 Agent 复核。
 - `VC开发文档/Auto_Autoform思路整理/04_柔性脚本与MCP工具说明.docx`，时间戳 2026-06-01 晚间。采用结论：真实 GUI 和本机控制动作需要经过白名单与证据记录。
 - `VC开发文档/Auto_Autoform思路整理/05_AutoForm软件控制与GUI自动化说明.docx`，时间戳 2026-06-01 晚间。采用结论：GUI 流程先实测窗口、菜单和控件路径，再沉淀为 wrapper，失败也要留截图和窗口树。
-- 本轮修改文档前重新核对时间戳：`README.md` 为 2026-06-05 21:15:00，`frontend/README.md` 为 2026-06-05 21:16:10，`docs/api_runtime_call_chain.md` 为 2026-06-05 21:18:46，`docs/beginner_onboarding_zh.md` 为 2026-06-05 21:19:25。
+- 本轮修改文档前重新核对时间戳：`README.md` 为 2026-06-05 21:15:00，`apps/workbench/README.md` 为 2026-06-05 21:16:10，`docs/api_runtime_call_chain.md` 为 2026-06-05 21:18:46，`docs/beginner_onboarding_zh.md` 为 2026-06-05 21:19:25。
 
 ## 实现内容
 
@@ -22,7 +22,7 @@
 - 在 `autoform_agent/cli.py` 增加 `import-geometry-to-new-project` 命令。
 - 在 `autoform_agent/agent_system/tool_gateway.py` 注册新工具为 `guarded_gui`，沿用本机 MCP 工具控制批准边界。
 - 在 `autoform_agent/agent_runtime.py` 增加新建工程加 CAD 导入意图识别，并把 `source_geometry_path`、`output_afd_path`、`run_dir`、`evidence_dir` 和 `gui_pid` 放入 `runtime.currentProject`。
-- 在 `frontend/app.js` 扩展当前工程上下文和工具摘要字段，不新增第二个新建工程入口。
+- 在 `apps/workbench/app.js` 扩展当前工程上下文和工具摘要字段，不新增第二个新建工程入口。
 
 ## 参数与返回
 
@@ -68,7 +68,7 @@ python -m autoform_agent import-geometry-to-new-project --source-geometry-path "
 $env:PYTHONPATH=(Get-Location).Path
 $env:TMP=(Join-Path (Get-Location).Path 'tmp\pytest_tmp')
 $env:TEMP=$env:TMP
-pytest tests/test_geometry_import_workflow.py tests/test_process.py tests/test_gui_automation.py tests/test_mcp_tools.py tests/test_agent_system.py tests/test_agent_runtime.py frontend/tests/smoke_test.py
+pytest tests/test_geometry_import_workflow.py tests/test_process.py tests/test_gui_automation.py tests/test_mcp_tools.py tests/test_agent_system.py tests/test_agent_runtime.py apps/workbench/tests/smoke_test.py
 ```
 
 结果：`78 passed, 1 skipped`。跳过项为 `AUTOFORM_GUI_IMPORT_TEST=1` 才执行的真实 GUI 测试。
@@ -77,7 +77,7 @@ pytest tests/test_geometry_import_workflow.py tests/test_process.py tests/test_g
 
 ```powershell
 python -m py_compile autoform_agent\geometry_import_workflow.py autoform_agent\gui_automation.py autoform_agent\process.py autoform_agent\mcp_tools\project.py autoform_agent\mcp_tools\__init__.py autoform_agent\cli.py autoform_agent\agent_system\tool_gateway.py autoform_agent\agent_runtime.py
-C:\Users\Tang Xufeng\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe --check frontend\app.js
+C:\Users\Tang Xufeng\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe --check apps\workbench\app.js
 ```
 
 系统 `node.exe` 返回 Access denied，已改用 Codex bundled Node 完成前端语法检查。

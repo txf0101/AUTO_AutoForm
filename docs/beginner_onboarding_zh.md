@@ -6,7 +6,7 @@
 
 AutoForm Agent 是一个本地辅助工具项目。它把本机 AutoForm Forming 的安装发现、材料库处理、QuickLink 导出收集、命令预览、诊断信息读取、直接 API 后端运行时、多 Agent 项目预留层、P0 事件与权限契约、可选 MCP 工具入口、V1.1 GUI 结果审阅入口和浏览器预览页面整理到同一个工作区中。当前 V1.4 版本以前端到 HTTP bridge 再到 `autoform_agent.agent_runtime` 的 API runtime 链路作为应用主控，页面可以为 DeepSeek 或其他兼容 chat completions 的 endpoint 传入当次请求的 provider、Base URL、模型和 API key，也可以通过“允许本机 MCP 工具控制”批准后端白名单 MCP 工具执行本机受控动作。普通用户可以先通过启动器和网页界面观察能力，开发者可以继续维护 Python 模块、测试、多 Agent 角色和可选 MCP 工具。
 
-这个结论依据项目根目录的 `README.md`、`DEVELOPERS.md`、`repo_scaffold.md`、`naming_policy.md`、`docs/api_runtime_call_chain.md`、`docs/multi_agent_architecture.md`、`docs/deprecated_ui_inventory.md`、`docs/ui_context_boundary.md`、`schemas/`、`fixtures/`、`policy/`、`evals/`、`autoform_agent/cli.py`、`autoform_agent/agent_system/`、`autoform_agent/mcp_server.py`、`autoform_agent/mcp_tools/`、`autoform_agent/http_bridge.py`、`frontend/README.md` 和 `start_autoform_agent.ps1`。
+这个结论依据项目根目录的 `README.md`、`DEVELOPERS.md`、`repo_scaffold.md`、`naming_policy.md`、`docs/api_runtime_call_chain.md`、`docs/multi_agent_architecture.md`、`docs/deprecated_ui_inventory.md`、`docs/ui_context_boundary.md`、`schemas/`、`fixtures/`、`policy/`、`evals/`、`autoform_agent/cli.py`、`autoform_agent/agent_system/`、`AutoForm_MCP/autoform_mcp_agent/mcp_server.py`、`autoform_core/tool_registry/`、`autoform_agent/http_bridge.py`、`apps/workbench/README.md` 和 `start_autoform_agent.ps1`。
 
 ## 先认识几个名字
 
@@ -24,7 +24,7 @@ AutoForm Agent 是一个本地辅助工具项目。它把本机 AutoForm Forming
 
 `低风险准备链路` 指 R6 至 R11 的需求分诊、几何数据、RAG 证据、材料候选、工艺候选、低风险脚本和端到端回放。当前入口是 `autoform_agent/preparation_agents.py` 和 CLI 的 `prepare-triage`、`prepare-evidence`、`prepare-script-run`、`prepare-r11-replay`。该链路只生成候选卡片、候选补丁、证据包、脚本运行记录和 `StageSummary`，不会提交真实 AutoForm 求解。
 
-`柔性脚本` 指登记在 `flex_script_library/` 的稳定脚本能力，以及临时放在 `tmp/flex_script_sandbox/` 的 fork、新建和调试脚本。稳定脚本由 `Script Agent` 和 `Script Executor` 运行，结果统一保存为 `ScriptRunRecord`，证据写入 `output/script_runs/`。当前 MCP 只暴露 `autoform_script_catalog` 和 `autoform_script_run` 两个控制入口；脚本 fork、新建、patch、validate、audit、deps、sample-run 和 promote 先由 CLI 或内部 Agent 能力完成。L2 脚本入库需要静态审计、依赖探测、验证报告和中心审批记录。
+`柔性脚本` 指登记在 `script_library/flex/` 的稳定脚本能力，以及临时放在 `tmp/flex_script_sandbox/` 的 fork、新建和调试脚本。稳定脚本由 `Script Agent` 和 `Script Executor` 运行，结果统一保存为 `ScriptRunRecord`，证据写入 `output/script_runs/`。当前 MCP 只暴露 `autoform_script_catalog` 和 `autoform_script_run` 两个控制入口；脚本 fork、新建、patch、validate、audit、deps、sample-run 和 promote 先由 CLI 或内部 Agent 能力完成。L2 脚本入库需要静态审计、依赖探测、验证报告和中心审批记录。
 
 `CAD 实测` 指 `cad_measure_geometry_v1` 脚本读取 CAD 文件后生成 `cad_measurement_result`。当前内置 STL bounding box 解析；STEP、STP、IGS 和 IGES 会探测 CadQuery/OCP、FreeCADCmd、FreeCAD、meshio 和 trimesh。CadQuery/OCP 或 FreeCADCmd 可用时，STEP 可以返回真实 bbox；解析器缺失或解析失败时会返回 `status=blocked`、`blocked_reason` 和 `evidence_dir`。文件名中的 `30-40-3` 只会作为 `filename_dimension_candidate`，不能当作实测长宽厚。
 
@@ -32,7 +32,7 @@ AutoForm Agent 是一个本地辅助工具项目。它把本机 AutoForm Forming
 
 `可选报告规则模板` 指 `schemas/result_review_report_rules_v1_1.schema.json` 和 `fixtures/result_review_report_rules_template_v1_1.json`。当前 V1.1 不要求工程 pass/fail 报告；如果后续需要工程判断报告，应先在模板中填写最小厚度、减薄率、FLD 风险、回弹偏差、最大力和材料流动异常等阈值。
 
-`MCP` 指给外部 MCP host 调用的可选工具入口。本项目的 MCP 入口是 `python -m autoform_agent.mcp_server`，配置模板示例是 `codex_mcp_config.autoform-agent.toml`。当前网页应用主链路不依赖外部 MCP host；R5 中心 Agent 和专业子 Agent 通过 `autoform_agent.agent_system.tool_gateway.AgentToolGateway` 复用 `autoform_agent.mcp_tools` 里的 MCP 同源工具函数，并在真实 AutoForm 控制动作前检查批准边界。
+`MCP` 指给外部 MCP host 调用的可选工具入口。本项目的 MCP 入口是 `python -m autoform_mcp_agent.mcp_server`，配置模板示例是 `AutoForm_MCP/codex_mcp_config.autoform-mcp.toml`。当前网页应用主链路不依赖外部 MCP host；R5 中心 Agent 和专业子 Agent 通过 `autoform_agent.agent_system.tool_gateway.AgentToolGateway` 复用 `autoform_core.tool_registry` 里的 MCP 同源工具函数，并在真实 AutoForm 控制动作前检查批准边界。
 
 `autoform://status` 指 MCP 的只读状态资源。支持 resources 的 MCP host 可以读取它；普通命令行用户可以运行 `python -m autoform_agent.cli status` 查看同样的状态快照。
 
@@ -44,13 +44,13 @@ AutoForm Agent 是一个本地辅助工具项目。它把本机 AutoForm Forming
 
 `gui-control-demo` 指 R12 基础可见窗口控制演示切片。它默认只读取当前 AutoForm 窗口快照，返回来源依据、执行边界、计划阶段和下一步动作；确认目标窗口后再加 `--execute`，可执行恢复、聚焦、截图、按键、点击或拖动中的一个动作。
 
-`r12-project-view-demo` 指 R12 示例工程视角演示。它默认只规划打开官方 `Solver_R13.afd`，再用快捷键 `Z` 切到俯视，然后用快捷键 `E` 回到等轴测；确认本机桌面可以被控制后再加 `--execute`，执行时会锁定目标工程标题和最终可交互窗口进程。
+`r12-project-view-demo` 指 R12 示例工程视角演示。它默认只规划打开官方 `Solver_R13.afd`，再用快捷键 `Z` 切到俯视，然后用快捷键 `E` 回到等轴测；确认本机桌面可以被控制后再加 `--execute`，执行时会锁定目标工程标题和最终可交互窗口进程。前端 prompt 同时包含示例工程和“俯视、上视、top、+Z”等目标视角时，后端会把该演示收敛为单一目标视角，不再执行默认回等轴测步骤。若上一轮已经打开工程并保存了 `conversationContext.current_project`，后续只输入“切到俯视图”“切到等轴测视图”时，后端会改用 `autoform_result_set_view` 对已有窗口发送快捷键，避免再次触发示例工程打开流程。
 
 `R13 至 R20 后续规划` 指 R12 之后的企业工艺数据和实时多 Agent 执行路线。R13 至 R17 依次覆盖企业数据接口契约、数据接入与清洗、结构化工艺知识卡、工艺 RAG 检索和证据包、企业证据驱动的工艺规划候选；R18 至 R20 依次覆盖实时执行器骨架、可用实时多 Agent 执行器、企业工艺数据接入后的完整执行器。严格验收标准以 `docs/multi_agent_architecture.md` 为准。
 
-`enterprise_data/` 指 R13 起新增的企业数据目录和来源白名单目录。当前文件包括 `r13_enterprise_data_contract.sample.json`、`source_whitelist.csv` 和 `r14_small_batch_samples.jsonl`；它们只用于来源元数据登记、契约校验和小批量清洗验证，不进行批量网页爬取、批量下载或自动入库。
+`data/rag/enterprise/` 指 R13 起新增的企业数据目录和来源白名单目录。当前文件包括 `r13_enterprise_data_contract.sample.json`、`source_whitelist.csv` 和 `r14_small_batch_samples.jsonl`；它们只用于来源元数据登记、契约校验和小批量清洗验证，不进行批量网页爬取、批量下载或自动入库。
 
-`enterprise_data/raw_data/` 指原始数据暂存目录。当前只保留来源清单模板、人工样本区和隔离区；真实原始文件默认被 `.gitignore` 排除，开始外部抓取前还需要先完成来源许可、访问频率和用途边界复核。
+`data/rag/enterprise/raw_data/` 指原始数据暂存目录。当前只保留来源清单模板、人工样本区和隔离区；真实原始文件默认被 `.gitignore` 排除，开始外部抓取前还需要先完成来源许可、访问频率和用途边界复核。
 
 `r14_external_metadata_samples.jsonl` 指 R14 外部元数据小样本。当前只包含一次 arXiv API 单条元数据样本，保留原始响应 checksum 和 manifest 记录，不代表已经开始批量采集。
 
@@ -67,14 +67,14 @@ AutoForm Agent 是一个本地辅助工具项目。它把本机 AutoForm Forming
 
 `result-review` 指 V1.1 的 GUI 后处理入口。MCP host 可以调用 `autoform_result_query_capabilities` 查看支持的结果栏目、视角、任务路线和动画证据边界，也可以调用 `autoform_result_gui_evidence` 查看本机 R13 控件证据、V1.1 卡点和 V1.2 延后项，还可以调用 `autoform_result_blockers` 查看当前卡点、对策和需要用户协助的事项。审阅执行前可调用 `autoform_result_plan_review` 从一句用户请求生成审阅计划，并调用 `autoform_result_readiness` 检查最新结果工程、可见窗口、工程窗口匹配和控件证据边界，再调用 `autoform_result_open_latest`、`autoform_result_show_variable`、`autoform_result_set_view`、`autoform_result_view_evidence`、`autoform_result_play_forming_animation` 或 `autoform_result_capture_evidence` 组织结果审阅。涉及真实窗口操作时，需要显式传入 `execute=true`。
 
-`前端` 指 `frontend/` 里的本地网页。它通过本地 HTTP bridge 与 Python 后端运行时通信，默认页面地址是 `http://127.0.0.1:8765/frontend/index.html?bridge=http`。这个页面用于输入 prompt、回放 P0 fixture、显示状态、观察 Agent 图谱、查看工程会话轨迹和命令输出，并在凭据边界面板配置 DeepSeek 或其他兼容 chat completions 的 endpoint。输入区左下角的“工程操作”下拉框包含“新建工程”“已有工程（请在Prompt里面告知项目地址）”和官方示例工程名；页面会把该选择整理为 `uiContext.localExecution.projectOperation`，只有选择官方示例时才同时发送 `exampleName`。工程会话轨迹会保留本次前端窗口内的用户 prompt 和 Agent 回复，用户输入靠右显示，live HTTP 回复靠左显示为一条中心 Agent 摘要，`查看本轮 Agent 明细` 折叠区可以查看专业 Agent 消息、当前工程上下文和紧凑工具结果；页面会把压缩后的历史作为 `conversationContext.project_history`、把当前工程对象作为 `conversationContext.current_project` 随下一轮请求传给后端。Agent 图谱固定显示 9 个业务 Agent：中心Agent、需求与工艺规划Agent、几何与数据Agent、材料Agent、工艺设置Agent、求解执行Agent、后处理Agent、诊断与优化Agent、报告整理Agent；内部 role_id 会映射到这些节点，节点工作时显示绿色，结束后回到待命灰白态。
+`前端` 指 `apps/workbench/` 里的本地网页。它通过本地 HTTP bridge 与 Python 后端运行时通信，默认页面地址是 `http://127.0.0.1:8765/apps/workbench/index.html?bridge=http`。这个页面用于输入 prompt、回放 P0 fixture、显示状态、观察 Agent 图谱、查看工程会话轨迹和命令输出，并在凭据边界面板配置 DeepSeek 或其他兼容 chat completions 的 endpoint。输入区左下角的“工程操作”下拉框包含“新建工程”“已有工程（请在Prompt里面告知项目地址）”和官方示例工程名；页面会把该选择整理为 `uiContext.localExecution.projectOperation`，只有选择官方示例时才同时发送 `exampleName`。工程会话轨迹会保留本次前端窗口内的用户 prompt 和 Agent 回复，用户输入靠右显示，live HTTP 回复靠左显示为一条中心 Agent 摘要，`查看本轮 Agent 明细` 折叠区可以查看专业 Agent 消息、当前工程上下文和紧凑工具结果；页面会把压缩后的历史作为 `conversationContext.project_history`、把当前工程对象作为 `conversationContext.current_project` 随下一轮请求传给后端。Agent 图谱固定显示 9 个业务 Agent：中心Agent、需求与工艺规划Agent、几何与数据Agent、材料Agent、工艺设置Agent、求解执行Agent、后处理Agent、诊断与优化Agent、报告整理Agent；内部 role_id 会映射到这些节点，节点工作时显示绿色，结束后回到待命灰白态。
 
 ## 你需要先准备什么
 
 1. 你需要能打开 PowerShell。项目现有启动脚本是 PowerShell 和 cmd 文件，依据是根目录的 `start_autoform_agent.ps1` 与 `start_autoform_agent.cmd`。
 2. 你需要有 Python 环境。项目推荐环境名是 `afagent`，依据是根目录 `environment.yml` 的 `name: afagent`。
 3. 你需要安装项目依赖。`environment.yml` 已列出 `mcp`、`pillow`、`psutil`、`pyperclip`、`python-docx`、`pytest` 和 `pywinauto`。
-4. 如果要调用真实 AutoForm 能力，需要本机存在 AutoForm 安装。安装发现逻辑由 `autoform_agent/paths.py` 和相关 CLI 命令负责；实际路径以你自己电脑上的 `discover` 输出为准。
+4. 如果要调用真实 AutoForm 能力，需要本机存在 AutoForm 安装。安装发现逻辑由 `autoform_core/paths.py` 和相关 CLI 命令负责；实际路径以你自己电脑上的 `discover` 输出为准。
 
 ## 第一次打开项目时看哪里
 
@@ -83,7 +83,7 @@ AutoForm Agent 是一个本地辅助工具项目。它把本机 AutoForm Forming
 1. `README.md`：了解项目已经能做什么，复制常用命令。
 2. 本文件：按新手视角完成启动、检查和提问。
 3. `docs/api_runtime_call_chain.md`：了解 API runtime、HTTP bridge、前端页面和可选 MCP server 之间的分工。
-4. `frontend/README.md`：了解网页预览页面怎样连接本地 HTTP bridge。
+4. `apps/workbench/README.md`：了解网页预览页面怎样连接本地 HTTP bridge。
 5. `DEVELOPERS.md`：在准备改代码时阅读，里面说明了各个 Python 模块的职责。
 6. `AGENTS.md`：了解本项目的协作约束，尤其是资料来源、检查要求和文档同步要求。
 
@@ -231,14 +231,14 @@ python -m autoform_agent.cli official-sample-run-summary --search-dir output\pro
 python -m autoform_agent.cli computer-use-probe --capture --output tmp\computer_use_probe\cli_desktop_probe.png
 ```
 
-这些命令会返回 JSON 计划、映射结果和证据边界。`gui-control-demo` 的 dry run 会先列出当前 AutoForm 窗口和 R12 执行边界，`--execute --action restore_focus` 只做恢复和聚焦；截图、按键、点击、拖动需要在 `--action` 中明确选择。`r12-project-view-demo` 是 R12 当前高层验收入口，dry run 只规划打开 `Solver_R13.afd`、切俯视和回等轴测；带 `--execute --no-screenshot` 时会打开示例工程并发送 `Z`、`E` 两个快捷键，适合先验证最小窗口控制闭环。`result-gui-evidence` 会列出证据文件、截图路径、控件状态、可用执行 profile、V1.1 缺口和 V1.2 延后项。`result-blockers` 会列出当前 V1.1 卡点、推荐对策、进度估算和需要用户协助的截图或操作。`result-view-evidence` 用于保留视角切换取证：先运行 `plan` 查看等轴测、俯视、正视、侧视、适合窗口和复位六个目标视角；计划输出会显示 2026-06-01 本机确认的 AutoForm R13 菜单名或控件名，包括 `等轴测视图`、`+Z向视图`、`+X向视图`、`-Y向视图` 和 `适合窗口`，其中复位视角当前采用 `等轴测视图` 与快捷键 `E` 作为替代路径；每个视角先由 MCP 抓取 before 截图，再由用户手动切换 AutoForm 视角，随后 MCP 抓取 after 截图并执行 compare。`result-set-view --execute` 已有快捷键 profile，会在发送 `E`、`Z`、`X` 或 `Shift+Y` 前检查 `interaction_ready_window_count`，如果 AutoForm 窗口最小化、离屏或尺寸过小，会返回 `blocked_no_interaction_ready_autoform_window`；2026-06-02 起可先运行 `gui-restore-window` 恢复可见项目窗口，再重复 readiness。2026-06-01 对 AutoComp_R13 窗口的实测已确认 `+Z向视图`、`+X向视图`、`-Y向视图` 和 `等轴测视图` 的自动快捷键切换。V1.1 演示动画播放时，本机 AutoComp_R13 可使用 `autocomp_r13_bottom_strip` profile：该 profile 通过 MCP 暴露的 Win32 GUI 原语执行受控点击，当前要求可见窗口标题包含 `AutoComp_R13`，工序为 `D-20` 或 `D-20 Drawing`；2026-06-02 的本机取证在窗口几何稳定条件下返回 `played_with_guarded_mcp_click_profile`，结果视图区差异达到阈值。`manual_user_playback` profile 保留为 fallback：用户在 AutoForm 中手动点击播放或拖动时间条，MCP 在指定观察窗口抓取前后截图，并且只有结果视图区截图差异达到阈值时才返回 `manual_playback_observed_with_result_view_change`。`gui-drag` 对应 MCP 工具 `autoform_gui_drag`，用于后续验证底部滑条扫帧。`result-plan` 会把用户请求整理为任务路线、结果变量、D 工序或帧候选、视角、证据清单、截图说明字段和异常恢复建议。`result-readiness` 会进一步判断最新结果工程、可见 AutoForm 窗口、工程窗口匹配和 GUI 控件证据边界。需要真实打开 AutoForm 窗口时，必须显式增加 `--execute`，并且本机需要允许 GUI 程序启动。
+这些命令会返回 JSON 计划、映射结果和证据边界。`gui-control-demo` 的 dry run 会先列出当前 AutoForm 窗口和 R12 执行边界，`--execute --action restore_focus` 只做恢复和聚焦；截图、按键、点击、拖动需要在 `--action` 中明确选择。`r12-project-view-demo` 是 R12 当前高层验收入口，dry run 只规划打开 `Solver_R13.afd`、切俯视和回等轴测；带 `--execute --no-screenshot` 时会打开示例工程并发送 `Z`、`E` 两个快捷键，适合先验证最小窗口控制闭环。前端的“打开示例工程，把视角调到俯视图”会复用同一工具，并把视角序列收敛为 `top`。`result-gui-evidence` 会列出证据文件、截图路径、控件状态、可用执行 profile、V1.1 缺口和 V1.2 延后项。`result-blockers` 会列出当前 V1.1 卡点、推荐对策、进度估算和需要用户协助的截图或操作。`result-view-evidence` 用于保留视角切换取证：先运行 `plan` 查看等轴测、俯视、正视、侧视、适合窗口和复位六个目标视角；计划输出会显示 2026-06-01 本机确认的 AutoForm R13 菜单名或控件名，包括 `等轴测视图`、`+Z向视图`、`+X向视图`、`-Y向视图` 和 `适合窗口`，其中复位视角当前采用 `等轴测视图` 与快捷键 `E` 作为替代路径；每个视角先由 MCP 抓取 before 截图，再由用户手动切换 AutoForm 视角，随后 MCP 抓取 after 截图并执行 compare。`result-set-view --execute` 已有快捷键 profile，会在发送 `E`、`Z`、`X` 或 `Shift+Y` 前检查 `interaction_ready_window_count`，如果 AutoForm 窗口最小化、离屏或尺寸过小，会返回 `blocked_no_interaction_ready_autoform_window`；2026-06-02 起可先运行 `gui-restore-window` 恢复可见项目窗口，再重复 readiness。2026-06-01 对 AutoComp_R13 窗口的实测已确认 `+Z向视图`、`+X向视图`、`-Y向视图` 和 `等轴测视图` 的自动快捷键切换。V1.1 演示动画播放时，本机 AutoComp_R13 可使用 `autocomp_r13_bottom_strip` profile：该 profile 通过 MCP 暴露的 Win32 GUI 原语执行受控点击，当前要求可见窗口标题包含 `AutoComp_R13`，工序为 `D-20` 或 `D-20 Drawing`；2026-06-02 的本机取证在窗口几何稳定条件下返回 `played_with_guarded_mcp_click_profile`，结果视图区差异达到阈值。`manual_user_playback` profile 保留为 fallback：用户在 AutoForm 中手动点击播放或拖动时间条，MCP 在指定观察窗口抓取前后截图，并且只有结果视图区截图差异达到阈值时才返回 `manual_playback_observed_with_result_view_change`。`gui-drag` 对应 MCP 工具 `autoform_gui_drag`，用于后续验证底部滑条扫帧。`result-plan` 会把用户请求整理为任务路线、结果变量、D 工序或帧候选、视角、证据清单、截图说明字段和异常恢复建议。`result-readiness` 会进一步判断最新结果工程、可见 AutoForm 窗口、工程窗口匹配和 GUI 控件证据边界。需要真实打开 AutoForm 窗口时，必须显式增加 `--execute`，并且本机需要允许 GUI 程序启动。
 `official-sample-run-summary` 用于补充样例覆盖验收，它只读取本地运行清单和求解器 stdout 摘要，不会启动 AutoForm GUI。
 `computer-use-probe` 用于补充真实桌面验收，它可以在点击或截图前先暴露当前会话是否具备可见窗口和截图能力。
 
 检查 MCP 模块能否被 Python 导入：
 
 ```powershell
-python -c "import autoform_agent.mcp_server; print('autoform_agent.mcp_server import ok')"
+python -c "import autoform_mcp_agent.mcp_server; print('autoform_mcp_agent.mcp_server import ok')"
 ```
 
 检查后端 Agent runtime 配置：
@@ -309,13 +309,13 @@ python -m http.server 8765 --directory .
 然后在浏览器访问：
 
 ```text
-http://127.0.0.1:8765/frontend/index.html?bridge=http
+http://127.0.0.1:8765/apps/workbench/index.html?bridge=http
 ```
 
 查看 R11 低风险端到端回放时，可访问：
 
 ```text
-http://127.0.0.1:8765/frontend/index.html?fixture=../fixtures/r11_low_risk_prepare_events.jsonl
+http://127.0.0.1:8765/apps/workbench/index.html?fixture=../fixtures/r11_low_risk_prepare_events.jsonl
 ```
 
 页面会自动加载该 fixture，用户可直接使用“单步”“跑完”和“重置”查看回放过程。
@@ -342,7 +342,7 @@ http://127.0.0.1:8765/frontend/index.html?fixture=../fixtures/r11_low_risk_prepa
 
 如果用户问“能不能通过项目 MCP 连接”，后端会优先调用只读的 `autoform_status_snapshot`，页面会显示工具完成事件和状态摘要。该检查用于确认网页请求已经进入 MCP 同源工具链。
 
-这些命令依据 `frontend/README.md`、`docs/api_runtime_call_chain.md` 和 `start_autoform_agent.ps1`。静态服务从仓库根目录启动，便于页面读取 `fixtures/run_events_demo.jsonl`；HTTP bridge 会通过 `http://127.0.0.1:4317/api/agent` 把网页 prompt、本机执行意图和批准状态转交给 `autoform_agent.agent_runtime`。
+这些命令依据 `apps/workbench/README.md`、`docs/api_runtime_call_chain.md` 和 `start_autoform_agent.ps1`。静态服务从仓库根目录启动，便于页面读取 `fixtures/run_events_demo.jsonl`；HTTP bridge 会通过 `http://127.0.0.1:4317/api/agent` 把网页 prompt、本机执行意图和批准状态转交给 `autoform_agent.agent_runtime`。
 
 如果 IT 只给了一个 API key，优先复制根目录 `.env.example` 为 `.env`，把 key 写入 `.env` 的 `DeepSeek_V4_API`，也可以放在 Windows 用户环境变量 `DeepSeek_V4_API`。`.gitignore` 已忽略 `.env`，因此这个本机文件不会进入 Git 仓库。临时测试时也可以把 key 粘贴到网页凭据边界面板；页面只会把 key 随本次 localhost 请求发送给后端，请求展示区会隐藏明文。
 
@@ -418,7 +418,7 @@ python -m autoform_agent script-promote --sandbox-id <sandbox_id> --approved-by 
 项目根目录提供了配置模板：
 
 ```text
-codex_mcp_config.autoform-agent.toml
+AutoForm_MCP/codex_mcp_config.autoform-mcp.toml
 ```
 
 模板说明需要把其中内容加入：
@@ -427,9 +427,9 @@ codex_mcp_config.autoform-agent.toml
 %USERPROFILE%\.codex\config.toml
 ```
 
-把模板内容加入支持 MCP 的客户端配置后，该客户端可以按配置启动 `autoform_agent.mcp_server`。这里说的是完整 `AUTO_AutoForm` 工作区，包名是 `autoform_agent`。独立 `AutoForm_MCP` 子项目的包名是 `autoform_mcp_agent`，需要使用 `AutoForm_MCP/codex_mcp_config.autoform-mcp.toml`。这个步骤的依据是 `codex_mcp_config.autoform-agent.toml`、`AutoForm_MCP/codex_mcp_config.autoform-mcp.toml` 和 `README.md` 的“Install And Connect The MCP Server”一节。
+把模板内容加入支持 MCP 的客户端配置后，该客户端可以按配置启动 `autoform_mcp_agent.mcp_server`。这里说的是完整 `AUTO_AutoForm` 工作区，包名是 `autoform_agent`。独立 `AutoForm_MCP` 子项目的包名是 `autoform_mcp_agent`，需要使用 `AutoForm_MCP/codex_mcp_config.autoform-mcp.toml`。这个步骤的依据是 `AutoForm_MCP/codex_mcp_config.autoform-mcp.toml`、`AutoForm_MCP/codex_mcp_config.autoform-mcp.toml` 和 `README.md` 的“Install And Connect The MCP Server”一节。
 
-根项目模板中的 `<path-to-cloned-repo>` 需要替换为当前电脑上的完整仓库绝对路径。模板默认通过 `conda run -n afagent python -m autoform_agent.mcp_server` 启动；如果 MCP host 找不到 `conda`，可以把 `command` 改成 `afagent` 环境中 `python.exe` 的绝对路径，并把 `args` 改为 `['-m', 'autoform_agent.mcp_server']`。独立 `AutoForm_MCP` 子项目对应的模块名是 `autoform_mcp_agent.mcp_server`。
+根项目模板中的 `<repo-root>` 需要替换为当前电脑上的完整仓库绝对路径。模板默认通过 `conda run -n afagent python -m autoform_mcp_agent.mcp_server` 启动；如果 MCP host 找不到 `conda`，可以把 `command` 改成 `afagent` 环境中 `python.exe` 的绝对路径，并把 `args` 改为 `['-m', 'autoform_mcp_agent.mcp_server']`。独立 `AutoForm_MCP` 子项目对应的模块名是 `autoform_mcp_agent.mcp_server`。
 
 如果只打开前端网页，页面会调用本地 HTTP bridge，并由 Python 后端运行时返回状态摘要。需要让外部 MCP host 直接调用 `autoform_` 工具时，才需要完成上面的 MCP 配置步骤。
 
@@ -443,7 +443,7 @@ codex_mcp_config.autoform-agent.toml
 
 官方样例的真实运行覆盖状态由 `python -m autoform_agent.cli official-sample-run-summary --search-dir output\project_runs --mode kinematic` 汇总。该命令的依据是本地 `run_manifest.json`，适合放在 V1.1 验收前检查。
 
-`frontend/` 存放网页界面。`frontend/README.md` 说明 `index.html` 负责页面结构，`styles.css` 负责视觉样式，`app.js` 负责交互逻辑和 API key 脱敏展示。
+`apps/workbench/` 存放网页界面。`apps/workbench/README.md` 说明 `index.html` 负责页面结构，`styles.css` 负责视觉样式，`app.js` 负责交互逻辑和 API key 脱敏展示。
 
 `tests/` 存放 Python 测试。`pyproject.toml` 中的 `testpaths = ["tests"]` 表明 pytest 会把这里作为测试目录。
 
@@ -451,7 +451,7 @@ codex_mcp_config.autoform-agent.toml
 
 `output/` 存放已经生成的文档、日志、演示包和运行记录。这里的内容通常用于排查、交付或复核。
 
-`autoform_agent_data/` 存放 Agent 运行时收集的数据，例如 QuickLink 导出记录。该目录是本机运行数据目录，默认不会进入 Git 提交。
+`data/runtime/agent/` 存放 Agent 运行时收集的数据，例如 QuickLink 导出记录。该目录是本机运行数据目录，默认不会进入 Git 提交。
 
 ## 正式对外发布前要检查什么
 
@@ -461,7 +461,7 @@ codex_mcp_config.autoform-agent.toml
 python -m autoform_agent.cli release-readiness
 ```
 
-该命令依据 `autoform_agent/release.py` 检查 README、开发者指南、版本记录、安装说明、卸载说明、许可、贡献说明、发布检查表、环境文件、MCP 配置模板和新手文档。输出中的 `ready` 为 `true` 时，说明必需文件在当前工作区存在；公开发布仍需负责人确认许可文本、版本号、发布范围和跨机器验证记录。
+该命令依据 `autoform_core/release.py` 检查 README、开发者指南、版本记录、安装说明、卸载说明、许可、贡献说明、发布检查表、环境文件、MCP 配置模板和新手文档。输出中的 `ready` 为 `true` 时，说明必需文件在当前工作区存在；公开发布仍需负责人确认许可文本、版本号、发布范围和跨机器验证记录。
 
 ## 修改项目时怎么做
 
@@ -471,11 +471,11 @@ python -m autoform_agent.cli release-readiness
 
 改 Python 代码时，优先在对应模块里写清楚函数用途、输入含义、返回结构和安全边界。`DEVELOPERS.md` 已说明公共函数和重要 helper 需要注释，项目目标是长期维护、方便后续开发者接手。
 
-改前端时，先看 `frontend/README.md` 对 `index.html`、`styles.css` 和 `app.js` 的分工说明，再保持状态、渲染和事件绑定职责清晰。
+改前端时，先看 `apps/workbench/README.md` 对 `index.html`、`styles.css` 和 `app.js` 的分工说明，再保持状态、渲染和事件绑定职责清晰。
 
 改启动器时，要同时核对 `start_autoform_agent.ps1`、`start_autoform_agent.cmd`、`README.md` 和本文件，因为新手通常会从启动器开始。
 
-改后端运行时时，要同时核对 `autoform_agent/agent_runtime.py`、`autoform_agent/http_bridge.py`、`frontend/README.md`、`README.md` 和测试。改多 Agent 角色或路由时，要同时核对 `autoform_agent/agent_system/`、`docs/multi_agent_architecture.md`、`DEVELOPERS.md`、`README.md` 和本文件。改 MCP 工具、CLI 结果审阅命令或资源时，要同时核对 `autoform_agent/mcp_server.py`、`autoform_agent/mcp_tools/`、对应业务模块、`README.md`、`DEVELOPERS.md` 和 `codex_mcp_config.autoform-agent.toml`。改状态快照时，还要核对 `autoform_agent/diagnostics.py`、`autoform_agent/mcp_tools/status.py` 与本文件中的 `python -m autoform_agent.cli status` 说明。
+改后端运行时时，要同时核对 `autoform_agent/agent_runtime.py`、`autoform_agent/http_bridge.py`、`apps/workbench/README.md`、`README.md` 和测试。改多 Agent 角色或路由时，要同时核对 `autoform_agent/agent_system/`、`docs/multi_agent_architecture.md`、`DEVELOPERS.md`、`README.md` 和本文件。改 MCP 工具、CLI 结果审阅命令或资源时，要同时核对 `AutoForm_MCP/autoform_mcp_agent/mcp_server.py`、`autoform_core/tool_registry/`、对应业务模块、`README.md`、`DEVELOPERS.md` 和 `AutoForm_MCP/codex_mcp_config.autoform-mcp.toml`。改状态快照时，还要核对 `autoform_core/diagnostics.py`、`autoform_core/tool_registry/status.py` 与本文件中的 `python -m autoform_agent.cli status` 说明。
 
 ## 每次更新后都要检查本文件
 
@@ -493,12 +493,12 @@ python -m autoform_agent.cli release-readiness
 
 启动器相关问题先看 `output/launcher_logs` 和 `output/launcher_pids`。日志和 PID 位置依据 `start_autoform_agent.ps1` 与 `README.md`。如果源码已经更新，但网页响应仍像旧版本，应使用 `-RestartServices` 重启本启动器记录的 HTTP bridge 和前端服务。
 
-网页无法连接时，先确认 `http://127.0.0.1:4317/health` 是否能访问，再确认 `http://127.0.0.1:8765/frontend/index.html?bridge=http` 是否打开。端口依据 `frontend/README.md` 和 `start_autoform_agent.ps1`。
+网页无法连接时，先确认 `http://127.0.0.1:4317/health` 是否能访问，再确认 `http://127.0.0.1:8765/apps/workbench/index.html?bridge=http` 是否打开。端口依据 `apps/workbench/README.md` 和 `start_autoform_agent.ps1`。
 
 MCP 无法加载时，先运行：
 
 ```powershell
-python -c "import autoform_agent.mcp_server; print('autoform_agent.mcp_server import ok')"
+python -c "import autoform_mcp_agent.mcp_server; print('autoform_mcp_agent.mcp_server import ok')"
 ```
 
 如果这个命令失败，优先检查 Python 环境、项目目录和依赖安装。
@@ -521,10 +521,10 @@ python -m autoform_agent.cli discover
 4. `pyproject.toml`：项目名、Python 版本要求、可选依赖和 pytest 测试目录。
 5. `environment.yml`：Conda 环境名和依赖列表。
 6. `start_autoform_agent.ps1` 与 `start_autoform_agent.cmd`：启动器入口、端口、日志目录、PID 目录和 API runtime 导入检查。
-7. `frontend/README.md`：前端启动方式、HTTP bridge 地址、连接模式、API 配置方式和前端文件职责。
+7. `apps/workbench/README.md`：前端启动方式、HTTP bridge 地址、连接模式、API 配置方式和前端文件职责。
 8. `docs/api_runtime_call_chain.md`：后端 Agent runtime、HTTP bridge、前端页面、可选 MCP 工具层、源码依据和分层职责。
-9. `codex_mcp_config.autoform-agent.toml`：MCP 配置模板示例。
-10. `autoform_agent/cli.py`、`autoform_agent/agent_runtime.py`、`autoform_agent/agent_system/`、`autoform_agent/mcp_server.py`、`autoform_agent/mcp_tools/` 和 `autoform_agent/http_bridge.py`：CLI、Agent runtime、多 Agent 预留层、MCP 入口、MCP 工具层和 HTTP bridge 的实际入口。
+9. `AutoForm_MCP/codex_mcp_config.autoform-mcp.toml`：MCP 配置模板示例。
+10. `autoform_agent/cli.py`、`autoform_agent/agent_runtime.py`、`autoform_agent/agent_system/`、`AutoForm_MCP/autoform_mcp_agent/mcp_server.py`、`autoform_core/tool_registry/` 和 `autoform_agent/http_bridge.py`：CLI、Agent runtime、多 Agent 预留层、MCP 入口、MCP 工具层和 HTTP bridge 的实际入口。
 11. 本次 `rg --files` 输出：当前工作区的目录和文件清单。
 
 ## 2026-06-02 后端 Agent runtime 补充说明
@@ -534,4 +534,4 @@ python -m autoform_agent.cli discover
 这个说明依据 `autoform_agent/agent_runtime.py` 中的 `TOOL_INTENT_SCHEMA_VERSION`、`_execute_runtime_tool_intents()` 和 `_runtime_tool_registry()`。安全边界依据同一文件中的白名单逻辑：未知工具会被拒绝，工程运行计划不会自动执行，桌面探测默认不截图，AFD 摘要工具只接受 `.afd` 路径。对应测试依据为 `tests/test_agent_runtime.py` 中的两次 direct API 调用、队列工具执行、用量合并和未知工具拒绝测试。
 ## 维护者和开发者延伸阅读
 
-如果你要接手维护或继续开发本项目，请阅读根目录 `维护者入门阅读文档/README.md`。该文件夹按项目全景、启动运行、核心调用链、九个业务 Agent、开发修改步骤和排错验收清单组织，面向维护者和开发者说明每一层代码的职责和修改边界。
+如果你要接手维护或继续开发本项目，请阅读根目录 `docs/maintainer_onboarding/README.md`。该文件夹按项目全景、启动运行、核心调用链、九个业务 Agent、开发修改步骤和排错验收清单组织，面向维护者和开发者说明每一层代码的职责和修改边界。

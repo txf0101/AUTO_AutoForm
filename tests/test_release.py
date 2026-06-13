@@ -5,7 +5,7 @@ This test file checks release readiness checks and public-release scans. Read ea
 
 from pathlib import Path
 
-from autoform_agent.release import install_check_plan, release_package_plan, release_readiness_check
+from autoform_core.release import install_check_plan, release_package_plan, release_readiness_check
 
 
 def _write_release_files(root: Path) -> None:
@@ -20,7 +20,7 @@ def _write_release_files(root: Path) -> None:
         "RELEASE_CHECKLIST.md",
         "environment.yml",
         "pyproject.toml",
-        "codex_mcp_config.autoform-agent.toml",
+        "AutoForm_MCP/codex_mcp_config.autoform-mcp.toml",
         "docs/beginner_onboarding_zh.md",
         "docs/api_runtime_call_chain.md",
         "docs/multi_agent_architecture.md",

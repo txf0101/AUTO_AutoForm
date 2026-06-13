@@ -6,13 +6,13 @@
 
 ## 已读项目规则
 
-已读取 `AGENTS.md`、`docs/enterprise_data_contract.md`、`docs/retrieval_api.md`、`enterprise_data/README.md`、`enterprise_data/raw_data/README.md`、`enterprise_data/source_whitelist.csv`、`enterprise_data/source_review_registry.csv`、`enterprise_data/raw_data/source_manifest.template.csv`、`schemas/enterprise_source_whitelist.schema.json`、`schemas/enterprise_ingestion_record.schema.json`、`schemas/process_knowledge_card.schema.json` 和 `schemas/process_rag_evidence_bundle.schema.json`。
+已读取 `AGENTS.md`、`docs/enterprise_data_contract.md`、`docs/retrieval_api.md`、`data/rag/enterprise/README.md`、`data/rag/enterprise/raw_data/README.md`、`data/rag/enterprise/source_whitelist.csv`、`data/rag/enterprise/source_review_registry.csv`、`data/rag/enterprise/raw_data/source_manifest.template.csv`、`schemas/enterprise_source_whitelist.schema.json`、`schemas/enterprise_ingestion_record.schema.json`、`schemas/process_knowledge_card.schema.json` 和 `schemas/process_rag_evidence_bundle.schema.json`。
 
 采用结论：
 
 - 外部来源继续保持 `candidate`，并显式保留 `bulk_crawl;bulk_download;auto_ingest`。
-- 原始响应保存在 `enterprise_data/raw_data/manual_samples/` 下，真实原始文件由 `.gitignore` 排除。
-- manifest 进入 `enterprise_data/raw_data/manifests/`，记录 `checksum`、`accessed_at`、`local_file_relpath` 和 `collection_status`。
+- 原始响应保存在 `data/rag/enterprise/raw_data/manual_samples/` 下，真实原始文件由 `.gitignore` 排除。
+- manifest 进入 `data/rag/enterprise/raw_data/manifests/`，记录 `checksum`、`accessed_at`、`local_file_relpath` 和 `collection_status`。
 - R15 卡片仅保留候选用途；许可证、适用范围和工程责任人未确认时，`review_status=needs_license_review`，`allowed_usage=catalog_only`。
 - R16 EvidenceBundle 仅用于检索评测和证据包，`blocked_actions` 保留正式工程写入、求解器提交和 GUI 控制三项。
 
@@ -49,10 +49,10 @@
 - 来源：`source_crossref_rest_metadata`。
 - 请求：`https://api.crossref.org/works?query.bibliographic=sheet%20metal%20forming%20optimization&rows=3`。
 - 响应状态：200。
-- 原始响应：`enterprise_data/raw_data/manual_samples/r21_controlled_small_batch_20260603/crossref_sheet_metal_forming_optimization_rows3_20260603.json`。
+- 原始响应：`data/rag/enterprise/raw_data/manual_samples/r21_controlled_small_batch_20260603/crossref_sheet_metal_forming_optimization_rows3_20260603.json`。
 - 原始响应 SHA256：`fb6f6db02d86a7d603ed67994983b2dbad9d4478659eef30fc92e42706b60fba`。
 - `retrieved_at`：`2026-06-03T07:34:51.371076+00:00`。
-- manifest：`enterprise_data/raw_data/manifests/2026-06-03_r21_crossref_metadata_sample_manifest.csv`。
+- manifest：`data/rag/enterprise/raw_data/manifests/2026-06-03_r21_crossref_metadata_sample_manifest.csv`。
 
 失败或隔离样本：
 
@@ -62,8 +62,8 @@
 
 清洗文件：
 
-- `enterprise_data/r21_external_metadata_samples.jsonl`
-- `enterprise_data/r14_cleaning_reports/r21_crossref_metadata_small_batch_cleaning_report.json`
+- `data/rag/enterprise/r21_external_metadata_samples.jsonl`
+- `data/rag/enterprise/r14_cleaning_reports/r21_crossref_metadata_small_batch_cleaning_report.json`
 
 清洗结果：
 
@@ -79,14 +79,14 @@
 
 R15 候选卡：
 
-- 文件：`enterprise_data/r21_process_knowledge_cards.candidate.json`。
+- 文件：`data/rag/enterprise/r21_process_knowledge_cards.candidate.json`。
 - 生成 3 张 `ProcessCase` 候选卡。
 - 每张卡均为 `review_status=needs_license_review`、`allowed_usage=catalog_only`、`formal_index_allowed=false`、`human_confirmation.status=pending`。
 - 卡片限制：Crossref 元数据只作为目录召回证据；条目许可证、工程适用范围和责任人尚未确认。
 
 R16 EvidenceBundle：
 
-- 文件：`enterprise_data/r21_process_rag_evidence_bundle.sample.json`。
+- 文件：`data/rag/enterprise/r21_process_rag_evidence_bundle.sample.json`。
 - 查询：`sheet metal forming metadata license review`。
 - `matched_card_count=3`。
 - `formal_index_allowed_count=0`。
@@ -98,19 +98,19 @@ R16 EvidenceBundle：
 
 进入版本库：
 
-- `enterprise_data/source_whitelist.csv`
-- `enterprise_data/source_review_registry.csv`
-- `enterprise_data/raw_data/manifests/2026-06-03_r21_crossref_metadata_sample_manifest.csv`
-- `enterprise_data/r21_external_metadata_samples.jsonl`
-- `enterprise_data/r14_cleaning_reports/r21_crossref_metadata_small_batch_cleaning_report.json`
-- `enterprise_data/r21_process_knowledge_cards.candidate.json`
-- `enterprise_data/r21_process_rag_evidence_bundle.sample.json`
+- `data/rag/enterprise/source_whitelist.csv`
+- `data/rag/enterprise/source_review_registry.csv`
+- `data/rag/enterprise/raw_data/manifests/2026-06-03_r21_crossref_metadata_sample_manifest.csv`
+- `data/rag/enterprise/r21_external_metadata_samples.jsonl`
+- `data/rag/enterprise/r14_cleaning_reports/r21_crossref_metadata_small_batch_cleaning_report.json`
+- `data/rag/enterprise/r21_process_knowledge_cards.candidate.json`
+- `data/rag/enterprise/r21_process_rag_evidence_bundle.sample.json`
 - `tests/test_enterprise_data_contract.py`
 - `handoff/2026-06-03_r21_controlled_small_batch_collection.md`
 
 留在本地且被 `.gitignore` 排除：
 
-- `enterprise_data/raw_data/manual_samples/r21_controlled_small_batch_20260603/crossref_sheet_metal_forming_optimization_rows3_20260603.json`
+- `data/rag/enterprise/raw_data/manual_samples/r21_controlled_small_batch_20260603/crossref_sheet_metal_forming_optimization_rows3_20260603.json`
 
 ## 检查计划
 

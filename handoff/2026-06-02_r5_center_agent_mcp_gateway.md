@@ -29,9 +29,9 @@
   - `docs/multi_agent_architecture.md` now documents `kernel.py`, `tool_gateway.py`, the center plan command and the MCP same-source gateway rule.
   - `docs/beginner_onboarding_zh.md` now includes `agent-center-plan` and explains that internal Agent MCP reuse goes through `AgentToolGateway`.
 - Updated frontend R5 event display.
-  - `frontend/app.js` now handles `context_view_built`, marks route roles, and draws route edges from R5 events.
-  - `frontend/styles.css` adds a planned-node state.
-  - `frontend/index.html` now uses the `20260602-r5-center` resource version to avoid stale browser assets.
+  - `apps/workbench/app.js` now handles `context_view_built`, marks route roles, and draws route edges from R5 events.
+  - `apps/workbench/styles.css` adds a planned-node state.
+  - `apps/workbench/index.html` now uses the `20260602-r5-center` resource version to avoid stale browser assets.
 
 ## Deliberately Deferred
 
@@ -49,7 +49,7 @@ python -m pytest tests\test_agent_system.py tests\test_agent_runtime.py tests\te
 Result: `19 passed`.
 
 ```powershell
-python -m pytest frontend\tests tests\test_agent_system.py tests\test_agent_runtime.py tests\test_http_bridge.py -q --basetemp=tmp\pytest_r5_frontend_core
+python -m pytest apps\workbench\tests tests\test_agent_system.py tests\test_agent_runtime.py tests\test_http_bridge.py -q --basetemp=tmp\pytest_r5_frontend_core
 ```
 
 Result: `21 passed`.
@@ -69,12 +69,12 @@ python -m pytest -q --basetemp=tmp\pytest_r5_full_v2
 Result: `147 passed`.
 
 ```powershell
-python -m pytest frontend\tests tests\test_agent_system.py tests\test_agent_runtime.py -q --basetemp=tmp\pytest_r5_final_quick
+python -m pytest apps\workbench\tests tests\test_agent_system.py tests\test_agent_runtime.py -q --basetemp=tmp\pytest_r5_final_quick
 ```
 
 Result: `18 passed`.
 
-HTTP asset check for `http://127.0.0.1:8786/frontend/index.html?bridge=http&v=r5-final`: `styles.css?v=20260602-r5-center` and `app.js?v=20260602-r5-center` were both present.
+HTTP asset check for `http://127.0.0.1:8786/apps/workbench/index.html?bridge=http&v=r5-final`: `styles.css?v=20260602-r5-center` and `app.js?v=20260602-r5-center` were both present.
 
 ```powershell
 python -m autoform_agent.cli public-release-scan
@@ -82,7 +82,7 @@ python -m autoform_agent.cli public-release-scan
 
 Result: `safe_to_publish: true`, `finding_count: 0`, `.env` not present in the repository root.
 
-Forbidden phrasing, placeholder and legacy Agents SDK scan across `autoform_agent`, `tests`, `docs`, `README.md`, `DEVELOPERS.md`, `frontend`, `handoff`, `schemas`, `policy` and `backend`: no matches.
+Forbidden phrasing, placeholder and legacy Agents SDK scan across `autoform_agent`, `tests`, `docs`, `README.md`, `DEVELOPERS.md`, `apps/workbench`, `handoff`, `schemas`, `policy` and `backend`: no matches.
 
 ```powershell
 python -m autoform_agent.cli agent-turn "请用一句话确认R5中心Agent计划已经生成，并说明当前是否需要真实控制AutoForm。" --conversation-id cli-r5-live-direct-api
@@ -130,15 +130,15 @@ python -m autoform_agent.cli public-release-scan
 
 Result: `safe_to_publish: true`, `finding_count: 0`, `.env` not present in the repository root.
 
-Forbidden phrasing, placeholder, obsolete usage-module reference and legacy Agents SDK scan across `autoform_agent`, `tests`, `docs`, `README.md`, `DEVELOPERS.md`, `frontend`, `handoff`, `schemas`, `policy` and `backend`: no matches.
+Forbidden phrasing, placeholder, obsolete usage-module reference and legacy Agents SDK scan across `autoform_agent`, `tests`, `docs`, `README.md`, `DEVELOPERS.md`, `apps/workbench`, `handoff`, `schemas`, `policy` and `backend`: no matches.
 
 Live DeepSeek direct API test using `DeepSeek_V4_API` returned `directApiCalled: true`, `directApiCallCount: 2`, `centerAgentStatus: ready`, `centerPlanSchema: autoform.center_agent.r5.v1`, `contextViewLevel: C0`, first events `user_input_received`, `task_card_created`, `route_decision`, `context_view_built`, `context_patch_proposed`, `patch_reviewed`, `agent_node_started`, and `usageTotal: 3495`. The test output intentionally omitted the raw key, key fingerprint and assistant answer text.
 
 ## Browser Demo Follow-up
 
-The Codex in-app browser was opened at `http://127.0.0.1:8786/frontend/index.html?bridge=http&endpoint=http%3A%2F%2F127.0.0.1%3A4318%2Fapi%2Fagent&v=r5-visible-centerplan-no-fingerprint` after starting a fresh HTTP bridge on port `4318`.
+The Codex in-app browser was opened at `http://127.0.0.1:8786/apps/workbench/index.html?bridge=http&endpoint=http%3A%2F%2F127.0.0.1%3A4318%2Fapi%2Fagent&v=r5-visible-centerplan-no-fingerprint` after starting a fresh HTTP bridge on port `4318`.
 
-The first browser run showed that an older bridge process on port `4317` could still answer requests without the visible R5 `centerPlan` contract. The demo was moved to the fresh bridge, and `frontend/app.js` was updated so the runtime response panel keeps a compact R5 `centerPlan` summary and `eventTypes` while continuing to hide raw API keys. The visible key fingerprint field now shows `configured` rather than a concrete hash.
+The first browser run showed that an older bridge process on port `4317` could still answer requests without the visible R5 `centerPlan` contract. The demo was moved to the fresh bridge, and `apps/workbench/app.js` was updated so the runtime response panel keeps a compact R5 `centerPlan` summary and `eventTypes` while continuing to hide raw API keys. The visible key fingerprint field now shows `configured` rather than a concrete hash.
 
 Browser verification result on the fresh bridge:
 
@@ -152,7 +152,7 @@ Browser verification result on the fresh bridge:
 - R5 event types: `user_input_received`, `task_card_created`, `route_decision`, `context_view_built`, `context_patch_proposed`, `patch_reviewed`, `agent_node_started`, `command_line`, `token_usage_snapshot`, `stage_summary`.
 
 ```powershell
-python -m pytest frontend\tests tests\test_agent_runtime.py tests\test_agent_system.py tests\test_p0_contracts.py -q --basetemp=tmp\pytest_r5_browser_display_final
+python -m pytest apps\workbench\tests tests\test_agent_runtime.py tests\test_agent_system.py tests\test_p0_contracts.py -q --basetemp=tmp\pytest_r5_browser_display_final
 ```
 
 Result: `24 passed`.

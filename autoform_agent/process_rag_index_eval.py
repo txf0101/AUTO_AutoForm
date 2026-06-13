@@ -17,8 +17,8 @@ from .process_rag_index import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_PROCESS_RAG_INDEX_EVAL_QUERIES = ROOT / "enterprise_data" / "r25_process_rag_index_eval_queries.jsonl"
-DEFAULT_PROCESS_RAG_INDEX_EVAL_REPORT = ROOT / "enterprise_data" / "r25_process_rag_index_eval_report.sample.json"
+DEFAULT_PROCESS_RAG_INDEX_EVAL_QUERIES = ROOT / "data" / "rag" / "enterprise" / "r25_process_rag_index_eval_queries.jsonl"
+DEFAULT_PROCESS_RAG_INDEX_EVAL_REPORT = ROOT / "data" / "rag" / "enterprise" / "r25_process_rag_index_eval_report.sample.json"
 DEFAULT_EVAL_SCHEMA_VERSION = "autoform.process_rag_index_eval.r25.v1"
 R25_BLOCKED_ACTIONS = sorted(
     set(BLOCKED_ACTIONS)

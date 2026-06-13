@@ -32,7 +32,7 @@ python -m autoform_agent.cli release-readiness
 7. `python -m autoform_agent.cli public-release-scan` 返回 `safe_to_publish = true`。
 8. `python -m pytest -q` 通过；V1.4 至少需要通过运行时、发布检查和前端 smoke 测试。
 9. 本地页面能访问 `http://127.0.0.1:8765/index.html?bridge=http`。
-10. 可选 MCP server 能导入 `autoform_agent.mcp_server`。
+10. 可选 MCP server 能导入 `autoform_mcp_agent.mcp_server`。
 
 ## 发布产物计划
 

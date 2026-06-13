@@ -46,7 +46,7 @@ The portable Codex/TOML template is:
 codex_mcp_config.autoform-mcp.toml
 ```
 
-Replace `<repo-root>` with the absolute path of the `AutoForm_MCP` folder on the current computer.
+Replace `<repo-root>` with the absolute path of the full workspace root on the current computer; it must contain both `autoform_core/` and `AutoForm_MCP/`.
 
 把 `<repo-root>` 替换成当前电脑上 `AutoForm_MCP` 文件夹的绝对路径。
 
@@ -69,10 +69,10 @@ New-Item -ItemType Directory -Force -Path $env:TEMP | Out-Null
 python -m pytest tests\test_mcp_tools.py tests\test_gui_automation.py tests\test_result_viewer.py tests\test_r12_demo.py tests\test_project_workflow.py tests\test_process.py -q --basetemp tmp\pytest_mcp
 ```
 
-Expected MCP_V1.1 result:
+Expected MCP_V1.8 result:
 
-当前 MCP_V1.1 预期结果：
+当前 MCP_V1.8 预期结果：
 
 ```text
-54 passed
+57 passed
 ```

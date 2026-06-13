@@ -10,8 +10,8 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_R16_EVIDENCE_BUNDLE = ROOT / "enterprise_data" / "r16_process_rag_evidence_bundle.sample.json"
-DEFAULT_R17_PROCESS_PLAN = ROOT / "enterprise_data" / "r17_enterprise_process_plan_candidate.sample.json"
+DEFAULT_R16_EVIDENCE_BUNDLE = ROOT / "data" / "rag" / "enterprise" / "r16_process_rag_evidence_bundle.sample.json"
+DEFAULT_R17_PROCESS_PLAN = ROOT / "data" / "rag" / "enterprise" / "r17_enterprise_process_plan_candidate.sample.json"
 DEFAULT_R17_TASK_ID = "task_r17_enterprise_process_candidate"
 
 

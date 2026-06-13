@@ -28,7 +28,7 @@ Codex / Claude Code / OpenCalw / other MCP host
 
 `autoform://status` 是只读资源。它调用 `autoform_mcp_agent.diagnostics.autoform_status_snapshot()`，返回项目版本、服务默认值、本机 AutoForm 安装发现、队列检查、QuickLink 导出、近期日志和能力覆盖。
 
-MCP_V1.1 当前注册 112 个 `autoform_` 工具。工具分组在 `autoform_mcp_agent/mcp_tools/__init__.py` 的 `MCP_TOOL_LAYERS` 和 `ALL_TOOL_FUNCTIONS` 中集中列出，`tests/test_mcp_tools.py` 会检查工具数量、关键工具名和 `autoform://status` 资源。
+MCP_V1.8 当前注册 112 个 `autoform_` 工具。工具分组在 `autoform_mcp_agent/mcp_tools/__init__.py` 的 `MCP_TOOL_LAYERS` 和 `ALL_TOOL_FUNCTIONS` 中集中列出，`tests/test_mcp_tools.py` 会检查工具数量、关键工具名和 `autoform://status` 资源。
 
 ## 分层职责
 
@@ -38,13 +38,13 @@ MCP_V1.1 当前注册 112 个 `autoform_` 工具。工具分组在 `autoform_mcp
 
 `autoform_mcp_agent/*.py` 是业务层。安装发现、工程运行、求解器计划、结果证据、GUI 窗口检查、结果审阅、材料、QuickLink、作业生命周期和发布检查都放在这里。CLI 和 MCP 可以共用这些函数。
 
-`tests/` 是验证层。MCP_V1.1 的核心测试包括工具注册、进程命令、工程运行、GUI 原语、R12 可见窗口演示和 V1.1 结果审阅。
+`tests/` 是验证层。MCP_V1.8 的核心测试包括工具注册、进程命令、工程运行、GUI 原语、R12 可见窗口演示和结果审阅。
 
 ## 安全边界
 
-大多数会影响本机 AutoForm、文件系统或桌面的动作默认是 planning、dry run 或需要显式 `execute=true`。调用者应该先读 `autoform://status`，再调用只读工具，最后才在确认工程、许可证、输出目录和可见桌面后开启真实执行。
+大多数会影响本机 AutoForm、文件系统或桌面的动作默认是 planning、dry run 或需要显式 `execute=true`。调用者应从 `autoform://status` 和只读工具开始检查环境，确认工程、许可证、输出目录和可见桌面后再开启真实执行。
 
-MCP_V1.1 不生成工程判断报告。它只返回证据、就绪检查、GUI 边界和审阅计划。工程阈值和 pass/fail 结论属于后续可选输入。
+MCP_V1.8 不生成工程判断报告。它只返回证据、就绪检查、GUI 边界和审阅计划。工程阈值和 pass/fail 结论属于后续可选输入。`autoform_r12_project_view_demo` 不内置默认视角切换序列；调用方传入 `view_sequence` 后才发送视角快捷键。已有结果窗口的续接视角切换应优先使用 `autoform_result_set_view`，并按需要传入 `title_contains` 或 `target_pid`。
 
 ## 维护要求
 

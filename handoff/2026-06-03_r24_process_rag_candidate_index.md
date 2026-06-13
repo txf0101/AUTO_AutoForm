@@ -28,7 +28,7 @@
 | `autoform_agent/process_rag_index.py` | 由 git 管理 | R24 候选索引构建和校验函数。 |
 | `schemas/process_rag_candidate_index.schema.json` | `52ed44b817ad01fc5ad747cb122fc3de2cafc1a4f1cef2a01cdcdb09a8f81c3d` | R24 候选索引快照 schema。 |
 | `docs/enterprise_rag_index.md` | `e57aac243714dc488cb9935323a9f9b222e9c3432ca20ed1d206cc1a9f07c443` | 企业工艺 RAG 索引结构说明。 |
-| `enterprise_data/r24_process_rag_candidate_index.sample.json` | `6f6fe2bfc41f8af7991c3baad095d3e5aeb981c1d437c6849f7f6358a4e30397` | R24 候选索引快照样例。 |
+| `data/rag/enterprise/r24_process_rag_candidate_index.sample.json` | `6f6fe2bfc41f8af7991c3baad095d3e5aeb981c1d437c6849f7f6358a4e30397` | R24 候选索引快照样例。 |
 | `tests/test_process_rag_index.py` | 由 git 管理 | R24 快照可重建、门禁和证据回链测试。 |
 
 ## 索引结构

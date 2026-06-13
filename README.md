@@ -2,17 +2,15 @@
 
 ## Start Here: AutoForm_MCP / 先从 AutoForm_MCP 开始
 
-The MCP subproject lives in `AutoForm_MCP/`. If somebody wants only the MCP server, publish or clone that folder as the independent GitHub repository `AutoForm_MCP`; do not copy the full `AUTO_AutoForm` workspace into the independent MCP repository.
+The MCP subproject lives in `AutoForm_MCP/`. Its stdio entrypoint and host config stay in that folder, while business functions come from the shared `autoform_core/` package. If this MCP project is published separately, package or install `autoform_core` with it.
 
-MCP 子项目位于 `AutoForm_MCP/`。如果别人只想使用 MCP server，应该把这个文件夹作为独立 GitHub 仓库 `AutoForm_MCP` 发布或克隆；不要把整个 `AUTO_AutoForm` 工作区复制成独立 MCP 仓库。
+MCP 子项目位于 `AutoForm_MCP/`。它保留独立 stdio 入口和 host 配置，业务函数统一来自 `autoform_core/`。如果后续把 MCP 项目单独发布，需要把 `autoform_core` 一起打包或作为依赖安装。
 
 Package names are deliberately different now: the full workspace uses `autoform_agent`, while the independent MCP folder uses `autoform_mcp_agent`.
 
-现在两个 Python 包名已经刻意区分：完整工作区继续使用 `autoform_agent`，独立 MCP 文件夹使用 `autoform_mcp_agent`。
+完整工作区继续使用 `autoform_agent`，MCP 子项目使用 `autoform_mcp_agent`。
 
 Fast MCP setup from the full workspace:
-
-从完整工作区快速安装 MCP：
 
 ```powershell
 cd AutoForm_MCP
@@ -22,9 +20,7 @@ python -c "import autoform_mcp_agent.mcp_server; print('mcp import ok')"
 python -m autoform_mcp_agent.cli status
 ```
 
-Codex config for the independent MCP folder:
-
-独立 MCP 文件夹的 Codex 配置：
+Codex config for the MCP subproject:
 
 ```toml
 [mcp_servers."autoform-mcp"]
@@ -34,12 +30,12 @@ startup_timeout_sec = 60
 enabled = true
 
 [mcp_servers."autoform-mcp".env]
-PYTHONPATH = '<path-to-cloned-repo>'
+PYTHONPATH = '<repo-root>;<repo-root>\AutoForm_MCP'
 ```
 
-Replace `<path-to-cloned-repo>` with the absolute path of the `AutoForm_MCP` folder on the current computer. More Codex, Claude Code, OpenCalw, cmd, and PowerShell examples are in `AutoForm_MCP/README.md` and `AutoForm_MCP/README.zh-CN.md`.
+Replace `<repo-root>` with the absolute path of the full workspace root on the current computer; it must contain both `autoform_core/` and `AutoForm_MCP/`. More Codex, Claude Code, OpenCalw, cmd, and PowerShell examples are in `AutoForm_MCP/README.md` and `AutoForm_MCP/README.zh-CN.md`.
 
-把 `<path-to-cloned-repo>` 替换成当前电脑上 `AutoForm_MCP` 文件夹的绝对路径。更多 Codex、Claude Code、OpenCalw、cmd 和 PowerShell 示例见 `AutoForm_MCP/README.md` 与 `AutoForm_MCP/README.zh-CN.md`。
+把 `<repo-root>` 替换成当前电脑上的完整工作区根目录，该目录需要同时包含 `autoform_core/` 和 `AutoForm_MCP/`。更多 Codex、Claude Code、OpenCalw、cmd 和 PowerShell 示例见 `AutoForm_MCP/README.md` 与 `AutoForm_MCP/README.zh-CN.md`。
 
 AutoForm Agent is a local automation helper for AutoForm Forming. It exposes verified AutoForm workflows through a Python CLI, an optional MCP server, and a local OpenAI-compatible Agent runtime.
 
@@ -48,7 +44,6 @@ AutoForm Agent is a local automation helper for AutoForm Forming. It exposes ver
 Version: `1.4.0`
 License: MIT
 Primary platform tested: Windows with AutoForm Forming R13
-
 ## V1.4 Release Scope
 
 V1.4 focuses on the local web workbench, Python API runtime, R5 center Agent, and MCP-sourced `AgentToolGateway` path.
@@ -86,7 +81,7 @@ Tested official examples:
 - Discover local AutoForm Forming installations, versions, program directories, material libraries, script folders, and official example project folders.
 - Open AutoForm Forming or a selected `.afd` project.
 - Create a new AutoForm project from a supported CAD geometry file (`.step`, `.stp`, `.igs`, `.iges`, `.stl`) through `autoform_import_geometry_to_new_project`, saving the `.afd` and GUI evidence under `output/geometry_import_projects`.
-- Run controlled flexible scripts from `flex_script_library`, including first-stage CAD geometry measurement with ScriptRunRecord evidence under `output/script_runs`.
+- Run controlled flexible scripts from `script_library/flex`, including first-stage CAD geometry measurement with ScriptRunRecord evidence under `output/script_runs`.
 - Resolve an official example name or an explicit `.afd` path into a reproducible project workflow.
 - Copy a project into a run directory, execute kinematic or full solver workflows, and write `run_manifest.json`.
 - Register local jobs, read job status, wait for completion, cancel managed jobs, preview logs, and plan archives.
@@ -222,22 +217,23 @@ python -m autoform_agent script-approval-create --sandbox-id <sandbox_id> --risk
 
 `cad_measure_geometry_v1` measures `.stl` files with the built-in ASCII/Binary STL bounding-box parser. For `.step/.stp/.igs/.iges`, the parser selector accepts `auto`, `cadquery`, `freecadcmd`, and `stl_builtin`; `auto` probes CadQuery/OCP and FreeCADCmd before returning a blocked result. When no STEP or IGES parser is available it returns `status=blocked`, `parser=probe_only`, `blocked_reason`, `evidence_dir`, and `filename_dimension_candidate`. A filename candidate such as `30-40-3` remains only a candidate value until a real CAD parser or AutoForm geometry reader supplies measured dimensions.
 
-L2 script hardening records static audit, dependency probe, input file hashes, resource limits, approval records, and validation report hashes in the `ScriptRunRecord`. Promotion from `tmp/flex_script_sandbox/<sandbox_id>/` requires a matching approval record and writes a new version directory under `flex_script_library/skills/<skill_id>/versions/`; it does not overwrite an existing stable version.
+L2 script hardening records static audit, dependency probe, input file hashes, resource limits, approval records, and validation report hashes in the `ScriptRunRecord`. Promotion from `tmp/flex_script_sandbox/<sandbox_id>/` requires a matching approval record and writes a new version directory under `script_library/flex/skills/<skill_id>/versions/`; it does not overwrite an existing stable version.
 
 中文说明：最小使用路径是先执行 `discover` 和 `status` 检查环境，再用 `project-run` 预演工程运行，确认许可证和路径可用后添加 `--execute` 执行求解。
 
 ## MCP Usage
 
-The visible MCP opening steps are at the top of this README. For a direct terminal launch, start the stdio server from the activated environment:
+The visible MCP opening steps are at the top of this README. For a direct terminal launch, start the stdio server from the MCP subproject in the activated environment:
 
 ```powershell
-python -m autoform_agent.mcp_server
+cd AutoForm_MCP
+python -m autoform_mcp_agent.mcp_server
 ```
 
 The repository also includes a portable MCP configuration template:
 
 ```text
-codex_mcp_config.autoform-agent.toml
+AutoForm_MCP/codex_mcp_config.autoform-mcp.toml
 ```
 
 Important MCP tools:
@@ -273,7 +269,7 @@ powershell -ExecutionPolicy Bypass -File .\start_autoform_agent.ps1
 The launcher can check the backend Agent runtime and start the local web page:
 
 ```text
-http://127.0.0.1:8765/frontend/index.html?bridge=http
+http://127.0.0.1:8765/apps/workbench/index.html?bridge=http
 ```
 
 The browser calls the local HTTP bridge at:
@@ -346,32 +342,33 @@ Write-operation planning:
 python -m autoform_agent.cli write-safety-plan "$env:ProgramData\AutoForm\AFplus\<VERSION>\scripts\CodexAgentBridge.cmd" --backup-root output\rollback
 ```
 
-中文说明：公开发布前应执行安全扫描、发布就绪检查和测试。`output/`、`tmp/`、`autoform_agent_data/`、`.env` 均已在 `.gitignore` 中排除，提交范围应保留源码、测试、文档、许可证和示例基准 JSON。
+中文说明：公开发布前应执行安全扫描、发布就绪检查和测试。`output/`、`tmp/`、`data/runtime/agent/`、`.env` 均已在 `.gitignore` 中排除，提交范围应保留源码、测试、文档、许可证和示例基准 JSON。
 
 ## Repository Layout
 
 ```text
-autoform_agent/                 Python package with CLI, MCP, runtime, workflow, solver, results, and release modules
-autoform_agent/flex_scripts/    Controlled Script Agent, Script Executor, registry, sandbox, validation, and CAD measurement modules
-docs/                           User-facing documentation and official example baseline
-flex_script_library/            Stable flexible-script SkillCards, versions, schemas, samples, and promotion targets
-frontend/                       Local browser UI for the HTTP bridge and Agent runtime
-scripts/flex/                   Shared script-side helpers and future flexible-script utilities
+autoform_agent/                 Main Agent runtime, CLI, HTTP bridge, provider, enterprise data, and RAG modules
+autoform_core/                  Shared AutoForm business capabilities used by Agent, CLI, tests, and MCP wrappers
+autoform_core/tool_registry/    MCP-sourced tool function registry shared by the Agent gateway and MCP subproject
+AutoForm_MCP/                   Independent stdio MCP subproject and host configuration template
+apps/workbench/                 Local browser UI for the HTTP bridge and Agent runtime
+data/rag/enterprise/            Enterprise RAG contracts, whitelists, samples, and candidate indexes
+data/runtime/agent/             New default local runtime data root; legacy autoform_agent_data remains readable
+script_library/flex/            Stable flexible-script SkillCards, versions, schemas, samples, and promotion targets
+docs/                           User-facing documentation, maintainer onboarding, and official example baseline
 tests/                          Pytest test suite
 tools/                          Document generation scripts
-output/script_runs/             ScriptRunRecord evidence and artifacts
-output/cad_measurements/        CAD measurement results and parser evidence
-tmp/flex_script_sandbox/        Forked, new, patched, and validation-only script workspaces
+output/                         Local execution evidence and logs, ignored by git
+tmp/                            Temporary test and sandbox artifacts, ignored by git
 environment.yml                 Recommended Conda environment
-codex_mcp_config.autoform-agent.toml  MCP configuration template
 ```
 
-中文说明：核心业务逻辑在 `autoform_agent/`，使用说明和基准文件在 `docs/`，本地网页在 `frontend/`，测试在 `tests/`。
+中文说明：业务核心在 `autoform_core/`，主 Agent 应用在 `autoform_agent/`，MCP 子项目在 `AutoForm_MCP/`，本地网页在 `apps/workbench/`，测试在 `tests/`。
 
 ## Documentation
 
 - [Beginner onboarding in Chinese](docs/beginner_onboarding_zh.md)
-- [Maintainer and developer reading guide in Chinese](维护者入门阅读文档/README.md)
+- [Maintainer and developer reading guide in Chinese](docs/maintainer_onboarding/README.md)
 - [API runtime call chain](docs/api_runtime_call_chain.md)
 - [V1.4 release notes](docs/v1_4_release_notes.md)
 - [Installation guide](INSTALL.md)

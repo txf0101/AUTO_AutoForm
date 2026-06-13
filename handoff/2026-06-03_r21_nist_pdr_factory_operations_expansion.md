@@ -11,11 +11,11 @@
 - `AGENTS.md`
 - `docs/enterprise_data_contract.md`
 - `docs/retrieval_api.md`
-- `enterprise_data/README.md`
-- `enterprise_data/raw_data/README.md`
-- `enterprise_data/source_whitelist.csv`
-- `enterprise_data/source_review_registry.csv`
-- `enterprise_data/raw_data/source_manifest.template.csv`
+- `data/rag/enterprise/README.md`
+- `data/rag/enterprise/raw_data/README.md`
+- `data/rag/enterprise/source_whitelist.csv`
+- `data/rag/enterprise/source_review_registry.csv`
+- `data/rag/enterprise/raw_data/source_manifest.template.csv`
 - `schemas/enterprise_source_whitelist.schema.json`
 - `schemas/enterprise_ingestion_record.schema.json`
 - `schemas/process_knowledge_card.schema.json`
@@ -51,19 +51,19 @@
 
 ## 原始响应与 checksum
 
-真实原始响应保存在 `enterprise_data/raw_data/manual_samples/r21_nist_pdr_factory_operations_expansion_20260603/`，该目录被 `.gitignore` 忽略。
+真实原始响应保存在 `data/rag/enterprise/raw_data/manual_samples/r21_nist_pdr_factory_operations_expansion_20260603/`，该目录被 `.gitignore` 忽略。
 
 | 本地原始文件 | 查询 | SHA256 checksum |
 | --- | --- | --- |
-| `enterprise_data/raw_data/manual_samples/r21_nist_pdr_factory_operations_expansion_20260603/nist_pdr_factory_operations_limit5_20260603.json` | `factory operations`, `limit=5` | `6daef31f3ff86d00f5b9182fb870d7035eba4cf244aa109d699faa5c9e9e40ef` |
+| `data/rag/enterprise/raw_data/manual_samples/r21_nist_pdr_factory_operations_expansion_20260603/nist_pdr_factory_operations_limit5_20260603.json` | `factory operations`, `limit=5` | `6daef31f3ff86d00f5b9182fb870d7035eba4cf244aa109d699faa5c9e9e40ef` |
 
-Manifest 写入：`enterprise_data/raw_data/manifests/2026-06-03_r21_nist_pdr_factory_operations_manifest.csv`。Manifest 保留 `accessed_at`、`checksum`、`local_file_relpath`、`collection_status=sampled_once_metadata_only` 和限制说明。
+Manifest 写入：`data/rag/enterprise/raw_data/manifests/2026-06-03_r21_nist_pdr_factory_operations_manifest.csv`。Manifest 保留 `accessed_at`、`checksum`、`local_file_relpath`、`collection_status=sampled_once_metadata_only` 和限制说明。
 
 ## R14 清洗结果
 
-R14 文件：`enterprise_data/r21_nist_pdr_factory_operations_metadata_samples.jsonl`。
+R14 文件：`data/rag/enterprise/r21_nist_pdr_factory_operations_metadata_samples.jsonl`。
 
-清洗报告：`enterprise_data/r14_cleaning_reports/r21_nist_pdr_factory_operations_cleaning_report.json`。
+清洗报告：`data/rag/enterprise/r14_cleaning_reports/r21_nist_pdr_factory_operations_cleaning_report.json`。
 
 | record_id | DOI | 标题 | source_hash |
 | --- | --- | --- | --- |
@@ -75,7 +75,7 @@ R14 文件：`enterprise_data/r21_nist_pdr_factory_operations_metadata_samples.j
 
 ## R15 与 R16 转换
 
-R15 候选卡：`enterprise_data/r21_nist_pdr_factory_operations_cards.candidate.json`。
+R15 候选卡：`data/rag/enterprise/r21_nist_pdr_factory_operations_cards.candidate.json`。
 
 - 共 3 张 `ProcessCase` 候选卡。
 - `review_status=needs_license_review`。
@@ -83,7 +83,7 @@ R15 候选卡：`enterprise_data/r21_nist_pdr_factory_operations_cards.candidate
 - `payload.formal_index_allowed=false`。
 - `human_confirmation.status=pending`。
 
-R16 EvidenceBundle：`enterprise_data/r21_nist_pdr_factory_operations_evidence_bundle.sample.json`。
+R16 EvidenceBundle：`data/rag/enterprise/r21_nist_pdr_factory_operations_evidence_bundle.sample.json`。
 
 - `collection_phase=R21`。
 - `conflict_status=blocked_evidence_present`。
@@ -93,13 +93,13 @@ R16 EvidenceBundle：`enterprise_data/r21_nist_pdr_factory_operations_evidence_b
 
 ## 来源白名单与复核记录
 
-已更新 `enterprise_data/source_whitelist.csv`：
+已更新 `data/rag/enterprise/source_whitelist.csv`：
 
 - `source_nist_public_data_repository` 记录 R21 PDR 样本总量为 6 条 selected records，仍为 `candidate`。
 - `source_zenodo_records_metadata` 保留 `candidate`，记录当前环境 `robots.txt` 和 records API 返回 403。
 - 两个来源均继续保留 `prohibited_actions=bulk_crawl;bulk_download;auto_ingest`。
 
-已更新 `enterprise_data/source_review_registry.csv`：
+已更新 `data/rag/enterprise/source_review_registry.csv`：
 
 - NIST PDR 记录本轮 `factory operations`、`limit=5`、选择 3 条的受控采样边界。
 - Zenodo 记录当前阻断原因：terms、policies、developers 页面可访问，robots 和 records API 返回 403。

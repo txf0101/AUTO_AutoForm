@@ -43,12 +43,12 @@ $ErrorActionPreference = "Stop"
 # 都能以当前项目为工作目录加载。
 $WorkspaceRoot = $PSScriptRoot
 
-# 前端和后端使用固定 localhost 端口，与 frontend/app.js 和 frontend/README.md
+# 前端和后端使用固定 localhost 端口，与 apps/workbench/app.js 和 apps/workbench/README.md
 # 中的默认地址保持一致。
 $HostAddress = "127.0.0.1"
 $BridgePort = 4317
 $FrontendPort = 8765
-$FrontendUrl = "http://$HostAddress`:$FrontendPort/frontend/index.html?bridge=http"
+$FrontendUrl = "http://$HostAddress`:$FrontendPort/apps/workbench/index.html?bridge=http"
 
 # 日志按启动时间分目录存放，避免覆盖正在运行服务仍在写入的旧日志。
 $RunStamp = Get-Date -Format "yyyyMMdd_HHmmss"
@@ -393,7 +393,7 @@ function Start-HttpBridge {
         (Join-Path $WorkspaceRoot "autoform_agent\agent_runtime.py"),
         (Join-Path $WorkspaceRoot "autoform_agent\agent_system\kernel.py"),
         (Join-Path $WorkspaceRoot "autoform_agent\agent_system\tool_gateway.py"),
-        (Join-Path $WorkspaceRoot "autoform_agent\mcp_tools\project.py")
+        (Join-Path $WorkspaceRoot "autoform_core\tool_registry\project.py")
     )
 
     if (($RestartServices -or $ForceRestart) -and (Test-LocalPortListening -Port $BridgePort)) {
@@ -425,9 +425,9 @@ function Start-FrontendServer {
       http.server 已经足够。服务只绑定到 127.0.0.1，避免把开发页面暴露到局域网。
     #>
     $frontendSources = @(
-        (Join-Path $WorkspaceRoot "frontend\index.html"),
-        (Join-Path $WorkspaceRoot "frontend\app.js"),
-        (Join-Path $WorkspaceRoot "frontend\styles.css")
+        (Join-Path $WorkspaceRoot "apps\workbench\index.html"),
+        (Join-Path $WorkspaceRoot "apps\workbench\app.js"),
+        (Join-Path $WorkspaceRoot "apps\workbench\styles.css")
     )
 
     if (($RestartServices -or $ForceRestart) -and (Test-LocalPortListening -Port $FrontendPort)) {
@@ -439,9 +439,9 @@ function Start-FrontendServer {
         return
     }
 
-    $frontendDirectory = Join-Path $WorkspaceRoot "frontend"
+    $frontendDirectory = Join-Path $WorkspaceRoot "apps\workbench"
     if (-not (Test-Path $frontendDirectory)) {
-        throw "未找到 frontend 目录：$frontendDirectory"
+        throw "未找到 apps\workbench 目录：$frontendDirectory"
     }
 
     Start-DetachedPythonProcess `

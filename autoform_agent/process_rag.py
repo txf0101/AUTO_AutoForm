@@ -17,8 +17,8 @@ from .process_knowledge import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_PROCESS_RAG_EVAL_QUERIES = ROOT / "enterprise_data" / "r16_process_rag_eval_queries.jsonl"
-DEFAULT_PROCESS_RAG_BUNDLE = ROOT / "enterprise_data" / "r16_process_rag_evidence_bundle.sample.json"
+DEFAULT_PROCESS_RAG_EVAL_QUERIES = ROOT / "data" / "rag" / "enterprise" / "r16_process_rag_eval_queries.jsonl"
+DEFAULT_PROCESS_RAG_BUNDLE = ROOT / "data" / "rag" / "enterprise" / "r16_process_rag_evidence_bundle.sample.json"
 
 TOKEN_PATTERN = re.compile(r"[a-zA-Z0-9_]+|[\u4e00-\u9fff]+")
 DEFAULT_INDEX_VERSION = "autoform.process_rag.r16.v1"

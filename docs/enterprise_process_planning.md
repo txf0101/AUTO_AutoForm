@@ -16,11 +16,11 @@ import json
 from pathlib import Path
 from autoform_agent.enterprise_process_planning import build_enterprise_process_plan_from_evidence
 
-bundle = json.loads(Path("enterprise_data/r16_process_rag_evidence_bundle.sample.json").read_text(encoding="utf-8"))
+bundle = json.loads(Path("data/rag/enterprise/r16_process_rag_evidence_bundle.sample.json").read_text(encoding="utf-8"))
 result = build_enterprise_process_plan_from_evidence(bundle)
 ```
 
-默认样例输出为 `enterprise_data/r17_enterprise_process_plan_candidate.sample.json`。
+默认样例输出为 `data/rag/enterprise/r17_enterprise_process_plan_candidate.sample.json`。
 
 ## 输出对象
 

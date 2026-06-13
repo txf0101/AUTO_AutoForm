@@ -46,7 +46,7 @@ R24 快照把索引拆成四层。
 
 ## R25 候选检索评测
 
-R25 在 R24 候选索引快照上增加检索评测门禁。当前评测集位于 `enterprise_data/r25_process_rag_index_eval_queries.jsonl`，评测报告位于 `enterprise_data/r25_process_rag_index_eval_report.sample.json`，schema 位于 `schemas/process_rag_index_eval_report.schema.json`。
+R25 在 R24 候选索引快照上增加检索评测门禁。当前评测集位于 `data/rag/enterprise/r25_process_rag_index_eval_queries.jsonl`，评测报告位于 `data/rag/enterprise/r25_process_rag_index_eval_report.sample.json`，schema 位于 `schemas/process_rag_index_eval_report.schema.json`。
 
 评测范围为 6 条查询，覆盖企业内部 R15 小样本、合作企业输入信封、AutoForm 官网公开页候选元数据、NIST PDR 制造元数据、NIST PDR 物流链元数据和权限过滤失败场景。报告要求 `duplicate_card_id_count=0`、`duplicate_entry_id_count=0`、`formal_index_allowed_count=0`、`embedding_status=not_built`、`training_status=not_started`。
 

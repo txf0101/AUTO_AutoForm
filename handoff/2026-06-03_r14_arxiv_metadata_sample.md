@@ -9,7 +9,7 @@
 | 资料 | 时间戳或访问状态 | 采用结论 |
 | --- | --- | --- |
 | `VC开发文档/Auto_Autoform思路整理/02_RAG工艺数据库详细架构计划与任务目标.docx` | `2026-06-01 18:14:07` | 新增外部资料需要登记 URL、DOI、许可、访问日期、版本和校验值。 |
-| `enterprise_data/source_review_registry.csv` | `2026-06-03T01:20:00+08:00` | arXiv 进入 metadata catalog only；R14 小样本需要限速和许可证过滤。 |
+| `data/rag/enterprise/source_review_registry.csv` | `2026-06-03T01:20:00+08:00` | arXiv 进入 metadata catalog only；R14 小样本需要限速和许可证过滤。 |
 | arXiv API Terms of Use | 2026-06-03 访问 | legacy API 请求间隔按 3 秒以上控制；元数据可用于目录，全文和 PDF 许可按条目处理。 |
 
 ## 执行记录
@@ -19,15 +19,15 @@
 - 请求前等待：超过 3 秒。
 - HTTP 状态：`200`。
 - Content-Type：`application/atom+xml; charset=utf-8`。
-- 原始响应本地路径：`enterprise_data/raw_data/manual_samples/arxiv_api_sheet_metal_forming_1_20260603.xml`。
+- 原始响应本地路径：`data/rag/enterprise/raw_data/manual_samples/arxiv_api_sheet_metal_forming_1_20260603.xml`。
 - 原始响应 SHA256：`386b3324467b6213bc4063044c670629cd2c215316e29eb83805c0e02951f39f`。
 
 ## 交付物
 
-- `enterprise_data/raw_data/manifests/2026-06-03_arxiv_api_metadata_sample_manifest.csv`：请求 URL、checksum、本地原始响应相对路径和采集状态。
-- `enterprise_data/r14_external_metadata_samples.jsonl`：归一化后的单条 arXiv 元数据样本。
+- `data/rag/enterprise/raw_data/manifests/2026-06-03_arxiv_api_metadata_sample_manifest.csv`：请求 URL、checksum、本地原始响应相对路径和采集状态。
+- `data/rag/enterprise/r14_external_metadata_samples.jsonl`：归一化后的单条 arXiv 元数据样本。
 - `tests/test_enterprise_data_contract.py`：新增 manifest 与样本一致性测试。
-- `docs/enterprise_data_contract.md`、`enterprise_data/README.md`、`docs/beginner_onboarding_zh.md`、`source_registry.csv`：同步记录本轮小样本边界。
+- `docs/enterprise_data_contract.md`、`data/rag/enterprise/README.md`、`docs/beginner_onboarding_zh.md`、`source_registry.csv`：同步记录本轮小样本边界。
 
 ## 暂缓事项
 

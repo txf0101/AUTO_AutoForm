@@ -601,6 +601,254 @@ def test_agent_runtime_ui_local_execution_context_builds_project_run_request(
     assert reply["toolRuns"][0]["result"]["working_project"] == "F:/demo/run/Solver_R13.afd"
 
 
+def test_agent_runtime_frontend_example_top_view_uses_gui_view_demo(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A frontend prompt can open the selected example and switch to top view in one GUI request."""
+
+    calls: list[tuple[str, dict, str, bool]] = []
+
+    class FakeGateway:
+        def list_tools(self, *, agent_id=None, include_guarded=True):
+            return [
+                {"name": "autoform_r12_project_view_demo", "owner_agent": "result_review"},
+                {"name": "autoform_project_run", "owner_agent": "project_workflow"},
+            ]
+
+        def call_tool(self, tool_name, arguments, *, agent_id="manager", execution_approved=False, secret_values=()):
+            calls.append((tool_name, arguments, agent_id, execution_approved))
+            assert tool_name == "autoform_r12_project_view_demo"
+            assert agent_id == "result_review"
+            assert execution_approved is True
+            assert arguments["example"] == "Solver_R13"
+            assert arguments["execute"] is True
+            assert arguments["verify_screenshot"] is False
+            assert arguments["view_sequence"] == ["top"]
+            return {
+                "object_type": "AgentToolGatewayResult",
+                "tool": tool_name,
+                "agent_id": agent_id,
+                "arguments": arguments,
+                "started_at": "2026-06-04T00:00:00+00:00",
+                "finished_at": "2026-06-04T00:00:01+00:00",
+                "status": "completed",
+                "policy": {"execution_class": "guarded_gui"},
+                "result": {
+                    "schema_version": "autoform.r12.project_view_demo.v1",
+                    "status": "completed",
+                    "project": {
+                        "source": "official_example",
+                        "path": "C:/ProgramData/AutoForm/AFplus/R13F/test/Solver_R13.afd",
+                        "name": "Solver_R13.afd",
+                    },
+                    "view_sequence": ["top"],
+                    "effective_target_pid": 2468,
+                    "large_log": "x" * 5000,
+                },
+            }
+
+    monkeypatch.setattr("autoform_agent.agent_system.kernel.build_agent_tool_gateway", lambda project_root=None: FakeGateway())
+
+    reply = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-ui-example-top-view",
+            "prompt": "\u6253\u5f00\u793a\u4f8b\u5de5\u7a0b\uff0c\u628a\u89c6\u89d2\u8c03\u5230\u4fef\u89c6\u56fe",
+            "uiContext": {
+                "surface": "p0-run-event-workbench",
+                "localExecution": {
+                    "enabled": True,
+                    "approved": True,
+                    "projectOperation": "example_project",
+                    "exampleName": "Solver_R13",
+                },
+            },
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    assert [call[0] for call in calls] == ["autoform_r12_project_view_demo"]
+    assert reply["runtime"]["directApiCalled"] is False
+    assert reply["runtime"]["localToolCompletedCount"] == 1
+    assert reply["runtime"]["willControlGui"] is True
+    assert reply["runtime"]["currentProject"]["example_name"] == "Solver_R13"
+    assert reply["runtime"]["currentProject"]["gui_pid"] == 2468
+    assert reply["toolRuns"][0]["tool"] == "autoform_r12_project_view_demo"
+    assert reply["toolRuns"][0]["arguments"]["view_sequence"] == ["top"]
+    assert reply["toolRuns"][0]["result"]["truncated"] is True
+    assert reply["toolRuns"][0]["result"]["view_sequence"] == ["top"]
+    assert "视角序列 top" in reply["text"]
+
+
+def test_agent_runtime_followup_top_view_uses_current_project_context(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A view-only follow-up should target the existing GUI window."""
+
+    calls: list[tuple[str, dict, str, bool]] = []
+
+    class FakeGateway:
+        def list_tools(self, *, agent_id=None, include_guarded=True):
+            return [{"name": "autoform_result_set_view", "owner_agent": "result_review"}]
+
+        def call_tool(self, tool_name, arguments, *, agent_id="manager", execution_approved=False, secret_values=()):
+            calls.append((tool_name, arguments, agent_id, execution_approved))
+            assert tool_name == "autoform_result_set_view"
+            assert agent_id == "result_review"
+            assert execution_approved is True
+            assert arguments["view"] == "top"
+            assert arguments["execute"] is True
+            assert arguments["verify_screenshot"] is False
+            assert arguments["target_pid"] == 44864
+            assert arguments["title_contains"] == "Triboform_R13.afd"
+            assert "afd_path" not in arguments
+            assert "example" not in arguments
+            return {
+                "object_type": "AgentToolGatewayResult",
+                "tool": tool_name,
+                "agent_id": agent_id,
+                "arguments": arguments,
+                "started_at": "2026-06-04T00:00:00+00:00",
+                "finished_at": "2026-06-04T00:00:01+00:00",
+                "status": "completed",
+                "policy": {"execution_class": "guarded_gui"},
+                "result": {
+                    "status": "shortcut_sent_without_visual_validation",
+                    "executed": True,
+                    "view_resolution": {
+                        "matched": True,
+                        "view": {"key": "top"},
+                    },
+                    "control_profile": {"target_pid": 44864, "title_contains": "Triboform_R13.afd"},
+                    "keystroke": {"sent": True},
+                },
+            }
+
+    monkeypatch.setattr("autoform_agent.agent_system.kernel.build_agent_tool_gateway", lambda project_root=None: FakeGateway())
+
+    reply = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-ui-followup-top-view",
+            "prompt": "\u5207\u5230\u4fef\u89c6\u56fe\uff1b",
+            "uiContext": {
+                "surface": "p0-run-event-workbench",
+                "localExecution": {
+                    "enabled": True,
+                    "approved": True,
+                    "projectOperation": "example_project",
+                    "exampleName": "Triboform_R13",
+                },
+            },
+            "conversationContext": {
+                "schema_version": "autoform.frontend_conversation_context.v1",
+                "current_project": {
+                    "kind": "example_project",
+                    "example_name": "Triboform_R13",
+                    "working_project": "F:/demo/run/Triboform_R13.afd",
+                    "gui_pid": 44864,
+                },
+            },
+            "agentToolExecutionApproved": True,
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    assert [call[0] for call in calls] == ["autoform_result_set_view"]
+    assert reply["runtime"]["directApiCalled"] is False
+    assert reply["runtime"]["localToolCompletedCount"] == 1
+    assert reply["runtime"]["willControlGui"] is True
+    assert reply["runtime"]["currentProject"]["working_project"] == "F:/demo/run/Triboform_R13.afd"
+    assert reply["toolRuns"][0]["tool"] == "autoform_result_set_view"
+    assert reply["toolRuns"][0]["arguments"]["view"] == "top"
+    assert reply["toolRuns"][0]["arguments"]["target_pid"] == 44864
+    assert "afd_path" not in reply["toolRuns"][0]["arguments"]
+
+
+def test_agent_runtime_followup_isometric_view_does_not_open_demo_project(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A view-only isometric request should not reuse the project-open demo tool."""
+
+    calls: list[tuple[str, dict, str, bool]] = []
+
+    class FakeGateway:
+        def list_tools(self, *, agent_id=None, include_guarded=True):
+            return [
+                {"name": "autoform_result_set_view", "owner_agent": "result_review"},
+                {"name": "autoform_r12_project_view_demo", "owner_agent": "result_review"},
+            ]
+
+        def call_tool(self, tool_name, arguments, *, agent_id="manager", execution_approved=False, secret_values=()):
+            calls.append((tool_name, arguments, agent_id, execution_approved))
+            assert tool_name == "autoform_result_set_view"
+            assert agent_id == "result_review"
+            assert execution_approved is True
+            assert arguments["view"] == "isometric"
+            assert arguments["target_pid"] == 61400
+            assert arguments["title_contains"] == "Sigma_R13.afd"
+            assert "afd_path" not in arguments
+            assert "example" not in arguments
+            return {
+                "object_type": "AgentToolGatewayResult",
+                "tool": tool_name,
+                "agent_id": agent_id,
+                "arguments": arguments,
+                "started_at": "2026-06-04T00:00:00+00:00",
+                "finished_at": "2026-06-04T00:00:01+00:00",
+                "status": "completed",
+                "policy": {"execution_class": "guarded_gui"},
+                "result": {
+                    "status": "shortcut_sent_without_visual_validation",
+                    "executed": True,
+                    "view_resolution": {
+                        "matched": True,
+                        "view": {"key": "isometric"},
+                    },
+                    "control_profile": {"target_pid": 61400, "title_contains": "Sigma_R13.afd"},
+                    "keystroke": {"sent": True},
+                },
+            }
+
+    monkeypatch.setattr("autoform_agent.agent_system.kernel.build_agent_tool_gateway", lambda project_root=None: FakeGateway())
+
+    reply = run_agent_runtime_turn(
+        {
+            "conversationId": "conv-ui-followup-isometric-view",
+            "prompt": "\u5207\u5230\u7b49\u8f74\u6d4b\u89c6\u56fe\uff1b",
+            "uiContext": {
+                "surface": "p0-run-event-workbench",
+                "localExecution": {
+                    "enabled": True,
+                    "approved": True,
+                    "projectOperation": "example_project",
+                    "exampleName": "Sigma_R13",
+                },
+            },
+            "conversationContext": {
+                "schema_version": "autoform.frontend_conversation_context.v1",
+                "current_project": {
+                    "kind": "example_project",
+                    "example_name": "Sigma_R13",
+                    "working_project": "F:/demo/run/Sigma_R13.afd",
+                    "gui_pid": 61400,
+                },
+            },
+            "agentToolExecutionApproved": True,
+        },
+        config=_offline_config(),
+        snapshot=_snapshot(),
+    )
+
+    assert [call[0] for call in calls] == ["autoform_result_set_view"]
+    assert reply["runtime"]["directApiCalled"] is False
+    assert reply["runtime"]["localToolCompletedCount"] == 1
+    assert reply["runtime"]["currentProject"]["working_project"] == "F:/demo/run/Sigma_R13.afd"
+    assert reply["toolRuns"][0]["tool"] == "autoform_result_set_view"
+    assert reply["toolRuns"][0]["arguments"]["view"] == "isometric"
+    assert "afd_path" not in reply["toolRuns"][0]["arguments"]
+
+
 def test_agent_runtime_generic_example_prompt_requires_selection(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

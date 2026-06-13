@@ -7,7 +7,7 @@ The existing backend implementation remains in `autoform_agent/`. This directory
 ## P0 responsibilities
 
 - R4 exposes a server-side `RunEvent` stream through `autoform_agent/runtime_events.py` that follows `schemas/ui_event_schema.json`.
-- R4 keeps API keys behind `autoform_agent/credentials.py`, `autoform_agent/provider_connection.py` and `autoform_agent/agent_runtime.py`, and exposes only masked status to `frontend/`.
+- R4 keeps API keys behind `autoform_agent/credentials.py`, `autoform_agent/provider_connection.py` and `autoform_agent/agent_runtime.py`, and exposes only masked status to `apps/workbench/`.
 - R4 aggregates token usage into `TokenUsageSnapshot` objects through `autoform_agent/runtime_events.py` and runtime reply events.
 - R5 connects `center_agent`, C0 context view building, patch review, Agent gateway calls and audit events through `autoform_agent/agent_system/kernel.py` and `autoform_agent/agent_system/tool_gateway.py`.
 

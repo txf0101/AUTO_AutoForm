@@ -1,19 +1,28 @@
-"""这个测试文件检查MCP 工具注册、工具数量和兼容入口。读测试时可以把每个断言看成一条项目承诺：输入什么、应该返回什么、哪些危险动作默认不能发生。
+"""这个测试文件检查 MCP 工具注册、工具数量和独立 MCP 子项目入口。
 
-This test file checks MCP tool registration, tool counts, and compatibility entry points. Read each assertion as one project promise: what input is accepted, what output must come back, and which risky actions must stay disabled by default.
+This test file checks MCP tool registration, tool counts, and the independent
+MCP subproject entry point.
 """
 
 from __future__ import annotations
+
+import sys
+from pathlib import Path
 
 import pytest
 
 pytest.importorskip("mcp.server.fastmcp")
 
+ROOT = Path(__file__).resolve().parents[1]
+MCP_ROOT = ROOT / "AutoForm_MCP"
+if str(MCP_ROOT) not in sys.path:
+    sys.path.insert(0, str(MCP_ROOT))
+
 
 def test_mcp_server_registers_all_tool_layers() -> None:
-    """The stable MCP entry point should still expose the V1.0 tool surface."""
-    from autoform_agent import mcp_server
-    from autoform_agent.mcp_tools import ALL_TOOL_FUNCTIONS, MCP_TOOL_LAYERS
+    """The independent MCP entry point should expose the shared tool surface."""
+    from autoform_core.tool_registry import ALL_TOOL_FUNCTIONS, MCP_TOOL_LAYERS
+    from autoform_mcp_agent import mcp_server
 
     tool_names = set(mcp_server.mcp._tool_manager._tools)
 
@@ -43,9 +52,9 @@ def test_mcp_server_registers_all_tool_layers() -> None:
     assert "autoform_script_run" in tool_names
 
 
-def test_mcp_server_keeps_status_resource_and_legacy_exports() -> None:
-    """Existing imports from `mcp_server` should keep working after the split."""
-    from autoform_agent import mcp_server
+def test_mcp_server_keeps_status_resource_and_core_exports() -> None:
+    """The MCP subproject should expose the status resource and core wrappers."""
+    from autoform_mcp_agent import mcp_server
 
     resource_uris = set(mcp_server.mcp._resource_manager._resources)
 

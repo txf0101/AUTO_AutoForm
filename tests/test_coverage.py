@@ -3,7 +3,7 @@
 This test file checks the capability matrix and help-topic mapping. Read each assertion as one project promise: what input is accepted, what output must come back, and which risky actions must stay disabled by default.
 """
 
-import autoform_agent.coverage as coverage
+import autoform_core.coverage as coverage
 
 
 def test_help_topic_agent_mapping_groups_topics(monkeypatch) -> None:

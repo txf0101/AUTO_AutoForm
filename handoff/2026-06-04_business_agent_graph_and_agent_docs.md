@@ -21,12 +21,12 @@
 
 ## 本轮修改
 
-- `frontend/app.js`：固定图谱为九个业务 Agent：中心Agent、需求与工艺规划Agent、几何与数据Agent、材料Agent、工艺设置Agent、求解执行Agent、后处理Agent、诊断与优化Agent、报告整理Agent。新增内部 role_id 到业务节点的映射，隐藏 User、UI、Runtime、Gateway 等调试节点。运行态显示绿色，完成和计划态显示灰白待命。
-- `frontend/styles.css`：把 Agent 图谱调整为三列九宫格，绿色只绑定到 `.is-running`，灰白态作为默认和完成后的视觉基线。
+- `apps/workbench/app.js`：固定图谱为九个业务 Agent：中心Agent、需求与工艺规划Agent、几何与数据Agent、材料Agent、工艺设置Agent、求解执行Agent、后处理Agent、诊断与优化Agent、报告整理Agent。新增内部 role_id 到业务节点的映射，隐藏 User、UI、Runtime、Gateway 等调试节点。运行态显示绿色，完成和计划态显示灰白待命。
+- `apps/workbench/styles.css`：把 Agent 图谱调整为三列九宫格，绿色只绑定到 `.is-running`，灰白态作为默认和完成后的视觉基线。
 - `autoform_agent/agent_system/registry.py`：补入九个业务 Agent 中缺失的角色注册项，并把几何与数据、材料显示名改为中文业务名。
 - `autoform_agent/agent_system/orchestrator.py`、`kernel.py`、`tool_gateway.py`：把路由关键词、任务类型和工具权限映射到新的业务 Agent，同时保留旧内部角色兼容路径。
-- `frontend/README.md`、`docs/beginner_onboarding_zh.md`、`docs/api_runtime_call_chain.md`：同步说明新的九节点图谱、role_id 映射和运行态复位规则。
-- `tests/test_agent_system.py`、`frontend/tests/smoke_test.py`、`frontend/tests/smoke-test.mjs`：补充九节点、别名映射、运行态 CSS 和工具权限测试。
+- `apps/workbench/README.md`、`docs/beginner_onboarding_zh.md`、`docs/api_runtime_call_chain.md`：同步说明新的九节点图谱、role_id 映射和运行态复位规则。
+- `tests/test_agent_system.py`、`apps/workbench/tests/smoke_test.py`、`apps/workbench/tests/smoke-test.mjs`：补充九节点、别名映射、运行态 CSS 和工具权限测试。
 
 ## 新增开发文档
 
@@ -46,9 +46,9 @@
 
 ## 核验记录
 
-- Python 测试：`24 passed in 0.40s`，覆盖 `tests/test_agent_system.py`、`tests/test_agent_system_runtime.py`、`frontend/tests/smoke_test.py`。
-- Node 前端检查：`frontend smoke test passed`，`node --check frontend/app.js` 通过。
-- 浏览器 DOM 核验：`http://127.0.0.1:8765/frontend/index.html?bridge=http` 渲染出 9 个节点，三列布局，初始背景 `rgb(251, 252, 253)`，边框 `rgb(216, 222, 232)`，状态文本为“待命”。
+- Python 测试：`24 passed in 0.40s`，覆盖 `tests/test_agent_system.py`、`tests/test_agent_system_runtime.py`、`apps/workbench/tests/smoke_test.py`。
+- Node 前端检查：`frontend smoke test passed`，`node --check apps/workbench/app.js` 通过。
+- 浏览器 DOM 核验：`http://127.0.0.1:8765/apps/workbench/index.html?bridge=http` 渲染出 9 个节点，三列布局，初始背景 `rgb(251, 252, 253)`，边框 `rgb(216, 222, 232)`，状态文本为“待命”。
 - 单步回放核验：第 4 个事件触发后，`需求与工艺规划Agent` 变为 `.is-running`，背景 `rgb(237, 249, 240)`，状态文本为“工作中”；回放完成后无绿色运行态残留。
 - 截图产物：`F:\【项目和任务】\EIT\2026\AUTO_AutoForm\outputs\frontend_agent_graph_20260604.png`，尺寸 `1280 x 900`。
 - DOCX 结构核验：九个新文档均通过 `python-docx` 段落、表格和全文抽取检查；未发现用户禁用句式、异常占位或空来源。

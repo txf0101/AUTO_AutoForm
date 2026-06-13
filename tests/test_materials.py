@@ -5,7 +5,7 @@ This test file checks material library checks, install plans, and duplicate-file
 
 from pathlib import Path
 
-from autoform_agent.materials import (
+from autoform_core.materials import (
     find_duplicate_material_files,
     inspect_material_file,
     install_material_library,
@@ -13,7 +13,7 @@ from autoform_agent.materials import (
     material_library_backup_plan,
     plan_material_files,
 )
-from autoform_agent.paths import AutoFormInstallation
+from autoform_core.paths import AutoFormInstallation
 
 
 def test_plan_material_files_keeps_material_and_support_files(tmp_path: Path) -> None:

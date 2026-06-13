@@ -4,7 +4,7 @@
 
 本轮完成 R25 候选索引检索评测门禁。R25 在 R24 `ProcessRagCandidateIndexSnapshot` 上增加小样本检索评测集和评测报告，验证候选索引在不写正式索引、不计算 embedding、不训练神经网络、不批量采集的前提下，能否按结构化过滤和关键词评分返回可解释命中。
 
-本轮还修复了 3 个候选卡 `card_id` 冲突。冲突来自 `enterprise_data/r21_public_process_chain_cards.candidate.json` 与 `enterprise_data/r21_nist_pdr_process_chain_cards.candidate.json` 的 NIST PDR process-chain 候选卡同名编号。修复后，R24 快照中 37 个 `card_id` 和 37 个 `entry_id` 均唯一。
+本轮还修复了 3 个候选卡 `card_id` 冲突。冲突来自 `data/rag/enterprise/r21_public_process_chain_cards.candidate.json` 与 `data/rag/enterprise/r21_nist_pdr_process_chain_cards.candidate.json` 的 NIST PDR process-chain 候选卡同名编号。修复后，R24 快照中 37 个 `card_id` 和 37 个 `entry_id` 均唯一。
 
 ## 已读 DOCX 与采用结论
 
@@ -26,19 +26,19 @@
 | 文件 | SHA256 | 用途 |
 | --- | --- | --- |
 | `autoform_agent/process_rag_index_eval.py` | 由 git 管理 | R25 候选索引检索、评测和报告校验函数。 |
-| `enterprise_data/r25_process_rag_index_eval_queries.jsonl` | `6b18ab044e428415b6eabcf54e107c1a040ba7cc9771b3e386d875495240fad2` | 6 条候选索引评测查询。 |
-| `enterprise_data/r25_process_rag_index_eval_report.sample.json` | `339764a740e1d7aad063ae4921b7a7730fc8c02e1c81be6fbff1847148a83c3c` | R25 评测报告样例。 |
+| `data/rag/enterprise/r25_process_rag_index_eval_queries.jsonl` | `6b18ab044e428415b6eabcf54e107c1a040ba7cc9771b3e386d875495240fad2` | 6 条候选索引评测查询。 |
+| `data/rag/enterprise/r25_process_rag_index_eval_report.sample.json` | `339764a740e1d7aad063ae4921b7a7730fc8c02e1c81be6fbff1847148a83c3c` | R25 评测报告样例。 |
 | `schemas/process_rag_index_eval_report.schema.json` | `32e3d083eab7d889296bef9c03ace3eea602845397e293b2de978b68cb7f5db2` | R25 评测报告 schema。 |
-| `enterprise_data/r24_process_rag_candidate_index.sample.json` | `137eec0699517450bf640a97d9b6caf9db11a34e2479d1999dfd7916debaa441` | 修复重复卡 ID 后重建的 R24 候选索引快照。 |
+| `data/rag/enterprise/r24_process_rag_candidate_index.sample.json` | `137eec0699517450bf640a97d9b6caf9db11a34e2479d1999dfd7916debaa441` | 修复重复卡 ID 后重建的 R24 候选索引快照。 |
 | `docs/enterprise_rag_index.md` | `2725e13c17ecbcfb57cf43c0bda7645a87606b9539711881fbc75b56920afe78` | 增加 R25 候选检索评测说明。 |
 
 ## ID 修复记录
 
 | 原 `card_id` | 新 `card_id` | 文件 |
 | --- | --- | --- |
-| `pkc_r21_nist_pdr_process_chain_case_001` | `pkc_r21_nist_pdr_logistics_chain_case_001` | `enterprise_data/r21_nist_pdr_process_chain_cards.candidate.json` |
-| `pkc_r21_nist_pdr_process_chain_case_002` | `pkc_r21_nist_pdr_logistics_chain_case_002` | `enterprise_data/r21_nist_pdr_process_chain_cards.candidate.json` |
-| `pkc_r21_nist_pdr_process_chain_case_003` | `pkc_r21_nist_pdr_logistics_chain_case_003` | `enterprise_data/r21_nist_pdr_process_chain_cards.candidate.json` |
+| `pkc_r21_nist_pdr_process_chain_case_001` | `pkc_r21_nist_pdr_logistics_chain_case_001` | `data/rag/enterprise/r21_nist_pdr_process_chain_cards.candidate.json` |
+| `pkc_r21_nist_pdr_process_chain_case_002` | `pkc_r21_nist_pdr_logistics_chain_case_002` | `data/rag/enterprise/r21_nist_pdr_process_chain_cards.candidate.json` |
+| `pkc_r21_nist_pdr_process_chain_case_003` | `pkc_r21_nist_pdr_logistics_chain_case_003` | `data/rag/enterprise/r21_nist_pdr_process_chain_cards.candidate.json` |
 
 证据引用、`source_hash`、来源文件和清洗样本路径保持不变；本轮只修复候选卡键名冲突。
 

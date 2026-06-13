@@ -5,14 +5,14 @@ This test file checks status snapshots, logs, and diagnostic bundle plans. Read 
 
 from pathlib import Path
 
-import autoform_agent.diagnostics as diagnostics
-from autoform_agent.diagnostics import (
+import autoform_core.diagnostics as diagnostics
+from autoform_core.diagnostics import (
     autoform_status_snapshot,
     collect_gui_project_events,
     collect_recent_autoform_logs,
     diagnostic_bundle_plan,
 )
-from autoform_agent.paths import AutoFormInstallation
+from autoform_core.paths import AutoFormInstallation
 
 
 def test_collect_recent_autoform_logs_reads_preview(tmp_path: Path) -> None:

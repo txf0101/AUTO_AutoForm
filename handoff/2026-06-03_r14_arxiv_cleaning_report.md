@@ -7,10 +7,10 @@
 ## 交付物
 
 - `autoform_agent/enterprise_data.py`：新增 `build_small_batch_cleaning_report()`。
-- `enterprise_data/r14_cleaning_reports/README.md`：清洗报告目录说明。
-- `enterprise_data/r14_cleaning_reports/arxiv_metadata_sample_cleaning_report.json`：arXiv 单条元数据样本清洗报告。
+- `data/rag/enterprise/r14_cleaning_reports/README.md`：清洗报告目录说明。
+- `data/rag/enterprise/r14_cleaning_reports/arxiv_metadata_sample_cleaning_report.json`：arXiv 单条元数据样本清洗报告。
 - `tests/test_enterprise_data_contract.py`：新增清洗报告可重建性测试。
-- `docs/enterprise_data_contract.md`、`enterprise_data/README.md`、`docs/beginner_onboarding_zh.md`、`source_registry.csv`：同步报告入口和门禁。
+- `docs/enterprise_data_contract.md`、`data/rag/enterprise/README.md`、`docs/beginner_onboarding_zh.md`、`source_registry.csv`：同步报告入口和门禁。
 
 ## 清洗结果
 
@@ -21,7 +21,7 @@
 - `clean_record_count`：1。
 - `quarantined_record_count`：0。
 - `source_hash`：`76003cf9778b2be42830d8d6d0e4168ea10c512d31f8442208540003520df6a9`。
-- manifest：`enterprise_data/raw_data/manifests/2026-06-03_arxiv_api_metadata_sample_manifest.csv`。
+- manifest：`data/rag/enterprise/raw_data/manifests/2026-06-03_arxiv_api_metadata_sample_manifest.csv`。
 
 ## 仍需门禁
 

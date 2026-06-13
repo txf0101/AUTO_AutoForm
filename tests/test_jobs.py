@@ -6,7 +6,7 @@ This test file checks local job submit, status, wait, cancel, and archive behavi
 import sys
 from pathlib import Path
 
-from autoform_agent.jobs import archive_job, job_logs, job_status, list_jobs, submit_job, wait_for_job
+from autoform_core.jobs import archive_job, job_logs, job_status, list_jobs, submit_job, wait_for_job
 
 
 def test_submit_job_defaults_to_plan(tmp_path: Path) -> None:
